@@ -16,10 +16,9 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| PIP-001 | [PIP](tickets/PIP-pipeline-feeds.md) | PipelineFeed entity and branch pattern matching |
+| PIP-001 | [PIP](tickets/PIP-pipeline-feeds.md) | PipelineFeed entity and persistence |
 | APP-001 | [APP](tickets/APP-applications.md) | DeployableApplication entity and persistence |
 | APP-002 | [APP](tickets/APP-applications.md) | ApplicationInstance entity and persistence |
-| PIP-002 | [PIP](tickets/PIP-pipeline-feeds.md) | Resolve feed from branch name on ApplicationInstance |
 | APP-003 | [APP](tickets/APP-applications.md) | DeployableApplication admin UI |
 | PIP-003 | [PIP](tickets/PIP-pipeline-feeds.md) | Pipeline feed admin UI |
 | APP-004 | [APP](tickets/APP-applications.md) | ApplicationInstance admin UI |
@@ -40,7 +39,7 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 | Epic | Description | Tickets Completed | Tickets Shelved | Total Tickets | Progress |
 |------|-------------|-------------------|-----------------|---------------|----------|
 | [Applications (APP)](tickets/APP-applications.md) | Deployable app vs instance | 0 | 0 | 4 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
-| [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Branch feeds and BuildNumber origin | 0 | 0 | 3 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
+| [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Named pipeline feeds (no branch matching v1) | 0 | 1 | 2 | 🟨⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
 | [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 0 | 0 | 5 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
 | [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | 0 | 0 | 4 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
 
@@ -50,7 +49,7 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 
 | TicketId | Epic | Description | Notes |
 |----------|------|-------------|-------|
-| *(none)* | | | |
+| PIP-002 | [PIP](tickets/PIP-pipeline-feeds.md) | Resolve feed from branch name on ApplicationInstance | Shelved — branch rules enforced elsewhere; no pattern matching in DevDash yet |
 
 ## Cancelled
 

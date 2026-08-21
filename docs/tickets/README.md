@@ -32,7 +32,7 @@ Ticket-driven development for a personal/work Blazor dashboard. Workflow: see [`
 | **FND** | [FND-foundation.md](FND-foundation.md) | Solution skeleton, Blazor host, layout shell |
 | **ENV** | [ENV-environments.md](ENV-environments.md) | Named environments, SQLite, SQL Server instance |
 | **APP** | [APP-applications.md](APP-applications.md) | DeployableApplication vs ApplicationInstance |
-| **PIP** | [PIP-pipeline-feeds.md](PIP-pipeline-feeds.md) | Branch/WIP/NuGet pipeline feeds, BuildNumber |
+| **PIP** | [PIP-pipeline-feeds.md](PIP-pipeline-feeds.md) | Named pipeline feeds (WIP / Branch / NuGet), BuildNumber |
 | **CFG** | [CFG-configuration.md](CFG-configuration.md) | Shared settings read and compare |
 | **LOG** | [LOG-log-interpreter.md](LOG-log-interpreter.md) | Adaptable log viewer per application |
 | **IDE** | [IDE-ideas.md](IDE-ideas.md) | Unprioritized feature ideas |

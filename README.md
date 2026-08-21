@@ -20,7 +20,7 @@ Agents update epic docs and the backlog when a ticket ships. They do **not** com
 ## Current state
 
 - **Backlog:** [docs/backlog.md](docs/backlog.md)
-- **Next ticket:** `PIP-001` — PipelineFeed entity and branch pattern matching
+- **Next ticket:** `PIP-001` — PipelineFeed entity and persistence
 
 ## Run
 

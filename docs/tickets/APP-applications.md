@@ -50,7 +50,7 @@ A specific deployment of a **DeployableApplication** in a specific **TrackedEnvi
 | `DeployableApplicationId` | `Guid` | FK |
 | `EnvironmentId` | `Guid` | FK → `TrackedEnvironment.Id` (local) |
 | `BuildNumber` | `string` | Version identifier from pipeline output |
-| `PipelineFeedId` | `Guid?` | FK — branch feed that produced this deployment |
+| `PipelineFeedId` | `Guid?` | FK — pipeline feed selected for this deployment (manual v1) |
 | `SourceBranch` | `string?` | Git branch used for the build |
 | `DeployedAt` | `DateTimeOffset?` | When deployed |
 | `PhysicalPath` | `string?` | Deploy location on the environment |
@@ -65,7 +65,7 @@ A specific deployment of a **DeployableApplication** in a specific **TrackedEnvi
 | Origin (from pipeline / build) | Environment-specific |
 |--------------------------------|----------------------|
 | `BuildNumber` | `PhysicalPath` |
-| `PipelineFeedId` / branch feed | `LogPath` |
+| `PipelineFeedId` / feed (manual) | `LogPath` |
 | `SourceBranch` | `SqlServerInstance` (override) |
 | `DeployedAt` | |
 
