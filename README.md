@@ -19,7 +19,8 @@ Agents update epic docs and the backlog when a ticket ships. They do **not** com
 ## Current state
 
 - **Backlog:** [docs/backlog.md](docs/backlog.md)
-- **Next ticket:** `FND-002` — trim nav/layout to DevDash scope (remove template orphan links)
+- **Next ticket:** `FND-002` — trim nav/layout to DevDash scope
+- **Domain epics queued:** ENV → APP + PIP → CFG + LOG (18 tickets after foundation)
 
 ## Run
 
