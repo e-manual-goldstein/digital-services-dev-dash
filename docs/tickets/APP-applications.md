@@ -20,7 +20,7 @@
 | ID | Status | Title | Depends on |
 |----|--------|-------|------------|
 | [APP-001](#app-001) | Done | DeployableApplication entity and persistence | ENV-001 |
-| [APP-002](#app-002) | Todo | ApplicationInstance entity and persistence | APP-001, ENV-001, PIP-001 |
+| [APP-002](#app-002) | Done | ApplicationInstance entity and persistence | APP-001, ENV-001, PIP-001 |
 | [APP-003](#app-003) | Todo | DeployableApplication admin UI | APP-001 |
 | [APP-004](#app-004) | Todo | ApplicationInstance admin UI | APP-002, ENV-002 |
 
@@ -110,9 +110,9 @@ Uniqueness (v1 suggestion): one **ApplicationInstance** per (`DeployableApplicat
 |-------|--------|
 | **ID** | APP-002 |
 | **Title** | ApplicationInstance entity and persistence |
-| **Status** | Todo |
-| **Description** | Add `ApplicationInstance` with FKs to `DeployableApplication`, `Environment`, and `PipelineFeed`. Capture origin fields (build number, branch, deployed date) and environment fields (physical path, log path, SQL override). Service layer CRUD + query by environment or deployable app. |
-| **Test / demo** | Register instance: App X in Partial16, build 1.2.3, branch `feature/123456-foo` → query by environment returns row with both origin and path fields. |
+| **Status** | Done |
+| **Description** | Added `ApplicationInstance` with FKs to `DeployableApplication`, `TrackedEnvironment`, and optional `PipelineFeed`. Origin fields (`BuildNumber`, `SourceBranch`, `DeployedAt`, feed) and environment fields (`PhysicalPath`, `LogPath`, `SqlServerInstance`). Unique slot per app+environment; `UpsertAsync` updates existing row. `IApplicationInstanceService` CRUD + query by environment or deployable app. Delete guard on deployable applications when instances exist. Schema upgrade for existing DBs. Unit tests in `ApplicationInstanceServiceTests`. |
+| **Test / demo** | `dotnet test --filter ApplicationInstanceServiceTests` → pass. Register instance: App X in Partial16, build 1.2.3, branch `feature/123456-foo` → query by environment returns row with origin and path fields. |
 | **Depends on** | APP-001, ENV-001, PIP-001 |
 
 ### APP-003

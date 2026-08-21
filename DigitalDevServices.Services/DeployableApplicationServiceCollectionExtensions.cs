@@ -8,6 +8,7 @@ public static class DeployableApplicationServiceCollectionExtensions
     public static IServiceCollection AddDeployableApplicationServices(this IServiceCollection services)
     {
         services.AddScoped<IDeployableApplicationService, DeployableApplicationService>();
+        services.AddScoped<IApplicationInstanceService, ApplicationInstanceService>();
         return services;
     }
 }

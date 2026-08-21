@@ -106,6 +106,16 @@ public sealed class DeployableApplicationService : IDeployableApplicationService
             return;
         }
 
+        var hasInstances = await _db.ApplicationInstances
+            .AnyAsync(instance => instance.DeployableApplicationId == id, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (hasInstances)
+        {
+            throw new InvalidOperationException(
+                "Cannot delete a deployable application while application instances still reference it.");
+        }
+
         _db.DeployableApplications.Remove(application);
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }

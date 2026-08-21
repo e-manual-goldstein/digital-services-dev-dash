@@ -25,6 +25,7 @@ public static class DevDashDataServiceCollectionExtensions
         db.Database.EnsureCreated();
         EnsurePipelineFeedsTableExists(db);
         EnsureDeployableApplicationsTableExists(db);
+        EnsureApplicationInstancesTableExists(db);
     }
 
     private static void EnsurePipelineFeedsTableExists(DevDashDbContext db)
@@ -57,6 +58,35 @@ public static class DevDashDataServiceCollectionExtensions
 
         db.Database.ExecuteSqlRaw("""
             CREATE UNIQUE INDEX IF NOT EXISTS "IX_DeployableApplications_Name" ON "DeployableApplications" ("Name");
+            """);
+    }
+
+    private static void EnsureApplicationInstancesTableExists(DevDashDbContext db)
+    {
+        db.Database.ExecuteSqlRaw("""
+            CREATE TABLE IF NOT EXISTS "ApplicationInstances" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_ApplicationInstances" PRIMARY KEY,
+                "DeployableApplicationId" TEXT NOT NULL,
+                "EnvironmentId" TEXT NOT NULL,
+                "BuildNumber" TEXT NOT NULL,
+                "PipelineFeedId" TEXT NULL,
+                "SourceBranch" TEXT NULL,
+                "DeployedAt" TEXT NULL,
+                "PhysicalPath" TEXT NULL,
+                "LogPath" TEXT NULL,
+                "SqlServerInstance" TEXT NULL,
+                "Notes" TEXT NULL,
+                "CreatedAt" TEXT NOT NULL,
+                "UpdatedAt" TEXT NULL,
+                FOREIGN KEY("DeployableApplicationId") REFERENCES "DeployableApplications" ("Id") ON DELETE RESTRICT,
+                FOREIGN KEY("EnvironmentId") REFERENCES "TrackedEnvironments" ("Id") ON DELETE RESTRICT,
+                FOREIGN KEY("PipelineFeedId") REFERENCES "PipelineFeeds" ("Id") ON DELETE SET NULL
+            );
+            """);
+
+        db.Database.ExecuteSqlRaw("""
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_ApplicationInstances_DeployableApplicationId_EnvironmentId"
+            ON "ApplicationInstances" ("DeployableApplicationId", "EnvironmentId");
             """);
     }
 }
