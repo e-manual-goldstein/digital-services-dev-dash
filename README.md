@@ -19,7 +19,7 @@ Agents update epic docs and the backlog when a ticket ships. They do **not** com
 ## Current state
 
 - **Backlog:** [docs/backlog.md](docs/backlog.md)
-- **Next ticket:** `ENV-002` — Environment management UI
+- **Next ticket:** `ENV-003` — Mock remote environment Web API for local testing
 
 ## Run
 

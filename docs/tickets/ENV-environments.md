@@ -20,6 +20,7 @@
 | ID | Status | Title | Depends on |
 |----|--------|-------|------------|
 | [ENV-001](#env-001) | Done | SQLite bootstrap, tracked environment entity, API cache | FND-002 |
+| [ENV-003](#env-003) | Todo | Mock remote environment Web API for local testing | ENV-001 |
 | [ENV-002](#env-002) | Todo | Environment management UI | ENV-001 |
 
 ---
@@ -80,7 +81,11 @@ What consumers (UI, other services) use:
 }
 ```
 
-When `BaseUrl` is empty, API calls fail with a clear configuration error (until configured).
+When `BaseUrl` is empty, API calls fail with a clear configuration error (until configured). Use **ENV-003** mock API for local development.
+
+### Mock API (ENV-003)
+
+Rudimentary standalone ASP.NET Minimal API returning fixed sample environments (e.g. `Partial16`) at the same paths as `RemoteEnvironmentApi`. Run locally and set DevDash `RemoteEnvironmentApi:BaseUrl` to the mock host URL.
 
 ### Storage
 
@@ -128,6 +133,17 @@ When `BaseUrl` is empty, API calls fail with a clear configuration error (until 
 | **Description** | Added `DevDashDbContext` with `TrackedEnvironment` (Guid, RemoteId, DateLastUpdated). `IEnvironmentService` tracks environments by remote id, fetches `RemoteEnvironmentDetails` via configurable `IRemoteEnvironmentApiClient`, caches in memory with configurable lifetime (default 24h), and supports `RefreshEnvironmentAsync` for manual refresh. Wired into DevDash host; unit tests cover persistence, cache, and refresh. |
 | **Test / demo** | `dotnet test` → EnvironmentServiceTests pass. Configure `RemoteEnvironmentApi:BaseUrl`, run app → DB file created under LocalAppData. |
 | **Depends on** | FND-002 |
+
+### ENV-003
+
+| Field | Detail |
+|-------|--------|
+| **ID** | ENV-003 |
+| **Title** | Mock remote environment Web API for local testing |
+| **Status** | Todo |
+| **Description** | Add a small standalone project (e.g. `DigitalDevServices.MockRemoteApi`) — ASP.NET Minimal API with no database. Serve hard-coded `RemoteEnvironmentDetails` JSON at `GET api/environments` (list) and `GET api/environments/{id}` (single, 404 when unknown). Include a handful of realistic sample environments (e.g. `Partial16`). Document default launch URL and sample `appsettings.Development.json` for DevDash pointing at the mock. |
+| **Test / demo** | Run mock API → `curl localhost:<port>/api/environments` returns JSON array → `curl .../api/environments/1` returns one env → configure DevDash `RemoteEnvironmentApi:BaseUrl` → `TrackEnvironmentAsync` succeeds against mock. |
+| **Depends on** | ENV-001 |
 
 ### ENV-002
 

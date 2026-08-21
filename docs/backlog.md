@@ -16,6 +16,7 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
+| ENV-003 | [ENV](tickets/ENV-environments.md) | Mock remote environment Web API for local testing |
 | ENV-002 | [ENV](tickets/ENV-environments.md) | Environment management UI |
 | PIP-001 | [PIP](tickets/PIP-pipeline-feeds.md) | PipelineFeed entity and branch pattern matching |
 | APP-001 | [APP](tickets/APP-applications.md) | DeployableApplication entity and persistence |
@@ -40,7 +41,7 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 
 | Epic | Description | Tickets Completed | Tickets Shelved | Total Tickets | Progress |
 |------|-------------|-------------------|-----------------|---------------|----------|
-| [Environments (ENV)](tickets/ENV-environments.md) | Remote API + local tracking | 1 | 0 | 2 | 🟩🟩🟩🟩🟩⬜⬜⬜⬜⬜ 50% |
+| [Environments (ENV)](tickets/ENV-environments.md) | Remote API + local tracking | 1 | 0 | 3 | 🟩🟩🟩⬜⬜⬜⬜⬜⬜⬜ 33% |
 | [Applications (APP)](tickets/APP-applications.md) | Deployable app vs instance | 0 | 0 | 4 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
 | [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Branch feeds and BuildNumber origin | 0 | 0 | 3 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
 | [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 0 | 0 | 5 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
