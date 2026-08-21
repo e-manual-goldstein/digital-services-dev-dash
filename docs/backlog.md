@@ -1,6 +1,6 @@
 # Digital Services Dev Dash — Backlog
 
-Ordered list of **open** tickets across all epics. When a ticket is completed, add it to **Recently completed** and remove it from **Active**.
+Ordered list of **open** tickets across all epics. When a ticket is completed, add it to **Recently completed** and remove it from **Active**. That section shows **only the latest** completed ticket — replace the row when a new one lands (previous rows drop off). If you complete **multiple tickets in one batch** (same session/commit), list every ticket from that batch in the table instead.
 
 **Source epics:** [tickets/README.md](tickets/README.md)
 
@@ -10,8 +10,6 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~APP-001~~ | [APP](tickets/APP-applications.md) | DeployableApplication entity and persistence |
-| ~~APP-002~~ | [APP](tickets/APP-applications.md) | ApplicationInstance entity and persistence |
 | ~~APP-003~~ | [APP](tickets/APP-applications.md) | DeployableApplication admin UI |
 
 ## Active (recommended order)
