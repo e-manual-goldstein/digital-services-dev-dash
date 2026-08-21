@@ -19,7 +19,7 @@
 
 | ID | Status | Title | Depends on |
 |----|--------|-------|------------|
-| [APP-001](#app-001) | Todo | DeployableApplication entity and persistence | ENV-001 |
+| [APP-001](#app-001) | Done | DeployableApplication entity and persistence | ENV-001 |
 | [APP-002](#app-002) | Todo | ApplicationInstance entity and persistence | APP-001, ENV-001, PIP-001 |
 | [APP-003](#app-003) | Todo | DeployableApplication admin UI | APP-001 |
 | [APP-004](#app-004) | Todo | ApplicationInstance admin UI | APP-002, ENV-002 |
@@ -99,9 +99,9 @@ Uniqueness (v1 suggestion): one **ApplicationInstance** per (`DeployableApplicat
 |-------|--------|
 | **ID** | APP-001 |
 | **Title** | DeployableApplication entity and persistence |
-| **Status** | Todo |
-| **Description** | Add `DeployableApplication` entity to SQLite schema, repository/service, CRUD. Seed optional sample row for dev. |
-| **Test / demo** | Create deployable app → list → update name → delete (when no instances reference it). |
+| **Status** | Done |
+| **Description** | Added `DeployableApplication` entity to SQLite (`Id`, unique `Name`, `ProjectKey`, `Notes`, `CreatedAt`). `IDeployableApplicationService` provides list/get/create/update/delete with duplicate name rejection. Schema upgrade adds table on existing databases. Wired into DevDash host; unit tests in `DeployableApplicationServiceTests`. |
+| **Test / demo** | `dotnet test --filter DeployableApplicationServiceTests` → pass. Create app → list → update name → delete. |
 | **Depends on** | ENV-001 |
 
 ### APP-002

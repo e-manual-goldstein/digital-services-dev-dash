@@ -14,6 +14,8 @@ public class DevDashDbContext : DbContext
 
     public DbSet<PipelineFeed> PipelineFeeds => Set<PipelineFeed>();
 
+    public DbSet<DeployableApplication> DeployableApplications => Set<DeployableApplication>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<TrackedEnvironment>(entity =>
@@ -32,6 +34,17 @@ public class DevDashDbContext : DbContext
             entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
             entity.HasIndex(e => e.Name).IsUnique();
             entity.Property(e => e.Description).HasMaxLength(2000);
+            entity.Property(e => e.CreatedAt).IsRequired();
+        });
+
+        modelBuilder.Entity<DeployableApplication>(entity =>
+        {
+            entity.ToTable("DeployableApplications");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.HasIndex(e => e.Name).IsUnique();
+            entity.Property(e => e.ProjectKey).HasMaxLength(200);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
             entity.Property(e => e.CreatedAt).IsRequired();
         });
     }

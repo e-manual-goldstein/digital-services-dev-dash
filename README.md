@@ -20,7 +20,7 @@ Agents update epic docs and the backlog when a ticket ships. They do **not** com
 ## Current state
 
 - **Backlog:** [docs/backlog.md](docs/backlog.md)
-- **Next ticket:** `APP-001` — DeployableApplication entity and persistence
+- **Next ticket:** `APP-002` — ApplicationInstance entity and persistence
 
 ## Run
 

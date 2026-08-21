@@ -24,6 +24,7 @@ public static class DevDashDataServiceCollectionExtensions
         var db = scope.ServiceProvider.GetRequiredService<DevDashDbContext>();
         db.Database.EnsureCreated();
         EnsurePipelineFeedsTableExists(db);
+        EnsureDeployableApplicationsTableExists(db);
     }
 
     private static void EnsurePipelineFeedsTableExists(DevDashDbContext db)
@@ -39,6 +40,23 @@ public static class DevDashDataServiceCollectionExtensions
 
         db.Database.ExecuteSqlRaw("""
             CREATE UNIQUE INDEX IF NOT EXISTS "IX_PipelineFeeds_Name" ON "PipelineFeeds" ("Name");
+            """);
+    }
+
+    private static void EnsureDeployableApplicationsTableExists(DevDashDbContext db)
+    {
+        db.Database.ExecuteSqlRaw("""
+            CREATE TABLE IF NOT EXISTS "DeployableApplications" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_DeployableApplications" PRIMARY KEY,
+                "Name" TEXT NOT NULL,
+                "ProjectKey" TEXT NULL,
+                "Notes" TEXT NULL,
+                "CreatedAt" TEXT NOT NULL
+            );
+            """);
+
+        db.Database.ExecuteSqlRaw("""
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_DeployableApplications_Name" ON "DeployableApplications" ("Name");
             """);
     }
 }

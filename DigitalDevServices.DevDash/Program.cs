@@ -14,6 +14,7 @@ builder.Services.AddScoped<ContextMenuService>();
 builder.Services.AddDevDashData(builder.Configuration);
 builder.Services.AddEnvironmentServices(builder.Configuration);
 builder.Services.AddPipelineFeedServices();
+builder.Services.AddDeployableApplicationServices();
 
 var app = builder.Build();
 
