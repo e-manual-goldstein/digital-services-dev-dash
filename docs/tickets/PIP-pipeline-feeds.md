@@ -21,7 +21,7 @@
 |----|--------|-------|------------|
 | [PIP-001](#pip-001) | Done | PipelineFeed entity and persistence | ENV-001 |
 | [PIP-002](#pip-002) | Shelved | Resolve feed from branch name on ApplicationInstance | PIP-001, APP-002 |
-| [PIP-003](#pip-003) | Todo | Pipeline feed admin UI | PIP-001 |
+| [PIP-003](#pip-003) | Done | Pipeline feed admin UI | PIP-001 |
 
 ---
 
@@ -99,7 +99,7 @@ Shelved — branch naming rules are enforced elsewhere; DevDash does not need pa
 |-------|--------|
 | **ID** | PIP-003 |
 | **Title** | Pipeline feed admin UI |
-| **Status** | Todo |
-| **Description** | Blazor CRUD for pipeline feeds: name and description. Nav link under **Pipeline Feeds**. Feeds appear in ApplicationInstance dropdown (APP-004). |
-| **Test / demo** | Create feed → appears in list → edit description → persists after restart. |
+| **Status** | Done |
+| **Description** | Blazor CRUD at `/pipeline-feeds`: list with deployment count, add/edit name and description, delete with confirm step. Nav link and home card enabled. Feeds available for APP-004 instance dropdown. |
+| **Test / demo** | Run DevDash → **Pipeline feeds** → create feed → appears in list → edit description → persists after restart. |
 | **Depends on** | PIP-001 |

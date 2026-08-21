@@ -1,0 +1,336 @@
+@page "/pipeline-feeds"
+@inject IPipelineFeedService PipelineFeedService
+@inject IApplicationInstanceService InstanceService
+@inject NotificationService NotificationService
+
+<PageTitle>Pipeline feeds</PageTitle>
+
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+    <div>
+        <h1 class="mb-1">Pipeline feeds</h1>
+        <p class="text-muted mb-0">Named feeds for related pipeline output and shared build numbers.</p>
+    </div>
+    @if (!_isFormVisible)
+    {
+        <button type="button"
+                class="btn btn-primary"
+                disabled="@_isBusy"
+                @onclick="ShowCreateForm">
+            Add feed
+        </button>
+    }
+</div>
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="alert alert-danger" role="alert">@_errorMessage</div>
+}
+
+@if (_isFormVisible)
+{
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="h5 mb-3">@(_editingId is null ? "Add pipeline feed" : "Edit pipeline feed")</h2>
+            <EditForm Model="_formModel" OnValidSubmit="SaveAsync">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger mb-3" />
+
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="feed-name">Name</label>
+                        <InputText id="feed-name"
+                                   class="form-control"
+                                   @bind-Value="_formModel.Name"
+                                   disabled="@_isBusy" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="feed-description">Description</label>
+                        <InputTextArea id="feed-description"
+                                       class="form-control"
+                                       rows="3"
+                                       @bind-Value="_formModel.Description"
+                                       disabled="@_isBusy" />
+                        <div class="form-text">Optional notes about repos, purpose, or related work.</div>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary" disabled="@_isBusy">
+                        @(_isSaving ? "Saving…" : "Save")
+                    </button>
+                    <button type="button"
+                            class="btn btn-outline-secondary"
+                            disabled="@_isBusy"
+                            @onclick="CancelForm">
+                        Cancel
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@if (_isLoading)
+{
+    <p class="text-muted">Loading pipeline feeds…</p>
+}
+else if (_feeds.Count == 0)
+{
+    <div class="alert alert-light border text-center py-5" role="status">
+        <p class="mb-3 text-muted">No pipeline feeds registered yet.</p>
+        @if (!_isFormVisible)
+        {
+            <button type="button" class="btn btn-primary" @onclick="ShowCreateForm">
+                Add your first feed
+            </button>
+        }
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Deployments</th>
+                    <th>Created</th>
+                    <th style="width: 11rem;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var feed in _feeds)
+                {
+                    var deploymentCount = _deploymentCounts.GetValueOrDefault(feed.Id);
+                    var isDeleting = _deletingId == feed.Id;
+                    <tr>
+                        <td>@feed.Name</td>
+                        <td>
+                            @if (string.IsNullOrWhiteSpace(feed.Description))
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                            else
+                            {
+                                @feed.Description
+                            }
+                        </td>
+                        <td>@deploymentCount</td>
+                        <td>@feed.CreatedAt.ToLocalTime().ToString("g")</td>
+                        <td>
+                            <div class="d-flex flex-wrap gap-1">
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-secondary"
+                                        disabled="@(_isBusy || isDeleting)"
+                                        @onclick="() => ShowEditForm(feed)">
+                                    Edit
+                                </button>
+                                @if (isDeleting)
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm btn-danger"
+                                            disabled="@_isBusy"
+                                            @onclick="() => ConfirmDeleteAsync(feed.Id)">
+                                        Confirm
+                                    </button>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-secondary"
+                                            disabled="@_isBusy"
+                                            @onclick="CancelDelete">
+                                        Cancel
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger"
+                                            disabled="@_isBusy"
+                                            @onclick="() => PromptDelete(feed.Id)">
+                                        Delete
+                                    </button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<PipelineFeed> _feeds = [];
+    private Dictionary<Guid, int> _deploymentCounts = [];
+    private bool _isLoading = true;
+    private bool _isBusy;
+    private bool _isSaving;
+    private bool _isFormVisible;
+    private Guid? _editingId;
+    private Guid? _deletingId;
+    private string? _errorMessage;
+    private PipelineFeedFormModel _formModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _errorMessage = null;
+        _isLoading = _feeds.Count == 0;
+
+        try
+        {
+            _feeds = await PipelineFeedService.GetAllAsync();
+            var instances = await InstanceService.GetAllAsync();
+            _deploymentCounts = instances
+                .Where(instance => instance.PipelineFeedId is not null)
+                .GroupBy(instance => instance.PipelineFeedId!.Value)
+                .ToDictionary(group => group.Key, group => group.Count());
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Could not load pipeline feeds: {ex.Message}";
+            _feeds = [];
+            _deploymentCounts = [];
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void ShowCreateForm()
+    {
+        _errorMessage = null;
+        _editingId = null;
+        _formModel = new PipelineFeedFormModel();
+        _isFormVisible = true;
+        _deletingId = null;
+    }
+
+    private void ShowEditForm(PipelineFeed feed)
+    {
+        _errorMessage = null;
+        _editingId = feed.Id;
+        _formModel = new PipelineFeedFormModel
+        {
+            Name = feed.Name,
+            Description = feed.Description ?? string.Empty
+        };
+        _isFormVisible = true;
+        _deletingId = null;
+    }
+
+    private void CancelForm()
+    {
+        _isFormVisible = false;
+        _editingId = null;
+        _formModel = new PipelineFeedFormModel();
+    }
+
+    private async Task SaveAsync()
+    {
+        _errorMessage = null;
+        _isBusy = true;
+        _isSaving = true;
+
+        try
+        {
+            var name = _formModel.Name.Trim();
+            var description = NormalizeOptional(_formModel.Description);
+
+            if (_editingId is null)
+            {
+                await PipelineFeedService.CreateAsync(name, description);
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Pipeline feed created",
+                    Detail = $"{name} was added.",
+                    Duration = 4000
+                });
+            }
+            else
+            {
+                await PipelineFeedService.UpdateAsync(_editingId.Value, name, description);
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Pipeline feed updated",
+                    Detail = $"{name} was saved.",
+                    Duration = 4000
+                });
+            }
+
+            CancelForm();
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSaving = false;
+            _isBusy = false;
+        }
+    }
+
+    private void PromptDelete(Guid id)
+    {
+        _errorMessage = null;
+        _deletingId = id;
+        _isFormVisible = false;
+    }
+
+    private void CancelDelete()
+    {
+        _deletingId = null;
+    }
+
+    private async Task ConfirmDeleteAsync(Guid id)
+    {
+        _errorMessage = null;
+        _isBusy = true;
+
+        try
+        {
+            await PipelineFeedService.DeleteAsync(id);
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Pipeline feed deleted",
+                Duration = 4000
+            });
+            _deletingId = null;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private static string? NormalizeOptional(string value)
+    {
+        var trimmed = value.Trim();
+        return trimmed.Length == 0 ? null : trimmed;
+    }
+
+    private sealed class PipelineFeedFormModel
+    {
+        [Required(ErrorMessage = "Name is required.")]
+        [StringLength(200, ErrorMessage = "Name must be 200 characters or fewer.")]
+        public string Name { get; set; } = string.Empty;
+
+        [StringLength(2000, ErrorMessage = "Description must be 2000 characters or fewer.")]
+        public string Description { get; set; } = string.Empty;
+    }
+}
