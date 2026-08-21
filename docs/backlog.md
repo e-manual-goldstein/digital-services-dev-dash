@@ -10,13 +10,12 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~FND-001~~ | [FND](tickets/FND-foundation.md) | Blazor Server solution skeleton and home page |
+| ~~FND-002~~ | [FND](tickets/FND-foundation.md) | Dashboard layout shell (nav, branding, empty sections) |
 
 ## Active (recommended order)
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| FND-002 | [FND](tickets/FND-foundation.md) | Dashboard layout shell (nav, branding, empty sections) |
 | ENV-001 | [ENV](tickets/ENV-environments.md) | SQLite bootstrap and Environment entity |
 | PIP-001 | [PIP](tickets/PIP-pipeline-feeds.md) | PipelineFeed entity and branch pattern matching |
 | APP-001 | [APP](tickets/APP-applications.md) | DeployableApplication entity and persistence |
@@ -42,7 +41,6 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 
 | Epic | Description | Tickets Completed | Tickets Shelved | Total Tickets | Progress |
 |------|-------------|-------------------|-----------------|---------------|----------|
-| [Foundation (FND)](tickets/FND-foundation.md) | Blazor skeleton and layout | 1 | 0 | 2 | 🟩🟩🟩🟩🟩⬜⬜⬜⬜⬜ 50% |
 | [Environments (ENV)](tickets/ENV-environments.md) | Named envs + SQL Server instance | 0 | 0 | 2 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
 | [Applications (APP)](tickets/APP-applications.md) | Deployable app vs instance | 0 | 0 | 4 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
 | [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Branch feeds and BuildNumber origin | 0 | 0 | 3 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
@@ -77,7 +75,7 @@ Unprioritized — not in the active queue. See [IDE-ideas.md](tickets/IDE-ideas.
 
 | Epic | Description | Completed |
 |------|-------------|-----------|
-| *(none yet)* | | |
+| [Foundation (FND)](tickets/FND-foundation.md) | Blazor skeleton and layout | FND-001 – FND-002 |
 
 ## Domain model (overview)
 

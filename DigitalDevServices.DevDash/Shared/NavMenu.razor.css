@@ -52,6 +52,28 @@
     color: white;
 }
 
+.nav-section {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding-top: 1.25rem;
+    padding-bottom: 0.35rem;
+}
+
+.nav-item-muted .nav-link-disabled {
+    color: rgba(255, 255, 255, 0.35);
+    cursor: default;
+    height: 2.5rem;
+    line-height: 2.5rem;
+}
+
+.nav-item-muted .nav-link-disabled:hover {
+    background-color: transparent;
+    color: rgba(255, 255, 255, 0.35);
+}
+
 @media (min-width: 641px) {
     .navbar-toggler {
         display: none;

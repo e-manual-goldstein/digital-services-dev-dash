@@ -56,6 +56,11 @@ a, .btn-link {
     padding-top: 1.1rem;
 }
 
+.card.border-dashed {
+    border-style: dashed;
+    background-color: #fafafa;
+}
+
 .valid.modified:not([type=checkbox]) {
     outline: 1px solid #26b050;
 }

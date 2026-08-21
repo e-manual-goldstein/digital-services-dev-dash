@@ -17,23 +17,33 @@
 
 ## Ticket summary
 
-| ID | Status | Title | Depends on |
-|----|--------|-------|------------|
-| [FND-001](#fnd-001) | Done | Blazor Server solution skeleton and home page | — |
-| [FND-002](#fnd-002) | Todo | Dashboard layout shell (nav, branding, empty sections) | FND-001 |
+
+| ID                  | Status | Title                                                  | Depends on |
+| ------------------- | ------ | ------------------------------------------------------ | ---------- |
+| [FND-001](#fnd-001) | Done   | Blazor Server solution skeleton and home page          | —          |
+| [FND-002](#fnd-002) | Done   | Dashboard layout shell (nav, branding, empty sections) | FND-001    |
+
 
 ---
 
+
+
 ## Design notes
+
+
 
 ### Naming
 
-| Layer | Name |
-|-------|------|
-| Repo folder | `DigitalServicesDevDash` |
-| Solution / projects | `DigitalDevServices.*` |
-| Blazor host | `DigitalDevServices.DevDash` |
-| UI title | **Digital Services Dev Dash** |
+
+| Layer               | Name                          |
+| ------------------- | ----------------------------- |
+| Repo folder         | `DigitalServicesDevDash`      |
+| Solution / projects | `DigitalDevServices.*`        |
+| Blazor host         | `DigitalDevServices.DevDash`  |
+| UI title            | **Digital Services Dev Dash** |
+
+
+
 
 ### Stack
 
@@ -41,6 +51,8 @@
 - **Blazor Server** (interactive UI without separate WASM host)
 - **Bootstrap** (default Blazor template styling; keep it simple for v1)
 - **Radzen.Blazor** (UI components)
+
+
 
 ### Solution layout
 
@@ -68,26 +80,37 @@ The solution was bootstrapped from an unrelated prior template; project names an
 
 ---
 
+
+
 ## Tickets
+
+
 
 ### FND-001
 
-| Field | Detail |
-|-------|--------|
-| **ID** | FND-001 |
-| **Title** | Blazor Server solution skeleton and home page |
-| **Status** | Done |
-| **Description** | Migrated template to `DigitalDevServices.*` projects with Blazor Server host at `DigitalDevServices.DevDash`. Solution builds cleanly. Home/admin landing at `/` and `/admin`. |
-| **Test / demo** | `dotnet build DigitalDevServices.DevDash/DigitalDevServices.DevDash.slnx` → 0 errors. `dotnet run --project DigitalDevServices.DevDash` → browser shows admin home. |
-| **Depends on** | — |
+
+| Field           | Detail                                                                                                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **ID**          | FND-001                                                                                                                                                                        |
+| **Title**       | Blazor Server solution skeleton and home page                                                                                                                                  |
+| **Status**      | Done                                                                                                                                                                           |
+| **Description** | Migrated template to `DigitalDevServices.`* projects with Blazor Server host at `DigitalDevServices.DevDash`. Solution builds cleanly. Home/admin landing at `/` and `/admin`. |
+| **Test / demo** | `dotnet build DigitalDevServices.DevDash/DigitalDevServices.DevDash.slnx` → 0 errors. `dotnet run --project DigitalDevServices.DevDash` → browser shows admin home.            |
+| **Depends on**  | —                                                                                                                                                                              |
+
+
+
 
 ### FND-002
 
-| Field | Detail |
-|-------|--------|
-| **ID** | FND-002 |
-| **Title** | Dashboard layout shell (nav, branding, empty sections) |
-| **Status** | Todo |
-| **Description** | Trim `MainLayout` + `NavMenu` to match DevDash scope — remove orphan links left from the template (pages that no longer exist). Keep branding **Digital Services Dev Dash**. Home empty state: “Add features via backlog tickets.” Responsive nav toggle. |
-| **Test / demo** | Run app → sidebar shows only valid nav links; home shows welcome + backlog hint; resize window → mobile nav toggles. No dead links. |
-| **Depends on** | FND-001 |
+
+| Field           | Detail                                                                                                                                                                                                                                                    |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **ID**          | FND-002                                                                                                                                                                                                                                                   |
+| **Title**       | Dashboard layout shell (nav, branding, empty sections)                                                                                                                                                                                                    |
+| **Status**      | Done                                                                                                                                                                                                                                                      |
+| **Description** | Trimmed `MainLayout` and `NavMenu`: branding **Digital Services Dev Dash**, Home nav only (no dead links), muted **Planned** section for upcoming epics. Home welcome + backlog hint and roadmap placeholder cards. Removed template Portal page and main About link. Responsive nav toggle retained. |
+| **Test / demo** | Run app → sidebar shows Home + planned labels (non-links); home shows welcome and backlog hint; narrow viewport → hamburger toggles nav. |
+| **Depends on**  | FND-001                                                                                                                                                                                                                                                   |
+
+

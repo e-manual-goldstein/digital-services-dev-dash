@@ -1,20 +1,53 @@
 @page "/"
-@page "/admin"
 
-<PageTitle>Admin</PageTitle>
+<PageTitle>Home</PageTitle>
 
-<h1>Admin</h1>
+<h1>Digital Services Dev Dash</h1>
+<p class="lead text-muted">Your workspace for environments, deployments, configuration, and logs.</p>
 
-<div class="row g-3">
+<div class="alert alert-light border mt-4" role="status">
+    <p class="mb-0">More tools and views will appear here as features are added.</p>
+</div>
+
+<div class="row g-3 mt-2">
     <div class="col-12 col-md-6 col-lg-4">
-        <div class="card">
+        <div class="card h-100 border-dashed">
             <div class="card-body">
-                <h5 class="card-title">System</h5>
-                <p class="card-text text-muted mb-3">Maintenance tools</p>
-                <a class="btn btn-outline-secondary" href="/system">Open system tools</a>
+                <h5 class="card-title text-muted">Environments</h5>
+                <p class="card-text small text-muted mb-0">Track named environments and SQL Server instances. <span class="badge bg-secondary">ENV</span></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100 border-dashed">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Applications</h5>
+                <p class="card-text small text-muted mb-0">Deployable apps and per-environment instances. <span class="badge bg-secondary">APP</span></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100 border-dashed">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Pipeline feeds</h5>
+                <p class="card-text small text-muted mb-0">Branch feeds and build numbers. <span class="badge bg-secondary">PIP</span></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100 border-dashed">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Configuration</h5>
+                <p class="card-text small text-muted mb-0">Read and compare shared settings. <span class="badge bg-secondary">CFG</span></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100 border-dashed">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Log viewer</h5>
+                <p class="card-text small text-muted mb-0">Adaptable logs per application. <span class="badge bg-secondary">LOG</span></p>
             </div>
         </div>
     </div>
 </div>
-
-
