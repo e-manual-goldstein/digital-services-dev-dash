@@ -20,7 +20,7 @@
 | ID | Status | Title | Depends on |
 |----|--------|-------|------------|
 | [ENV-001](#env-001) | Done | SQLite bootstrap, tracked environment entity, API cache | FND-002 |
-| [ENV-003](#env-003) | Todo | Mock remote environment Web API for local testing | ENV-001 |
+| [ENV-003](#env-003) | Done | Mock remote environment Web API for local testing | ENV-001 |
 | [ENV-002](#env-002) | Todo | Environment management UI | ENV-001 |
 
 ---
@@ -140,9 +140,9 @@ Rudimentary standalone ASP.NET Minimal API returning fixed sample environments (
 |-------|--------|
 | **ID** | ENV-003 |
 | **Title** | Mock remote environment Web API for local testing |
-| **Status** | Todo |
-| **Description** | Add a small standalone project (e.g. `DigitalDevServices.MockRemoteApi`) — ASP.NET Minimal API with no database. Serve hard-coded `RemoteEnvironmentDetails` JSON at `GET api/environments` (list) and `GET api/environments/{id}` (single, 404 when unknown). Include a handful of realistic sample environments (e.g. `Partial16`). Document default launch URL and sample `appsettings.Development.json` for DevDash pointing at the mock. |
-| **Test / demo** | Run mock API → `curl localhost:<port>/api/environments` returns JSON array → `curl .../api/environments/1` returns one env → configure DevDash `RemoteEnvironmentApi:BaseUrl` → `TrackEnvironmentAsync` succeeds against mock. |
+| **Status** | Done |
+| **Description** | Added `DigitalDevServices.MockRemoteApi` Minimal API on `http://localhost:5280` with four sample environments (`Partial16`, Integration, UAT, Production). Endpoints match `RemoteEnvironmentApi` paths. DevDash `appsettings.Development.json` points at the mock by default. Unit tests verify list and get-by-id responses. |
+| **Test / demo** | Terminal 1: `dotnet run --project DigitalDevServices.MockRemoteApi`. Terminal 2: `curl http://localhost:5280/api/environments/1` → Partial16 JSON. Run DevDash in Development → environment API calls hit the mock. |
 | **Depends on** | ENV-001 |
 
 ### ENV-002
