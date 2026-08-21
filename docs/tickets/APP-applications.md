@@ -42,13 +42,13 @@ Represents a compilable/deployable project in the wider codebase — the logical
 
 ### Entity (`ApplicationInstance`)
 
-A specific deployment of a **DeployableApplication** in a specific **Environment**.
+A specific deployment of a **DeployableApplication** in a specific **TrackedEnvironment** (local Guid).
 
 | Field | Type | Notes |
 |-------|------|--------|
 | `Id` | `Guid` | PK |
 | `DeployableApplicationId` | `Guid` | FK |
-| `EnvironmentId` | `Guid` | FK |
+| `EnvironmentId` | `Guid` | FK → `TrackedEnvironment.Id` (local) |
 | `BuildNumber` | `string` | Version identifier from pipeline output |
 | `PipelineFeedId` | `Guid?` | FK — branch feed that produced this deployment |
 | `SourceBranch` | `string?` | Git branch used for the build |
@@ -74,7 +74,7 @@ Uniqueness (v1 suggestion): one **ApplicationInstance** per (`DeployableApplicat
 ### Relationships
 
 - **DeployableApplication** 1→* **ApplicationInstance**
-- **Environment** 1→* **ApplicationInstance**
+- **TrackedEnvironment** 1→* **ApplicationInstance**
 - **PipelineFeed** 1→* **ApplicationInstance** (optional FK — see [PIP-pipeline-feeds.md](PIP-pipeline-feeds.md))
 
 ### UI notes

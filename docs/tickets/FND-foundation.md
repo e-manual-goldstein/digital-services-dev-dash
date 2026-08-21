@@ -76,7 +76,7 @@ The solution was bootstrapped from an unrelated prior template; project names an
 ### Out of scope (foundation epic)
 
 - Authentication / multi-user
-- Database or external API integrations (Data/Services projects are placeholders for now)
+- Domain data (environments, applications, etc.) — see ENV, APP, and related epics
 
 ---
 

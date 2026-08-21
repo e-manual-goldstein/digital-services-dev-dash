@@ -10,16 +10,15 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~FND-002~~ | [FND](tickets/FND-foundation.md) | Dashboard layout shell (nav, branding, empty sections) |
+| ~~ENV-001~~ | [ENV](tickets/ENV-environments.md) | SQLite bootstrap, tracked environment entity, API cache |
 
 ## Active (recommended order)
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ENV-001 | [ENV](tickets/ENV-environments.md) | SQLite bootstrap and Environment entity |
+| ENV-002 | [ENV](tickets/ENV-environments.md) | Environment management UI |
 | PIP-001 | [PIP](tickets/PIP-pipeline-feeds.md) | PipelineFeed entity and branch pattern matching |
 | APP-001 | [APP](tickets/APP-applications.md) | DeployableApplication entity and persistence |
-| ENV-002 | [ENV](tickets/ENV-environments.md) | Environment management UI |
 | APP-002 | [APP](tickets/APP-applications.md) | ApplicationInstance entity and persistence |
 | PIP-002 | [PIP](tickets/PIP-pipeline-feeds.md) | Resolve feed from branch name on ApplicationInstance |
 | APP-003 | [APP](tickets/APP-applications.md) | DeployableApplication admin UI |
@@ -41,7 +40,7 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 
 | Epic | Description | Tickets Completed | Tickets Shelved | Total Tickets | Progress |
 |------|-------------|-------------------|-----------------|---------------|----------|
-| [Environments (ENV)](tickets/ENV-environments.md) | Named envs + SQL Server instance | 0 | 0 | 2 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
+| [Environments (ENV)](tickets/ENV-environments.md) | Remote API + local tracking | 1 | 0 | 2 | 🟩🟩🟩🟩🟩⬜⬜⬜⬜⬜ 50% |
 | [Applications (APP)](tickets/APP-applications.md) | Deployable app vs instance | 0 | 0 | 4 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
 | [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Branch feeds and BuildNumber origin | 0 | 0 | 3 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
 | [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 0 | 0 | 5 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
@@ -81,16 +80,21 @@ Unprioritized — not in the active queue. See [IDE-ideas.md](tickets/IDE-ideas.
 
 ```mermaid
 erDiagram
-    Environment ||--o{ ApplicationInstance : contains
+    TrackedEnvironment ||--o{ ApplicationInstance : contains
     DeployableApplication ||--o{ ApplicationInstance : deployed_as
     PipelineFeed ||--o{ ApplicationInstance : originates_from
     DeployableApplication ||--o| LogFormatProfile : log_format
     ApplicationInstance ||--o{ ConfigurationSetting : has
+    TrackedEnvironment {
+        Guid Id
+        int RemoteId
+        DateTimeOffset DateLastUpdated
+    }
 ```
 
 | Epic | Core entities |
 |------|---------------|
-| ENV | `Environment` |
+| ENV | `TrackedEnvironment` (+ remote `RemoteEnvironmentDetails`) |
 | APP | `DeployableApplication`, `ApplicationInstance` |
 | PIP | `PipelineFeed` |
 | CFG | `ConfigurationSetting` |

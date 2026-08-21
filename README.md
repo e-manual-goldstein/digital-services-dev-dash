@@ -19,7 +19,7 @@ Agents update epic docs and the backlog when a ticket ships. They do **not** com
 ## Current state
 
 - **Backlog:** [docs/backlog.md](docs/backlog.md)
-- **Next ticket:** `ENV-001` — SQLite bootstrap and Environment entity
+- **Next ticket:** `ENV-002` — Environment management UI
 
 ## Run
 
