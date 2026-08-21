@@ -21,7 +21,7 @@
 |----|--------|-------|------------|
 | [APP-001](#app-001) | Done | DeployableApplication entity and persistence | ENV-001 |
 | [APP-002](#app-002) | Done | ApplicationInstance entity and persistence | APP-001, ENV-001, PIP-001 |
-| [APP-003](#app-003) | Todo | DeployableApplication admin UI | APP-001 |
+| [APP-003](#app-003) | Done | DeployableApplication admin UI | APP-001 |
 | [APP-004](#app-004) | Todo | ApplicationInstance admin UI | APP-002, ENV-002 |
 
 ---
@@ -121,9 +121,9 @@ Uniqueness (v1 suggestion): one **ApplicationInstance** per (`DeployableApplicat
 |-------|--------|
 | **ID** | APP-003 |
 | **Title** | DeployableApplication admin UI |
-| **Status** | Todo |
-| **Description** | Blazor CRUD for deployable applications. List, create, edit, delete (guard if instances exist). Nav link under **Applications**. |
-| **Test / demo** | Add “Customer Portal API” → appears in list → edit → persists. |
+| **Status** | Done |
+| **Description** | Blazor CRUD at `/applications`: list, add/edit form, delete with confirm step. Delete disabled when application instances exist; service guard surfaces errors. Nav link and home card enabled. |
+| **Test / demo** | Run DevDash → **Applications** → add “Customer Portal API” → appears in list → edit → persists. Delete blocked if deployments exist. |
 | **Depends on** | APP-001 |
 
 ### APP-004

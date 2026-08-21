@@ -17,7 +17,7 @@ public sealed class PipelineFeedService : IPipelineFeedService
     {
         return await _db.PipelineFeeds
             .AsNoTracking()
-            .OrderBy(feed => feed.Name, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(feed => feed.Name.ToLower())
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
     }

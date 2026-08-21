@@ -12,12 +12,12 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 |----------|------|-------------|
 | ~~APP-001~~ | [APP](tickets/APP-applications.md) | DeployableApplication entity and persistence |
 | ~~APP-002~~ | [APP](tickets/APP-applications.md) | ApplicationInstance entity and persistence |
+| ~~APP-003~~ | [APP](tickets/APP-applications.md) | DeployableApplication admin UI |
 
 ## Active (recommended order)
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| APP-003 | [APP](tickets/APP-applications.md) | DeployableApplication admin UI |
 | PIP-003 | [PIP](tickets/PIP-pipeline-feeds.md) | Pipeline feed admin UI |
 | APP-004 | [APP](tickets/APP-applications.md) | ApplicationInstance admin UI |
 | LOG-001 | [LOG](tickets/LOG-log-interpreter.md) | LogFormatProfile per DeployableApplication |
@@ -36,7 +36,7 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 
 | Epic | Description | Tickets Completed | Tickets Shelved | Total Tickets | Progress |
 |------|-------------|-------------------|-----------------|---------------|----------|
-| [Applications (APP)](tickets/APP-applications.md) | Deployable app vs instance | 2 | 0 | 4 | 🟩🟩🟩🟩🟩⬜⬜⬜⬜⬜ 50% |
+| [Applications (APP)](tickets/APP-applications.md) | Deployable app vs instance | 3 | 0 | 4 | 🟩🟩🟩🟩🟩🟩🟩🟩⬜⬜ 75% |
 | [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Named pipeline feeds (no branch matching v1) | 1 | 1 | 3 | 🟩🟩🟩🟨🟨🟨⬜⬜⬜⬜ 33% |
 | [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 0 | 0 | 5 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
 | [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | 0 | 0 | 4 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |

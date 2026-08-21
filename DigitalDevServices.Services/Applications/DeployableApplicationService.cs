@@ -17,7 +17,7 @@ public sealed class DeployableApplicationService : IDeployableApplicationService
     {
         return await _db.DeployableApplications
             .AsNoTracking()
-            .OrderBy(app => app.Name, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(app => app.Name.ToLower())
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
     }
