@@ -1,0 +1,27 @@
+@namespace DigitalDevServices.DevDash.Shared.Components
+@inherits CollapsibleSectionBase
+
+<div class="collapsible-section @(IsEmpty ? "collapsible-section--empty" : null)">
+    <button type="button"
+            class="collapsible-section__header w-100 d-flex align-items-center justify-content-between gap-2 text-start @(IsEmpty ? "text-secondary" : null)"
+            aria-expanded="@Expanded"
+            aria-controls="@BodyId"
+            id="@HeaderId"
+            @onclick="Toggle">
+        <span class="fw-semibold">@Title</span>
+        <span class="collapsible-section__chevron" aria-hidden="true">@(Expanded ? "▼" : "▶")</span>
+    </button>
+    <div class="collapsible-section-inner">
+        <div id="@BodyId"
+             class="collapsible-section__body @(Expanded ? "collapsible-section__body--open" : "collapsible-section__body--closed")"
+             aria-labelledby="@HeaderId"
+             role="region">
+            @ChildContent
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

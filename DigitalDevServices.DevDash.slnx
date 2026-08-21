@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="DigitalDevServices.Data/DigitalDevServices.Data.csproj" />
+  <Project Path="DigitalDevServices.DevDash/DigitalDevServices.DevDash.csproj" />
+  <Project Path="DigitalDevServices.Model/DigitalDevServices.Model.csproj" />
+  <Project Path="DigitalDevServices.Plugins/DigitalDevServices.Plugins.csproj" Id="aa042505-f2bb-4069-afe3-9f29402f25d3" />
+  <Project Path="DigitalDevServices.Services.Test/DigitalDevServices.Services.Test.csproj" Id="4879f4c8-16ec-439b-8e34-67875e923ff4" />
+  <Project Path="DigitalDevServices.Services/DigitalDevServices.Services.csproj" />
+</Solution>

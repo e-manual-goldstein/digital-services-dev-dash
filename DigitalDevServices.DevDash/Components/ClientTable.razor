@@ -1,0 +1,177 @@
+@using System.Globalization
+@namespace DigitalDevServices.DevDash.Components
+
+@typeparam TItem
+
+<div class="d-flex align-items-center justify-content-between gap-3 mb-2">
+    <div class="d-flex align-items-center gap-2">
+        @if (!string.IsNullOrWhiteSpace(Title))
+        {
+            <h5 class="mb-0">@Title</h5>
+        }
+        <span class="text-muted">@FilteredCount of @TotalCount</span>
+    </div>
+    <input class="form-control" style="max-width: 360px;" placeholder="Filter…" @bind="FilterText" @bind:event="oninput" />
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                @foreach (var col in Columns)
+                {
+                    <th class="@col.HeaderCssClass" style="user-select: none;">
+                        @if (col.HeaderTopTemplate is not null)
+                        {
+                            <div class="mb-1" style="user-select: auto;">
+                                @col.HeaderTopTemplate
+                            </div>
+                        }
+                        @if (col.IsSortable)
+                        {
+                            <button type="button"
+                                    class="btn btn-link p-0 text-decoration-none"
+                                    @onclick="() => ToggleSort(col)">
+                                @if (col.HeaderTemplate is not null)
+                                {
+                                    @col.HeaderTemplate
+                                }
+                                else
+                                {
+                                    @col.Title
+                                }
+                                <span class="ms-1 text-muted">@SortIndicator(col)</span>
+                            </button>
+                        }
+                        else
+                        {
+                            @if (col.HeaderTemplate is not null)
+                            {
+                                @col.HeaderTemplate
+                            }
+                            else
+                            {
+                                @col.Title
+                            }
+                        }
+                    </th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @if (ItemsToRender.Count == 0)
+            {
+                <tr>
+                    <td colspan="@Columns.Count" class="text-center text-muted py-4">
+                        No rows match the current filter.
+                    </td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var item in ItemsToRender)
+                {
+                    <tr>
+                        @foreach (var col in Columns)
+                        {
+                            <td class="@col.CellCssClass">@col.CellTemplate(item)</td>
+                        }
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired] public IReadOnlyList<TItem> Items { get; set; } = Array.Empty<TItem>();
+    [Parameter, EditorRequired] public IReadOnlyList<ClientTableColumn<TItem>> Columns { get; set; } = Array.Empty<ClientTableColumn<TItem>>();
+
+    /// <summary>
+    /// If provided, used for global filtering. Return a single string containing all searchable text for the row.
+    /// </summary>
+    [Parameter] public Func<TItem, string> FilterTextAccessor { get; set; }
+
+    [Parameter] public string FilterText { get; set; } = string.Empty;
+
+    private ClientTableColumn<TItem> _sortColumn;
+    private bool _sortDescending;
+
+    private int TotalCount => Items.Count;
+    private int FilteredCount => ItemsToRender.Count;
+
+    private List<TItem> ItemsToRender
+    {
+        get
+        {
+            IEnumerable<TItem> query = Items;
+
+            var ft = (FilterText ?? string.Empty).Trim();
+            if (ft.Length > 0 && FilterTextAccessor is not null)
+            {
+                query = query.Where(item =>
+                {
+                    var text = FilterTextAccessor(item) ?? string.Empty;
+                    return text.Contains(ft, StringComparison.OrdinalIgnoreCase);
+                });
+            }
+
+            if (_sortColumn?.SortKey is not null)
+            {
+                query = _sortDescending
+                    ? query.OrderByDescending(x => _sortColumn.SortKey(x), NullSafeComparableComparer.Instance)
+                    : query.OrderBy(x => _sortColumn.SortKey(x), NullSafeComparableComparer.Instance);
+            }
+
+            return query.ToList();
+        }
+    }
+
+    private void ToggleSort(ClientTableColumn<TItem> col)
+    {
+        if (!col.IsSortable)
+            return;
+
+        if (!ReferenceEquals(_sortColumn, col))
+        {
+            _sortColumn = col;
+            _sortDescending = false;
+            return;
+        }
+
+        // Same column: toggle direction -> none -> asc...
+        if (!_sortDescending)
+        {
+            _sortDescending = true;
+        }
+        else
+        {
+            _sortColumn = null;
+            _sortDescending = false;
+        }
+    }
+
+    private string SortIndicator(ClientTableColumn<TItem> col)
+    {
+        if (!ReferenceEquals(_sortColumn, col))
+            return string.Empty;
+        return _sortDescending ? "▼" : "▲";
+    }
+
+    private sealed class NullSafeComparableComparer : IComparer<IComparable>
+    {
+        public static readonly NullSafeComparableComparer Instance = new();
+
+        public int Compare(IComparable x, IComparable y)
+        {
+            if (ReferenceEquals(x, y)) return 0;
+            if (x is null) return -1;
+            if (y is null) return 1;
+            return x.CompareTo(y);
+        }
+    }
+}
+
+

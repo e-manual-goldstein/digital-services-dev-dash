@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DigitalDevServices.Data\DigitalDevServices.Data.csproj" />
+    <ProjectReference Include="..\DigitalDevServices.Model\DigitalDevServices.Model.csproj" />
+    <ProjectReference Include="..\DigitalDevServices.Services\DigitalDevServices.Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Radzen.Blazor" Version="9.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Pages\Admin\" />
+    <Folder Include="Services\" />
+  </ItemGroup>
+
+</Project>
