@@ -10,6 +10,7 @@ namespace DigitalDevServices.Services.Environments;
 public sealed class EnvironmentService : IEnvironmentService
 {
     private const string CacheKeyPrefix = "environment:";
+    private const string CatalogCacheKey = "environment-catalog";
 
     private readonly DevDashDbContext _db;
     private readonly IRemoteEnvironmentApiClient _apiClient;
@@ -28,20 +29,32 @@ public sealed class EnvironmentService : IEnvironmentService
         _cacheOptions = cacheOptions.Value;
     }
 
-    public async Task<IReadOnlyList<CachedEnvironment>> GetTrackedEnvironmentsAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<CachedEnvironment>> GetEnvironmentsAsync(
+        bool forceRefresh = false,
+        CancellationToken cancellationToken = default)
     {
-        var tracked = await _db.TrackedEnvironments
-            .AsNoTracking()
-            .OrderBy(e => e.RemoteId)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        var results = new List<CachedEnvironment>(tracked.Count);
-        foreach (var item in tracked)
+        if (!forceRefresh
+            && _memoryCache.TryGetValue(CatalogCacheKey, out IReadOnlyList<CachedEnvironment>? cachedCatalog)
+            && cachedCatalog is not null)
         {
-            results.Add(await GetOrFetchAsync(item, forceRefresh: false, cancellationToken).ConfigureAwait(false));
+            return cachedCatalog
+                .Select(environment => environment with { IsFromCache = true })
+                .ToList();
         }
 
+        var remoteEnvironments = await _apiClient.ListEnvironmentsAsync(cancellationToken).ConfigureAwait(false);
+        var updatedAt = DateTimeOffset.UtcNow;
+        var results = new List<CachedEnvironment>(remoteEnvironments.Count);
+
+        foreach (var details in remoteEnvironments.OrderBy(environment => environment.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            var tracked = await EnsureTrackedAsync(details.RemoteId, updatedAt, cancellationToken).ConfigureAwait(false);
+            var cachedEnvironment = ToCachedEnvironment(tracked, details, updatedAt, isFromCache: false);
+            _memoryCache.Set(GetCacheKey(tracked.Id), cachedEnvironment, _cacheOptions.CacheLifetime);
+            results.Add(cachedEnvironment);
+        }
+
+        _memoryCache.Set(CatalogCacheKey, results, _cacheOptions.CacheLifetime);
         return results;
     }
 
@@ -49,7 +62,7 @@ public sealed class EnvironmentService : IEnvironmentService
     {
         var tracked = await _db.TrackedEnvironments
             .AsNoTracking()
-            .SingleOrDefaultAsync(e => e.Id == localId, cancellationToken)
+            .SingleOrDefaultAsync(environment => environment.Id == localId, cancellationToken)
             .ConfigureAwait(false);
 
         if (tracked is null)
@@ -60,44 +73,24 @@ public sealed class EnvironmentService : IEnvironmentService
         return await GetOrFetchAsync(tracked, forceRefresh: false, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<CachedEnvironment> TrackEnvironmentAsync(int remoteId, CancellationToken cancellationToken = default)
+    public async Task<CachedEnvironment> RefreshEnvironmentAsync(int remoteId, CancellationToken cancellationToken = default)
     {
-        var existing = await _db.TrackedEnvironments
-            .SingleOrDefaultAsync(e => e.RemoteId == remoteId, cancellationToken)
-            .ConfigureAwait(false);
+        _memoryCache.Remove(CatalogCacheKey);
 
-        if (existing is not null)
-        {
-            return await GetOrFetchAsync(existing, forceRefresh: true, cancellationToken).ConfigureAwait(false);
-        }
+        var details = await _apiClient.GetEnvironmentAsync(remoteId, cancellationToken).ConfigureAwait(false)
+            ?? throw new InvalidOperationException($"Remote environment '{remoteId}' was not found via the Web API.");
 
-        var tracked = new TrackedEnvironment
-        {
-            Id = Guid.NewGuid(),
-            RemoteId = remoteId,
-            DateLastUpdated = DateTimeOffset.MinValue
-        };
-
-        _db.TrackedEnvironments.Add(tracked);
-        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-        return await GetOrFetchAsync(tracked, forceRefresh: true, cancellationToken).ConfigureAwait(false);
-    }
-
-    public async Task<CachedEnvironment> RefreshEnvironmentAsync(Guid localId, CancellationToken cancellationToken = default)
-    {
-        var tracked = await _db.TrackedEnvironments
-            .SingleOrDefaultAsync(e => e.Id == localId, cancellationToken)
-            .ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"Tracked environment '{localId}' was not found.");
-
-        return await GetOrFetchAsync(tracked, forceRefresh: true, cancellationToken).ConfigureAwait(false);
+        var updatedAt = DateTimeOffset.UtcNow;
+        var tracked = await EnsureTrackedAsync(remoteId, updatedAt, cancellationToken).ConfigureAwait(false);
+        var result = ToCachedEnvironment(tracked, details, updatedAt, isFromCache: false);
+        _memoryCache.Set(GetCacheKey(tracked.Id), result, _cacheOptions.CacheLifetime);
+        return result;
     }
 
     public async Task UntrackEnvironmentAsync(Guid localId, CancellationToken cancellationToken = default)
     {
         var tracked = await _db.TrackedEnvironments
-            .SingleOrDefaultAsync(e => e.Id == localId, cancellationToken)
+            .SingleOrDefaultAsync(environment => environment.Id == localId, cancellationToken)
             .ConfigureAwait(false);
 
         if (tracked is null)
@@ -108,6 +101,35 @@ public sealed class EnvironmentService : IEnvironmentService
         _db.TrackedEnvironments.Remove(tracked);
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         _memoryCache.Remove(GetCacheKey(localId));
+        _memoryCache.Remove(CatalogCacheKey);
+    }
+
+    private async Task<TrackedEnvironment> EnsureTrackedAsync(
+        int remoteId,
+        DateTimeOffset updatedAt,
+        CancellationToken cancellationToken)
+    {
+        var tracked = await _db.TrackedEnvironments
+            .SingleOrDefaultAsync(environment => environment.RemoteId == remoteId, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (tracked is null)
+        {
+            tracked = new TrackedEnvironment
+            {
+                Id = Guid.NewGuid(),
+                RemoteId = remoteId,
+                DateLastUpdated = updatedAt
+            };
+            _db.TrackedEnvironments.Add(tracked);
+        }
+        else
+        {
+            tracked.DateLastUpdated = updatedAt;
+        }
+
+        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return tracked;
     }
 
     private async Task<CachedEnvironment> GetOrFetchAsync(
@@ -122,29 +144,23 @@ public sealed class EnvironmentService : IEnvironmentService
             return cached with { IsFromCache = true };
         }
 
-        var details = await _apiClient.GetEnvironmentAsync(tracked.RemoteId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"Remote environment '{tracked.RemoteId}' was not found via the Web API.");
+        return await RefreshEnvironmentAsync(tracked.RemoteId, cancellationToken).ConfigureAwait(false);
+    }
 
-        var updatedAt = DateTimeOffset.UtcNow;
-
-        var entity = await _db.TrackedEnvironments
-            .SingleAsync(e => e.Id == tracked.Id, cancellationToken)
-            .ConfigureAwait(false);
-
-        entity.DateLastUpdated = updatedAt;
-        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-        var result = new CachedEnvironment
+    private static CachedEnvironment ToCachedEnvironment(
+        TrackedEnvironment tracked,
+        RemoteEnvironmentDetails details,
+        DateTimeOffset updatedAt,
+        bool isFromCache)
+    {
+        return new CachedEnvironment
         {
             LocalId = tracked.Id,
             RemoteId = tracked.RemoteId,
             Details = details,
             DateLastUpdated = updatedAt,
-            IsFromCache = false
+            IsFromCache = isFromCache
         };
-
-        _memoryCache.Set(cacheKey, result, _cacheOptions.CacheLifetime);
-        return result;
     }
 
     private static string GetCacheKey(Guid localId) => CacheKeyPrefix + localId.ToString("N");

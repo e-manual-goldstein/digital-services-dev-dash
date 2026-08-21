@@ -21,7 +21,7 @@
 |----|--------|-------|------------|
 | [ENV-001](#env-001) | Done | SQLite bootstrap, tracked environment entity, API cache | FND-002 |
 | [ENV-003](#env-003) | Done | Mock remote environment Web API for local testing | ENV-001 |
-| [ENV-002](#env-002) | Todo | Environment management UI | ENV-001 |
+| [ENV-002](#env-002) | Done | Environment management UI | ENV-001 |
 
 ---
 
@@ -96,10 +96,9 @@ Rudimentary standalone ASP.NET Minimal API returning fixed sample environments (
 
 | Method | Purpose |
 |--------|---------|
-| `TrackEnvironmentAsync(remoteId)` | Create local link + initial API fetch |
-| `GetTrackedEnvironmentsAsync()` | All tracked envs with cached/fresh details |
-| `GetTrackedEnvironmentAsync(localId)` | Single env |
-| `RefreshEnvironmentAsync(localId)` | Force API refresh |
+| `GetEnvironmentsAsync(forceRefresh?)` | Load full catalog from remote API (cached); sync local tracking records |
+| `GetTrackedEnvironmentAsync(localId)` | Single env by local id |
+| `RefreshEnvironmentAsync(remoteId)` | Force API refresh for one environment |
 | `UntrackEnvironmentAsync(localId)` | Remove local link |
 
 ### Relationships
@@ -109,9 +108,11 @@ Rudimentary standalone ASP.NET Minimal API returning fixed sample environments (
 ### UI notes (ENV-002)
 
 - Sidebar: **Environments**
-- List: name + SQL instance from cached API data, `DateLastUpdated`, refresh button per row
-- Track environment by remote id (or pick from API list when available)
-- No editing of name/SQL Server — read-only from remote source
+- Page loads full environment list from remote API on open
+- Table: name, remote id, SQL Server instance, last updated
+- **Refresh all** and per-row **Refresh** bypass cache and call the API
+- Local tracking records are created automatically when the catalog is loaded (for downstream FK use)
+- No manual “track by id” step
 
 ### Out of scope (epic v1)
 
@@ -151,7 +152,7 @@ Rudimentary standalone ASP.NET Minimal API returning fixed sample environments (
 |-------|--------|
 | **ID** | ENV-002 |
 | **Title** | Environment management UI |
-| **Status** | Todo |
-| **Description** | Blazor pages: list tracked environments with API-sourced name and SQL instance, show `DateLastUpdated`, per-row **Refresh** button. Track new environment by remote id. Empty state when none tracked. Nav link enables **Environments** in sidebar. |
-| **Test / demo** | Track remote id → list shows API name/SQL → Refresh updates timestamp → data persists after restart. |
+| **Status** | Done |
+| **Description** | Added `/environments` page that loads the full catalog from the remote Web API on open. Table shows name, remote id, SQL Server instance, and last updated. **Refresh all** and per-row **Refresh** bypass cache. Local tracking records sync automatically in the background. Nav link and home card enabled. |
+| **Test / demo** | Run mock API + DevDash → track remote id `1` → Partial16 appears → Refresh updates timestamp → restart DevDash → row persists. |
 | **Depends on** | ENV-001 |

@@ -1,0 +1,170 @@
+@page "/environments"
+@inject IEnvironmentService EnvironmentService
+@inject NotificationService NotificationService
+
+<PageTitle>Environments</PageTitle>
+
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+    <div>
+        <h1 class="mb-1">Environments</h1>
+        <p class="text-muted mb-0">Environments defined by the remote system.</p>
+    </div>
+    <button type="button"
+            class="btn btn-outline-secondary"
+            disabled="@_isBusy"
+            @onclick="RefreshAllAsync">
+        @(_isRefreshingAll ? "Refreshing…" : "Refresh all")
+    </button>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="alert alert-danger" role="alert">@_errorMessage</div>
+}
+
+@if (_isLoading)
+{
+    <p class="text-muted">Loading environments from remote API…</p>
+}
+else if (_environments.Count == 0)
+{
+    <div class="alert alert-light border text-center py-5" role="status">
+        <p class="mb-0 text-muted">No environments were returned from the remote API.</p>
+    </div>
+}
+else
+{
+    @if (_loadedFromCache)
+    {
+        <p class="text-muted small mb-2">Showing cached data. Use Refresh all or refresh a row to fetch the latest from the API.</p>
+    }
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Name</th>
+                    <th>Remote id</th>
+                    <th>SQL Server instance</th>
+                    <th>Last updated</th>
+                    <th style="width: 7rem;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var environment in _environments)
+                {
+                    var isRefreshing = _refreshingRemoteId == environment.RemoteId;
+                    <tr>
+                        <td>@environment.Details.Name</td>
+                        <td>@environment.RemoteId</td>
+                        <td><code>@environment.Details.SqlServerInstance</code></td>
+                        <td>@environment.DateLastUpdated.ToLocalTime().ToString("g")</td>
+                        <td>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary"
+                                    disabled="@(_isBusy || isRefreshing)"
+                                    @onclick="() => RefreshEnvironmentAsync(environment.RemoteId)">
+                                @(isRefreshing ? "Refreshing…" : "Refresh")
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<CachedEnvironment> _environments = [];
+    private bool _isLoading = true;
+    private bool _isBusy;
+    private bool _isRefreshingAll;
+    private bool _loadedFromCache;
+    private int? _refreshingRemoteId;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEnvironmentsAsync(forceRefresh: false);
+    }
+
+    private async Task LoadEnvironmentsAsync(bool forceRefresh)
+    {
+        _errorMessage = null;
+        _isLoading = _environments.Count == 0;
+
+        try
+        {
+            _environments = await EnvironmentService.GetEnvironmentsAsync(forceRefresh);
+            _loadedFromCache = !forceRefresh && _environments.Any(environment => environment.IsFromCache);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Could not load environments: {ex.Message}";
+            _environments = [];
+            _loadedFromCache = false;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task RefreshAllAsync()
+    {
+        _errorMessage = null;
+        _isBusy = true;
+        _isRefreshingAll = true;
+
+        try
+        {
+            await LoadEnvironmentsAsync(forceRefresh: true);
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Environments refreshed",
+                Detail = $"{_environments.Count} environment(s) loaded from the remote API.",
+                Duration = 4000
+            });
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Could not refresh environments: {ex.Message}";
+        }
+        finally
+        {
+            _isRefreshingAll = false;
+            _isBusy = false;
+            _loadedFromCache = false;
+        }
+    }
+
+    private async Task RefreshEnvironmentAsync(int remoteId)
+    {
+        _errorMessage = null;
+        _isBusy = true;
+        _refreshingRemoteId = remoteId;
+
+        try
+        {
+            var refreshed = await EnvironmentService.RefreshEnvironmentAsync(remoteId);
+            await LoadEnvironmentsAsync(forceRefresh: false);
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Environment refreshed",
+                Detail = $"{refreshed.Details.Name} updated at {refreshed.DateLastUpdated.ToLocalTime():g}",
+                Duration = 4000
+            });
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Could not refresh environment: {ex.Message}";
+        }
+        finally
+        {
+            _refreshingRemoteId = null;
+            _isBusy = false;
+        }
+    }
+}
