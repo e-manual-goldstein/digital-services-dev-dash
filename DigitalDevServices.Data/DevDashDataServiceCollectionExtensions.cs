@@ -23,5 +23,22 @@ public static class DevDashDataServiceCollectionExtensions
         using var scope = serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<DevDashDbContext>();
         db.Database.EnsureCreated();
+        EnsurePipelineFeedsTableExists(db);
+    }
+
+    private static void EnsurePipelineFeedsTableExists(DevDashDbContext db)
+    {
+        db.Database.ExecuteSqlRaw("""
+            CREATE TABLE IF NOT EXISTS "PipelineFeeds" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_PipelineFeeds" PRIMARY KEY,
+                "Name" TEXT NOT NULL,
+                "Description" TEXT NULL,
+                "CreatedAt" TEXT NOT NULL
+            );
+            """);
+
+        db.Database.ExecuteSqlRaw("""
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_PipelineFeeds_Name" ON "PipelineFeeds" ("Name");
+            """);
     }
 }

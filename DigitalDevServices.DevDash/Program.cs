@@ -13,6 +13,7 @@ builder.Services.AddScoped<ContextMenuService>();
 
 builder.Services.AddDevDashData(builder.Configuration);
 builder.Services.AddEnvironmentServices(builder.Configuration);
+builder.Services.AddPipelineFeedServices();
 
 var app = builder.Build();
 

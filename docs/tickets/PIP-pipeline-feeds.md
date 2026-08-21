@@ -19,7 +19,7 @@
 
 | ID | Status | Title | Depends on |
 |----|--------|-------|------------|
-| [PIP-001](#pip-001) | Todo | PipelineFeed entity and persistence | ENV-001 |
+| [PIP-001](#pip-001) | Done | PipelineFeed entity and persistence | ENV-001 |
 | [PIP-002](#pip-002) | Shelved | Resolve feed from branch name on ApplicationInstance | PIP-001, APP-002 |
 | [PIP-003](#pip-003) | Todo | Pipeline feed admin UI | PIP-001 |
 
@@ -75,9 +75,9 @@
 |-------|--------|
 | **ID** | PIP-001 |
 | **Title** | PipelineFeed entity and persistence |
-| **Status** | Todo |
-| **Description** | Add `PipelineFeed` to SQLite schema with CRUD service: `Id`, `Name` (unique), `Description`, `CreatedAt`. No branch pattern fields or matching logic. |
-| **Test / demo** | Create feed `Feature 123456` → read back by name → duplicate name rejected. |
+| **Status** | Done |
+| **Description** | Added `PipelineFeed` entity to SQLite (`Id`, unique `Name`, `Description`, `CreatedAt`). `IPipelineFeedService` provides list/get/create/update/delete with duplicate name rejection (case-insensitive). Schema upgrade adds `PipelineFeeds` table on existing databases. Wired into DevDash host; unit tests in `PipelineFeedServiceTests`. |
+| **Test / demo** | `dotnet test --filter PipelineFeedServiceTests` → pass. Create feed `Feature 123456` via service → read by name → duplicate rejected. |
 | **Depends on** | ENV-001 |
 
 ### PIP-002
