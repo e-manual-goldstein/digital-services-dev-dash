@@ -1,6 +1,6 @@
 # Mock Remote Environment API
 
-Rudimentary stand-in for the external team's environment Web API. Returns fixed sample data for local DevDash development.
+Rudimentary stand-in for the Web API. Returns fixed sample data for local DevDash development.
 
 ## Run
 
