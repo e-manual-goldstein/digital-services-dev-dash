@@ -21,7 +21,7 @@ Default URL: **http://localhost:5280**
 
 | RemoteId | Name | SQL Server instance |
 |----------|------|---------------------|
-| 1 | Partial16 | `PARTIAL16\SQL2019` |
+| 1 | Dev | `DEVSQL\SQL2019` |
 | 2 | Integration | `INT-SQL01\DEV` |
 | 3 | UAT | `UAT-SQL01\STD` |
 | 4 | Production | `PROD-SQL01\STD` |
