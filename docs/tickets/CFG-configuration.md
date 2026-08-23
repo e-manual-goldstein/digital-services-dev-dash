@@ -20,7 +20,7 @@
 | ID | Status | Title | Depends on |
 |----|--------|-------|------------|
 | [CFG-001](#cfg-001) | Done | Configuration setting model and storage | APP-002 |
-| [CFG-002](#cfg-002) | Todo | Import settings from deployed application locations | CFG-001, APP-004 |
+| [CFG-002](#cfg-002) | Done | Import settings from deployed application locations | CFG-001, APP-004 |
 | [CFG-003](#cfg-003) | Todo | Settings browser UI (view all settings for an instance) | CFG-002, ENV-005 |
 | [CFG-004](#cfg-004) | Todo | Compare setting by name across apps in one environment | CFG-002, ENV-002 |
 | [CFG-005](#cfg-005) | Todo | Compare setting by name for one app across environments | CFG-002, APP-004 |
@@ -89,9 +89,9 @@ Uniqueness: one row per (`ApplicationInstanceId`, `Key`) — refresh replaces va
 |-------|--------|
 | **ID** | CFG-002 |
 | **Title** | Import settings from deployed application locations |
-| **Status** | Todo |
-| **Description** | Service to read config files from `ApplicationInstance.PhysicalPath` (JSON v1 minimum). Flatten nested keys with `:` separator. Store via CFG-001 upsert. Handle missing path gracefully. |
-| **Test / demo** | Point instance at folder with sample `appsettings.json` → refresh → keys appear in DB. |
+| **Status** | Done |
+| **Description** | `IConfigurationImportService.RefreshAsync` reads `appsettings*.json` from `ApplicationInstance.PhysicalPath`, flattens nested JSON keys with `:` separators (`JsonConfigurationFlattener`), merges files (`appsettings.json` first, then overrides from environment-specific files), and stores via `IConfigurationSettingService.UpsertManyAsync`. Missing path, missing folder, and parse/read errors return a result with `ErrorMessage` (same pattern as package scan). Sample files in `samples/config/`. |
+| **Test / demo** | `dotnet test --filter ConfigurationImportServiceTests` → pass. Point instance `PhysicalPath` at `samples/config` → call `RefreshAsync` → keys like `ConnectionStrings:Default` stored with source filename. |
 | **Depends on** | CFG-001, APP-004 |
 
 ### CFG-003

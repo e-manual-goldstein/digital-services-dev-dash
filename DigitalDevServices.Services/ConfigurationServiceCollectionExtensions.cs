@@ -8,6 +8,7 @@ public static class ConfigurationServiceCollectionExtensions
     public static IServiceCollection AddConfigurationServices(this IServiceCollection services)
     {
         services.AddScoped<IConfigurationSettingService, ConfigurationSettingService>();
+        services.AddScoped<IConfigurationImportService, ConfigurationImportService>();
 
         return services;
     }

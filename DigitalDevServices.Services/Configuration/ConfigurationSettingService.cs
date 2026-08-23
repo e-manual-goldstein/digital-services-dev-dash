@@ -83,6 +83,63 @@ public sealed class ConfigurationSettingService : IConfigurationSettingService
             .ConfigureAwait(false))!;
     }
 
+    public async Task<IReadOnlyList<ConfigurationSetting>> UpsertManyAsync(
+        Guid applicationInstanceId,
+        IReadOnlyList<ConfigurationSettingUpsert> upserts,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(upserts);
+
+        await EnsureApplicationInstanceExistsAsync(applicationInstanceId, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (upserts.Count == 0)
+        {
+            return await GetByApplicationInstanceIdAsync(applicationInstanceId, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        var keys = upserts
+            .Select(upsert => NormalizeRequiredText(upsert.Key, nameof(upsert.Key)))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var existingSettings = await _db.ConfigurationSettings
+            .Where(setting => setting.ApplicationInstanceId == applicationInstanceId && keys.Contains(setting.Key))
+            .ToDictionaryAsync(setting => setting.Key, StringComparer.OrdinalIgnoreCase, cancellationToken)
+            .ConfigureAwait(false);
+
+        var capturedAt = DateTimeOffset.UtcNow;
+
+        foreach (var upsert in upserts)
+        {
+            var key = NormalizeRequiredText(upsert.Key, nameof(upsert.Key));
+            var value = upsert.Value ?? string.Empty;
+            var source = NormalizeOptionalText(upsert.Source);
+
+            if (!existingSettings.TryGetValue(key, out var existing))
+            {
+                existing = new ConfigurationSetting
+                {
+                    Id = Guid.NewGuid(),
+                    ApplicationInstanceId = applicationInstanceId,
+                    Key = key
+                };
+                _db.ConfigurationSettings.Add(existing);
+                existingSettings[key] = existing;
+            }
+
+            existing.Value = value;
+            existing.Source = source;
+            existing.CapturedAt = capturedAt;
+        }
+
+        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        return await GetByApplicationInstanceIdAsync(applicationInstanceId, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     private async Task EnsureApplicationInstanceExistsAsync(Guid id, CancellationToken cancellationToken)
     {
         var exists = await _db.ApplicationInstances.AnyAsync(instance => instance.Id == id, cancellationToken)

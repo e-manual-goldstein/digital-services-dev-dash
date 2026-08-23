@@ -17,4 +17,9 @@ public interface IConfigurationSettingService
     Task<ConfigurationSetting> UpsertAsync(
         ConfigurationSettingUpsert upsert,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ConfigurationSetting>> UpsertManyAsync(
+        Guid applicationInstanceId,
+        IReadOnlyList<ConfigurationSettingUpsert> upserts,
+        CancellationToken cancellationToken = default);
 }
