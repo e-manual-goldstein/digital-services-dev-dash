@@ -32,7 +32,7 @@
 | Field | Type | Notes |
 |-------|------|--------|
 | `Id` | `Guid` | PK |
-| `Name` | `string` | Required, unique — e.g. `Feature 123456`, `Partial16 WIP` |
+| `Name` | `string` | Required, unique — e.g. `Feature 123456`, `UAT-01 WIP` |
 | `Description` | `string?` | Optional notes (repos, purpose, etc.) |
 | `CreatedAt` | `DateTimeOffset` | UTC |
 

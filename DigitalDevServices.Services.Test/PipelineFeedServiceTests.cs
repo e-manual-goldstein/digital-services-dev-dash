@@ -26,10 +26,10 @@ public sealed class PipelineFeedServiceTests
     public async Task CreateAsync_RejectsDuplicateName()
     {
         await using var fixture = await PipelineFeedServiceFixture.CreateAsync();
-        await fixture.Service.CreateAsync("Partial16 WIP");
+        await fixture.Service.CreateAsync("UAT-01 WIP");
 
         var ex = await Assert.ThrowsExactlyAsync<InvalidOperationException>(
-            () => fixture.Service.CreateAsync("partial16 wip"));
+            () => fixture.Service.CreateAsync("UAT-01 wip"));
 
         StringAssert.Contains(ex.Message, "already exists");
         Assert.AreEqual(1, await fixture.Db.PipelineFeeds.CountAsync());

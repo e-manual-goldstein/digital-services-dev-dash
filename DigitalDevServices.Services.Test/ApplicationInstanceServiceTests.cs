@@ -29,7 +29,7 @@ public sealed class ApplicationInstanceServiceTests
             DeployedAt = new DateTimeOffset(2026, 8, 21, 12, 0, 0, TimeSpan.Zero),
             PhysicalPath = @"D:\apps\customer-portal",
             LogPath = @"D:\logs\customer-portal.log",
-            SqlServerInstance = @"PARTIAL16\SQL2019"
+            SqlServerInstance = @"UAT-01\SQL2019"
         };
 
         var created = await fixture.Service.UpsertAsync(upsert);

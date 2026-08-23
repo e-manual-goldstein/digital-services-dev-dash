@@ -9,8 +9,8 @@ internal static class SampleEnvironments
         new RemoteEnvironmentDetails
         {
             RemoteId = 1,
-            Name = "Partial16",
-            SqlServerInstance = @"PARTIAL16\SQL2019"
+            Name = "UAT-01",
+            SqlServerInstance = @"UAT-01\SQL2019"
         },
         new RemoteEnvironmentDetails
         {

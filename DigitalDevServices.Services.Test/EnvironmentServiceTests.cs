@@ -20,8 +20,8 @@ public sealed class EnvironmentServiceTests
                 [42] = new RemoteEnvironmentDetails
                 {
                     RemoteId = 42,
-                    Name = "Partial16",
-                    SqlServerInstance = "sql-partial16.example"
+                    Name = "UAT-01",
+                    SqlServerInstance = "sql-UAT-01.example"
                 },
                 [2] = new RemoteEnvironmentDetails
                 {
@@ -36,7 +36,7 @@ public sealed class EnvironmentServiceTests
 
         Assert.HasCount(2, results);
         Assert.AreEqual("Integration", results[0].Details.Name);
-        Assert.AreEqual("Partial16", results[1].Details.Name);
+        Assert.AreEqual("UAT-01", results[1].Details.Name);
         Assert.AreEqual(1, fixture.Api.ListCallCount);
         Assert.AreEqual(2, await fixture.Db.TrackedEnvironments.CountAsync());
     }

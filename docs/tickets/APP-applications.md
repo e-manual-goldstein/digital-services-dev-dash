@@ -112,7 +112,7 @@ Uniqueness (v1 suggestion): one **ApplicationInstance** per (`DeployableApplicat
 | **Title** | ApplicationInstance entity and persistence |
 | **Status** | Done |
 | **Description** | Added `ApplicationInstance` with FKs to `DeployableApplication`, `TrackedEnvironment`, and optional `PipelineFeed`. Origin fields (`BuildNumber`, `SourceBranch`, `DeployedAt`, feed) and environment fields (`PhysicalPath`, `LogPath`, `SqlServerInstance`). Unique slot per app+environment; `UpsertAsync` updates existing row. `IApplicationInstanceService` CRUD + query by environment or deployable app. Delete guard on deployable applications when instances exist. Schema upgrade for existing DBs. Unit tests in `ApplicationInstanceServiceTests`. |
-| **Test / demo** | `dotnet test --filter ApplicationInstanceServiceTests` → pass. Register instance: App X in Partial16, build 1.2.3, branch `feature/123456-foo` → query by environment returns row with origin and path fields. |
+| **Test / demo** | `dotnet test --filter ApplicationInstanceServiceTests` → pass. Register instance: App X in UAT-01, build 1.2.3, branch `feature/123456-foo` → query by environment returns row with origin and path fields. |
 | **Depends on** | APP-001, ENV-001, PIP-001 |
 
 ### APP-003
@@ -134,5 +134,5 @@ Uniqueness (v1 suggestion): one **ApplicationInstance** per (`DeployableApplicat
 | **Title** | ApplicationInstance admin UI |
 | **Status** | Todo |
 | **Description** | Blazor UI to register/edit deployments: pick deployable app + environment, enter build number, pipeline feed, branch, deploy date, physical path, log path. Accessible from environment detail and/or standalone **Deployments** page. |
-| **Test / demo** | From Partial16, add deployment for an app with build number and paths → visible on environment detail and application detail. |
+| **Test / demo** | From UAT-01, add deployment for an app with build number and paths → visible on environment detail and application detail. |
 | **Depends on** | APP-002, ENV-002 |
