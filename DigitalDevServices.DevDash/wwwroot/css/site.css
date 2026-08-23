@@ -105,3 +105,19 @@ code {
     .blazor-error-boundary::after {
         content: "An error has occurred."
     }
+
+.log-entry-message,
+.log-entry-raw {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.9rem;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+}
+
+.log-entry-card .list-group-item.active .badge {
+    filter: brightness(0.95);
+}

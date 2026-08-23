@@ -15,6 +15,7 @@ builder.Services.AddDevDashData(builder.Configuration);
 builder.Services.AddEnvironmentServices(builder.Configuration);
 builder.Services.AddPipelineFeedServices();
 builder.Services.AddDeployableApplicationServices();
+builder.Services.AddLogServices();
 
 var app = builder.Build();
 

@@ -63,6 +63,10 @@ One profile per **DeployableApplication** — same format across all environment
 3. Stream or paginate parsed entries
 4. Filters: minimum level (hide INFO and below), text contains, time range (future)
 
+### Sample logs and preview UI
+
+Prototype sample files live in [`samples/logs/`](../../samples/logs/README.md) (Serilog JSON, plain text, NLog multiline, log4net pattern). The **Log preview** page at `/logs/preview` loads these files, parses them with format-specific parsers, and lets you step through entries one at a time. Parser code in `DigitalDevServices.Services.Logs` is the starting point for LOG-001.
+
 ### Plugin angle
 
 - Parser implementations may live in `DigitalDevServices.Plugins` — profile selects parser by `FormatName`.
