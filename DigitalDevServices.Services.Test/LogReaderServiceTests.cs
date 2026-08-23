@@ -1,0 +1,266 @@
+using DigitalDevServices.Data;
+using DigitalDevServices.Model.Applications;
+using DigitalDevServices.Model.Entities;
+using DigitalDevServices.Model.Logs;
+using DigitalDevServices.Services.Applications;
+using DigitalDevServices.Services.Logs;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace DigitalDevServices.Services.Test;
+
+[TestClass]
+public sealed class LogReaderServiceTests
+{
+    [TestMethod]
+    public async Task ReadAsync_ReturnsParsedEntriesFromLogFile()
+    {
+        await using var fixture = await LogReaderServiceFixture.CreateAsync();
+        var logDirectory = await fixture.CreateLogDirectoryAsync();
+        var logFilePath = Path.Combine(logDirectory, "app.log");
+        await File.WriteAllTextAsync(logFilePath, """
+            2026-08-23 09:02:11.004 INFO  [WorkerHost] Background worker started
+            2026-08-23 09:03:01.774 WARN  [ImportJob] Row 88 skipped
+            2026-08-23 09:05:17.889 ERROR [EmailSender] SMTP handshake failed
+            """);
+
+        var application = await fixture.DeployableApplicationService.CreateAsync("Worker Host");
+        await fixture.ProfileService.UpsertAsync(new LogFormatProfileUpsert
+        {
+            DeployableApplicationId = application.Id,
+            FormatName = LogFormatNames.PlainText
+        });
+
+        var instance = await fixture.CreateApplicationInstanceAsync(application.Id, logFilePath);
+        var result = await fixture.ReaderService.ReadAsync(instance.Id);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(logFilePath, result.LogFilePath);
+        Assert.HasCount(3, result.Entries);
+        Assert.AreEqual("INFO", result.Entries[0].Level);
+        Assert.IsNotNull(result.Entries[0].Timestamp);
+        Assert.AreEqual("WARN", result.Entries[1].Level);
+        Assert.AreEqual("ERROR", result.Entries[2].Level);
+    }
+
+    [TestMethod]
+    public async Task ReadAsync_LimitsToLastMaxLines()
+    {
+        await using var fixture = await LogReaderServiceFixture.CreateAsync();
+        var logDirectory = await fixture.CreateLogDirectoryAsync();
+        var logFilePath = Path.Combine(logDirectory, "app.log");
+
+        var lines = Enumerable.Range(1, 120)
+            .Select(index => $"2026-08-23 09:02:{index % 60:00}.004 INFO  [WorkerHost] Line {index}");
+        await File.WriteAllLinesAsync(logFilePath, lines);
+
+        var application = await fixture.DeployableApplicationService.CreateAsync("Worker Host");
+        await fixture.ProfileService.UpsertAsync(new LogFormatProfileUpsert
+        {
+            DeployableApplicationId = application.Id,
+            FormatName = LogFormatNames.PlainText
+        });
+
+        var instance = await fixture.CreateApplicationInstanceAsync(application.Id, logFilePath);
+        var result = await fixture.ReaderService.ReadAsync(instance.Id, maxLines: 100);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(100, result.RawLinesRead);
+        Assert.HasCount(100, result.Entries);
+        Assert.AreEqual("Line 21", result.Entries[0].Message);
+        Assert.AreEqual("Line 120", result.Entries[^1].Message);
+    }
+
+    [TestMethod]
+    public async Task ReadAsync_UsesNewestLogInDirectory()
+    {
+        await using var fixture = await LogReaderServiceFixture.CreateAsync();
+        var logDirectory = await fixture.CreateLogDirectoryAsync();
+        var olderLogPath = Path.Combine(logDirectory, "older.log");
+        var newerLogPath = Path.Combine(logDirectory, "newer.log");
+
+        await File.WriteAllTextAsync(olderLogPath, "2026-08-23 09:00:00.000 INFO  [WorkerHost] Old entry");
+        await File.WriteAllTextAsync(newerLogPath, "2026-08-23 09:10:00.000 WARN  [WorkerHost] New entry");
+        File.SetLastWriteTimeUtc(olderLogPath, DateTime.UtcNow.AddHours(-2));
+        File.SetLastWriteTimeUtc(newerLogPath, DateTime.UtcNow);
+
+        var application = await fixture.DeployableApplicationService.CreateAsync("Worker Host");
+        await fixture.ProfileService.UpsertAsync(new LogFormatProfileUpsert
+        {
+            DeployableApplicationId = application.Id,
+            FormatName = LogFormatNames.PlainText
+        });
+
+        var instance = await fixture.CreateApplicationInstanceAsync(application.Id, logDirectory);
+        var result = await fixture.ReaderService.ReadAsync(instance.Id);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(newerLogPath, result.LogFilePath);
+        Assert.HasCount(1, result.Entries);
+        Assert.AreEqual("WARN", result.Entries[0].Level);
+        Assert.AreEqual("New entry", result.Entries[0].Message);
+    }
+
+    [TestMethod]
+    public async Task ReadAsync_ReturnsErrorWhenLogPathMissing()
+    {
+        await using var fixture = await LogReaderServiceFixture.CreateAsync();
+        var application = await fixture.DeployableApplicationService.CreateAsync("Worker Host");
+        await fixture.ProfileService.UpsertAsync(new LogFormatProfileUpsert
+        {
+            DeployableApplicationId = application.Id,
+            FormatName = LogFormatNames.PlainText
+        });
+
+        var instance = await fixture.CreateApplicationInstanceAsync(application.Id, logPath: null);
+        var result = await fixture.ReaderService.ReadAsync(instance.Id);
+
+        Assert.IsFalse(result.IsSuccess);
+        StringAssert.Contains(result.ErrorMessage!, "log path");
+    }
+
+    [TestMethod]
+    public async Task ReadAsync_ReturnsErrorWhenPathDoesNotExist()
+    {
+        await using var fixture = await LogReaderServiceFixture.CreateAsync();
+        var application = await fixture.DeployableApplicationService.CreateAsync("Worker Host");
+        var instance = await fixture.CreateApplicationInstanceAsync(application.Id, @"D:\does-not-exist\app.log");
+
+        var result = await fixture.ReaderService.ReadAsync(instance.Id);
+
+        Assert.IsFalse(result.IsSuccess);
+        StringAssert.Contains(result.ErrorMessage!, "does not exist");
+    }
+
+    [TestMethod]
+    public async Task ReadAsync_ReturnsErrorWhenInstanceNotFound()
+    {
+        await using var fixture = await LogReaderServiceFixture.CreateAsync();
+
+        var result = await fixture.ReaderService.ReadAsync(Guid.NewGuid());
+
+        Assert.IsFalse(result.IsSuccess);
+        StringAssert.Contains(result.ErrorMessage!, "not found");
+    }
+
+    [TestMethod]
+    public async Task ReadAsync_ReturnsErrorWhenLogFormatProfileMissing()
+    {
+        await using var fixture = await LogReaderServiceFixture.CreateAsync();
+        var logDirectory = await fixture.CreateLogDirectoryAsync();
+        var logFilePath = Path.Combine(logDirectory, "app.log");
+        await File.WriteAllTextAsync(logFilePath, "2026-08-23 09:02:11.004 INFO  [WorkerHost] Background worker started");
+
+        var application = await fixture.DeployableApplicationService.CreateAsync("Worker Host");
+        var instance = await fixture.CreateApplicationInstanceAsync(application.Id, logFilePath);
+        var result = await fixture.ReaderService.ReadAsync(instance.Id);
+
+        Assert.IsFalse(result.IsSuccess);
+        StringAssert.Contains(result.ErrorMessage!, "log format profile");
+    }
+
+    private sealed class LogReaderServiceFixture : IAsyncDisposable
+    {
+        private readonly ServiceProvider _serviceProvider;
+        private readonly string _tempRoot;
+
+        private LogReaderServiceFixture(
+            ServiceProvider serviceProvider,
+            DevDashDbContext db,
+            ILogReaderService readerService,
+            IDeployableApplicationService deployableApplicationService,
+            ILogFormatProfileService profileService,
+            IApplicationInstanceService applicationInstanceService,
+            string tempRoot)
+        {
+            _serviceProvider = serviceProvider;
+            Db = db;
+            ReaderService = readerService;
+            DeployableApplicationService = deployableApplicationService;
+            ProfileService = profileService;
+            ApplicationInstanceService = applicationInstanceService;
+            _tempRoot = tempRoot;
+        }
+
+        public DevDashDbContext Db { get; }
+
+        public ILogReaderService ReaderService { get; }
+
+        public IDeployableApplicationService DeployableApplicationService { get; }
+
+        public ILogFormatProfileService ProfileService { get; }
+
+        public IApplicationInstanceService ApplicationInstanceService { get; }
+
+        public static async Task<LogReaderServiceFixture> CreateAsync()
+        {
+            var services = new ServiceCollection();
+            services.AddDbContext<DevDashDbContext>(options => options.UseSqlite("Data Source=:memory:"));
+            services.AddScoped<IDeployableApplicationService, DeployableApplicationService>();
+            services.AddScoped<IApplicationInstanceService, ApplicationInstanceService>();
+            services.AddSingleton<ILogEntryParser, PlainTextLogParser>();
+            services.AddSingleton<ILogEntryParser, SerilogJsonLogParser>();
+            services.AddSingleton<ILogEntryParser, NLogMultilineLogParser>();
+            services.AddSingleton<ILogEntryParser, Log4NetPatternLogParser>();
+            services.AddSingleton<LogParserRegistry>();
+            services.AddScoped<ILogFormatProfileService, LogFormatProfileService>();
+            services.AddScoped<ILogParsingService, LogParsingService>();
+            services.AddScoped<ILogReaderService, LogReaderService>();
+
+            var serviceProvider = services.BuildServiceProvider();
+            var db = serviceProvider.GetRequiredService<DevDashDbContext>();
+            await db.Database.OpenConnectionAsync();
+            await db.Database.EnsureCreatedAsync();
+
+            var tempRoot = Path.Combine(Path.GetTempPath(), "devdash-logs-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempRoot);
+
+            return new LogReaderServiceFixture(
+                serviceProvider,
+                db,
+                serviceProvider.GetRequiredService<ILogReaderService>(),
+                serviceProvider.GetRequiredService<IDeployableApplicationService>(),
+                serviceProvider.GetRequiredService<ILogFormatProfileService>(),
+                serviceProvider.GetRequiredService<IApplicationInstanceService>(),
+                tempRoot);
+        }
+
+        public Task<string> CreateLogDirectoryAsync()
+        {
+            var logDirectory = Path.Combine(_tempRoot, Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(logDirectory);
+            return Task.FromResult(logDirectory);
+        }
+
+        public async Task<ApplicationInstance> CreateApplicationInstanceAsync(Guid deployableApplicationId, string? logPath)
+        {
+            var environment = new TrackedEnvironment
+            {
+                Id = Guid.NewGuid(),
+                RemoteId = Random.Shared.Next(1, 10000),
+                DateLastUpdated = DateTimeOffset.UtcNow
+            };
+
+            Db.TrackedEnvironments.Add(environment);
+            await Db.SaveChangesAsync();
+
+            return await ApplicationInstanceService.UpsertAsync(new ApplicationInstanceUpsert
+            {
+                DeployableApplicationId = deployableApplicationId,
+                EnvironmentId = environment.Id,
+                BuildNumber = "1.0.0",
+                LogPath = logPath
+            });
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (Directory.Exists(_tempRoot))
+            {
+                Directory.Delete(_tempRoot, recursive: true);
+            }
+
+            await _serviceProvider.DisposeAsync();
+        }
+    }
+}

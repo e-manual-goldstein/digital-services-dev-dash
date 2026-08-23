@@ -20,7 +20,7 @@
 | ID | Status | Title | Depends on |
 |----|--------|-------|------------|
 | [LOG-001](#log-001) | Done | LogFormatProfile per DeployableApplication | APP-001 |
-| [LOG-002](#log-002) | Todo | Log file reader using ApplicationInstance paths | APP-002, LOG-001 |
+| [LOG-002](#log-002) | Done | Log file reader using ApplicationInstance paths | APP-002, LOG-001 |
 | [LOG-003](#log-003) | Todo | Log viewer UI (environment → instance picker) | LOG-002, ENV-005, APP-004 |
 | [LOG-004](#log-004) | Todo | Log filtering (level, text search) | LOG-003 |
 
@@ -98,9 +98,9 @@ Prototype sample files live in [`samples/logs/`](../../samples/logs/README.md) (
 |-------|--------|
 | **ID** | LOG-002 |
 | **Title** | Log file reader using ApplicationInstance paths |
-| **Status** | Todo |
-| **Description** | Service: given ApplicationInstance, resolve `LogPath`, read file(s), apply DeployableApplication’s LogFormatProfile, return parsed entries (paginated/tail). Handle missing files with clear error. |
-| **Test / demo** | Instance with log path → read last 100 lines → parsed entries returned with timestamps and levels. |
+| **Status** | Done |
+| **Description** | `ILogReaderService.ReadAsync` resolves `ApplicationInstance.LogPath` (file path, or newest `*.log` in a directory), reads the last N lines (default 100, max 10,000; large files tail the last 10 MB), and parses content using the deployable app's `LogFormatProfile` via `ILogParsingService`. Returns `LogReadResult` with entries, source file path, raw line count, or a clear error (missing path, missing file, read failure, missing profile). |
+| **Test / demo** | `dotnet test --filter LogReaderServiceTests` → pass. Instance with `LogPath` pointing at a log file + Plain text profile → `ReadAsync(instanceId, 100)` returns parsed entries with timestamps and levels. |
 | **Depends on** | APP-002, LOG-001 |
 
 ### LOG-003

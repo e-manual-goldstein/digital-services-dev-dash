@@ -15,6 +15,7 @@ public static class LogServiceCollectionExtensions
         services.AddSingleton<ISampleLogService, SampleLogService>();
         services.AddScoped<ILogFormatProfileService, LogFormatProfileService>();
         services.AddScoped<ILogParsingService, LogParsingService>();
+        services.AddScoped<ILogReaderService, LogReaderService>();
 
         return services;
     }
