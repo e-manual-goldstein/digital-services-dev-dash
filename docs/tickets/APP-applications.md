@@ -22,7 +22,7 @@
 | [APP-001](#app-001) | Done | DeployableApplication entity and persistence | ENV-001 |
 | [APP-002](#app-002) | Done | ApplicationInstance entity and persistence | APP-001, ENV-001, PIP-001 |
 | [APP-003](#app-003) | Done | DeployableApplication admin UI | APP-001 |
-| [APP-004](#app-004) | Todo | ApplicationInstance admin UI | APP-002, ENV-002 |
+| [APP-004](#app-004) | Todo | ApplicationInstance admin UI | APP-002, ENV-004, ENV-005 |
 
 ---
 
@@ -37,6 +37,7 @@ Represents a compilable/deployable project in the wider codebase — the logical
 | `Id` | `Guid` | PK |
 | `Name` | `string` | Required, unique — human name |
 | `ProjectKey` | `string?` | Optional repo/project identifier |
+| `IsWebApp` | `bool` | `true` when this app has a browser homepage (ENV-005) |
 | `Notes` | `string?` | |
 | `CreatedAt` | `DateTimeOffset` | UTC |
 
@@ -55,6 +56,7 @@ A specific deployment of a **DeployableApplication** in a specific **TrackedEnvi
 | `DeployedAt` | `DateTimeOffset?` | When deployed |
 | `PhysicalPath` | `string?` | Deploy location on the environment |
 | `LogPath` | `string?` | Log file or directory location |
+| `HomepageUrl` | `string?` | Browser homepage for this instance (web apps only) |
 | `SqlServerInstance` | `string?` | Override if instance differs from environment default |
 | `Notes` | `string?` | |
 | `CreatedAt` | `DateTimeOffset` | UTC |
@@ -67,7 +69,7 @@ A specific deployment of a **DeployableApplication** in a specific **TrackedEnvi
 | `BuildNumber` | `PhysicalPath` |
 | `PipelineFeedId` / feed (manual) | `LogPath` |
 | `SourceBranch` | `SqlServerInstance` (override) |
-| `DeployedAt` | |
+| `DeployedAt` | `HomepageUrl` |
 
 Uniqueness (v1 suggestion): one **ApplicationInstance** per (`DeployableApplicationId`, `EnvironmentId`) — redeploy updates the same row.
 
@@ -80,14 +82,15 @@ Uniqueness (v1 suggestion): one **ApplicationInstance** per (`DeployableApplicat
 ### UI notes
 
 - Sidebar: **Applications** (deployable catalog) and **Deployments** or nested under Environments
-- Environment detail: list application instances in that environment
+- Environment detail (ENV-004 / ENV-005): list application instances in that environment, with logs / homepage / config / packages actions
 - DeployableApplication detail: list instances across environments
+- APP-004: add/edit deployments from the environment details page (environment pre-selected)
 
 ### Out of scope (epic v1)
 
 - Automatic deployment detection from Azure DevOps / file system scans
 - Historical deployment audit trail (multiple past build numbers per slot)
-- NuGet package inventory per instance
+- NuGet gallery / feed package inventory (filesystem DLL listing is [ENV-006](ENV-environments.md#env-006))
 
 ---
 
@@ -133,6 +136,6 @@ Uniqueness (v1 suggestion): one **ApplicationInstance** per (`DeployableApplicat
 | **ID** | APP-004 |
 | **Title** | ApplicationInstance admin UI |
 | **Status** | Todo |
-| **Description** | Blazor UI to register/edit deployments: pick deployable app + environment, enter build number, pipeline feed, branch, deploy date, physical path, log path. Accessible from environment detail and/or standalone **Deployments** page. |
-| **Test / demo** | From UAT-01, add deployment for an app with build number and paths → visible on environment detail and application detail. |
-| **Depends on** | APP-002, ENV-002 |
+| **Description** | Blazor UI to register/edit deployments from the environment details page (environment pre-selected) and/or a standalone **Deployments** page: pick deployable app, enter build number, pipeline feed, branch, deploy date, physical path, log path, and homepage URL (when the app is a web app). New rows appear in the ENV-005 table. |
+| **Test / demo** | From UAT-01 details, add a web app deployment with build number, paths, and homepage URL → row appears on the environment table with a working homepage link. Non-web app has no homepage link. |
+| **Depends on** | APP-002, ENV-004, ENV-005 |

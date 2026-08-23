@@ -21,7 +21,7 @@
 |----|--------|-------|------------|
 | [CFG-001](#cfg-001) | Todo | Configuration setting model and storage | APP-002 |
 | [CFG-002](#cfg-002) | Todo | Import settings from deployed application locations | CFG-001, APP-004 |
-| [CFG-003](#cfg-003) | Todo | Settings browser UI (view all settings for an instance) | CFG-002 |
+| [CFG-003](#cfg-003) | Todo | Settings browser UI (view all settings for an instance) | CFG-002, ENV-005 |
 | [CFG-004](#cfg-004) | Todo | Compare setting by name across apps in one environment | CFG-002, ENV-002 |
 | [CFG-005](#cfg-005) | Todo | Compare setting by name for one app across environments | CFG-002, APP-004 |
 
@@ -59,6 +59,7 @@ Uniqueness: one row per (`ApplicationInstanceId`, `Key`) — refresh replaces va
 
 - Sidebar: **Configuration**
 - Sub-views: **Browse** (instance → all keys), **Compare in environment**, **Compare across environments**
+- Browse is also reachable as `/configuration/{instanceId}` from the environment details **Configuration** button (ENV-005)
 - Mask values when key matches `*Secret*`, `*Password*`, `*Key*` (configurable list)
 
 ### Out of scope (epic v1)
@@ -100,9 +101,9 @@ Uniqueness: one row per (`ApplicationInstanceId`, `Key`) — refresh replaces va
 | **ID** | CFG-003 |
 | **Title** | Settings browser UI (view all settings for an instance) |
 | **Status** | Todo |
-| **Description** | Blazor page: pick environment → application instance → searchable table of all settings. Refresh button. Secret masking. |
-| **Test / demo** | Select UAT-01 + app instance → see settings → refresh → updated values. |
-| **Depends on** | CFG-002 |
+| **Description** | Blazor page at `/configuration/{instanceId}` (deep link from environment details Configuration button) and with pickers: environment → application instance → searchable table of all settings. Refresh button. Secret masking. |
+| **Test / demo** | From UAT-01 details, click **Configuration** on an instance → see settings → refresh → updated values. Also reachable from the Configuration sidebar. |
+| **Depends on** | CFG-002, ENV-005 |
 
 ### CFG-004
 

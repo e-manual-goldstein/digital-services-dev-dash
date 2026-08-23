@@ -21,7 +21,7 @@
 |----|--------|-------|------------|
 | [LOG-001](#log-001) | Todo | LogFormatProfile per DeployableApplication | APP-001 |
 | [LOG-002](#log-002) | Todo | Log file reader using ApplicationInstance paths | APP-002, LOG-001 |
-| [LOG-003](#log-003) | Todo | Log viewer UI (environment → instance picker) | LOG-002, ENV-002, APP-004 |
+| [LOG-003](#log-003) | Todo | Log viewer UI (environment → instance picker) | LOG-002, ENV-005, APP-004 |
 | [LOG-004](#log-004) | Todo | Log filtering (level, text search) | LOG-003 |
 
 ---
@@ -58,7 +58,7 @@ One profile per **DeployableApplication** — same format across all environment
 
 ### Viewer UX
 
-1. Select **Environment**
+1. Select **Environment** (or arrive via `/logs/{instanceId}` from environment details)
 2. Select **ApplicationInstance** (filtered to that environment)
 3. Stream or paginate parsed entries
 4. Filters: minimum level (hide INFO and below), text contains, time range (future)
@@ -106,9 +106,9 @@ One profile per **DeployableApplication** — same format across all environment
 | **ID** | LOG-003 |
 | **Title** | Log viewer UI (environment → instance picker) |
 | **Status** | Todo |
-| **Description** | Blazor **Log Viewer** page: cascade dropdowns Environment → ApplicationInstance. Display parsed log entries in readable table (time, level badge, message). Load more / tail refresh button. |
-| **Test / demo** | Pick UAT-01 → pick app instance → see formatted log lines from disk. |
-| **Depends on** | LOG-002, ENV-002, APP-004 |
+| **Description** | Blazor **Log Viewer** page at `/logs/{instanceId}` (deep link from environment details Logs button) and with cascade dropdowns Environment → ApplicationInstance as an alternate entry. Display parsed log entries in readable table (time, level badge, message). Load more / tail refresh button. Uses the instance's `LogPath` and the deployable app's LogFormatProfile. |
+| **Test / demo** | From UAT-01 details, click **Logs** on an instance → formatted log lines from disk. Also: open **Log Viewer** → pick UAT-01 → pick app instance → same result. |
+| **Depends on** | LOG-002, ENV-005, APP-004 |
 
 ### LOG-004
 

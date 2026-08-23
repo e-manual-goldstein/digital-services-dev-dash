@@ -16,6 +16,9 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
+| ENV-004 | [ENV](tickets/ENV-environments.md) | Environment details page (SQL copy, BuildNumber/TFS, WIP branch) |
+| ENV-005 | [ENV](tickets/ENV-environments.md) | Deployed applications table on environment details |
+| ENV-006 | [ENV](tickets/ENV-environments.md) | Deployed application packages page (DLL list + versions) |
 | APP-004 | [APP](tickets/APP-applications.md) | ApplicationInstance admin UI |
 | LOG-001 | [LOG](tickets/LOG-log-interpreter.md) | LogFormatProfile per DeployableApplication |
 | CFG-001 | [CFG](tickets/CFG-configuration.md) | Configuration setting model and storage |
@@ -33,6 +36,7 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 
 | Epic | Description | Tickets Completed | Tickets Shelved | Total Tickets | Progress |
 |------|-------------|-------------------|-----------------|---------------|----------|
+| [Environments (ENV)](tickets/ENV-environments.md) | Remote API + local tracking + environment details hub | 3 | 0 | 6 | 🟩🟩🟩🟩🟩⬜⬜⬜⬜⬜ 50% |
 | [Applications (APP)](tickets/APP-applications.md) | Deployable app vs instance | 3 | 0 | 4 | 🟩🟩🟩🟩🟩🟩🟩🟩⬜⬜ 75% |
 | [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Named pipeline feeds (no branch matching v1) | 2 | 1 | 3 | 🟩🟩🟩🟩🟩🟩🟨🟨🟨⬜ 67% |
 | [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 0 | 0 | 5 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
@@ -67,7 +71,6 @@ Unprioritized — not in the active queue. See [IDE-ideas.md](tickets/IDE-ideas.
 | Epic | Description | Completed |
 |------|-------------|-----------|
 | [Foundation (FND)](tickets/FND-foundation.md) | Blazor skeleton and layout | FND-001 – FND-002 |
-| [Environments (ENV)](tickets/ENV-environments.md) | Remote API + local tracking + UI | ENV-001 – ENV-003 |
 
 ## Domain model (overview)
 
