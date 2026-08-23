@@ -11,7 +11,7 @@
 
 ## Primary user story
 
-> Every team configures apps differently, but I constantly need to answer “what is the connection string for X?” or “does this flag differ between Partial16 and Production?” I want to pick a setting by name and compare it across apps or environments in seconds.
+> Every team configures apps differently, but I constantly need to answer “what is the connection string for X?” or “does this flag differ between UAT-01 and SYS-02?” I want to pick a setting by name and compare it across apps or environments in seconds.
 
 ---
 
