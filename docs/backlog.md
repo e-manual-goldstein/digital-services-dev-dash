@@ -10,13 +10,12 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~PIP-003~~ | [PIP](tickets/PIP-pipeline-feeds.md) | Pipeline feed admin UI |
+| ~~ENV-004~~ | [ENV](tickets/ENV-environments.md) | Environment details page (SQL copy, BuildNumber/TFS, WIP branch) |
 
 ## Active (recommended order)
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ENV-004 | [ENV](tickets/ENV-environments.md) | Environment details page (SQL copy, BuildNumber/TFS, WIP branch) |
 | ENV-005 | [ENV](tickets/ENV-environments.md) | Deployed applications table on environment details |
 | ENV-006 | [ENV](tickets/ENV-environments.md) | Deployed application packages page (DLL list + versions) |
 | APP-004 | [APP](tickets/APP-applications.md) | ApplicationInstance admin UI |
@@ -36,7 +35,7 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 
 | Epic | Description | Tickets Completed | Tickets Shelved | Total Tickets | Progress |
 |------|-------------|-------------------|-----------------|---------------|----------|
-| [Environments (ENV)](tickets/ENV-environments.md) | Remote API + local tracking + environment details hub | 3 | 0 | 6 | 🟩🟩🟩🟩🟩⬜⬜⬜⬜⬜ 50% |
+| [Environments (ENV)](tickets/ENV-environments.md) | Remote API + local tracking + environment details hub | 4 | 0 | 6 | 🟩🟩🟩🟩🟩🟩🟩⬜⬜⬜ 67% |
 | [Applications (APP)](tickets/APP-applications.md) | Deployable app vs instance | 3 | 0 | 4 | 🟩🟩🟩🟩🟩🟩🟩🟩⬜⬜ 75% |
 | [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Named pipeline feeds (no branch matching v1) | 2 | 1 | 3 | 🟩🟩🟩🟩🟩🟩🟨🟨🟨⬜ 67% |
 | [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 0 | 0 | 5 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |

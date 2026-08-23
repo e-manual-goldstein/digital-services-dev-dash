@@ -1,5 +1,6 @@
-using DigitalDevServices.Services.Environments;
 using DigitalDevServices.Model.Environments;
+using DigitalDevServices.Model.Tfs;
+using DigitalDevServices.Services.Environments;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,6 +14,7 @@ public static class EnvironmentServiceCollectionExtensions
     {
         services.Configure<EnvironmentCacheOptions>(configuration.GetSection(EnvironmentCacheOptions.SectionName));
         services.Configure<RemoteEnvironmentApiOptions>(configuration.GetSection(RemoteEnvironmentApiOptions.SectionName));
+        services.Configure<TfsOptions>(configuration.GetSection(TfsOptions.SectionName));
 
         services.AddMemoryCache();
 

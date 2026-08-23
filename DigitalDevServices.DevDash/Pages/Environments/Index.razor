@@ -55,7 +55,9 @@ else
                 {
                     var isRefreshing = _refreshingRemoteId == environment.RemoteId;
                     <tr>
-                        <td>@environment.Details.Name</td>
+                        <td>
+                            <a href="@($"/environments/{environment.LocalId}")">@environment.Details.Name</a>
+                        </td>
                         <td>@environment.RemoteId</td>
                         <td><code>@environment.Details.SqlServerInstance</code></td>
                         <td>@environment.DateLastUpdated.ToLocalTime().ToString("g")</td>

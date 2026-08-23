@@ -1,0 +1,205 @@
+@page "/environments/{LocalId:guid}"
+@inject IEnvironmentService EnvironmentService
+@inject NotificationService NotificationService
+@inject IJSRuntime JSRuntime
+@inject IOptions<TfsOptions> TfsOptions
+
+<PageTitle>@(_environment?.Details.Name ?? "Environment")</PageTitle>
+
+<div class="mb-3">
+    <a href="/environments" class="text-decoration-none">&larr; Back to environments</a>
+</div>
+
+@if (_isLoading)
+{
+    <p class="text-muted">Loading environment…</p>
+}
+else if (_environment is null)
+{
+    <div class="alert alert-warning" role="alert">
+        Environment not found. It may have been removed or the link is invalid.
+    </div>
+}
+else
+{
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+        <div>
+            <h1 class="mb-1">@_environment.Details.Name</h1>
+            <p class="text-muted mb-0">Remote id @_environment.RemoteId</p>
+        </div>
+        <button type="button"
+                class="btn btn-outline-secondary"
+                disabled="@_isBusy"
+                @onclick="RefreshAsync">
+            @(_isRefreshing ? "Refreshing…" : "Refresh")
+        </button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+    {
+        <div class="alert alert-danger" role="alert">@_errorMessage</div>
+    }
+
+    @if (_environment.IsFromCache)
+    {
+        <p class="text-muted small mb-3">Showing cached data. Use Refresh to fetch the latest from the API.</p>
+    }
+
+    <div class="card">
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Last updated</dt>
+                <dd class="col-sm-9">@_environment.DateLastUpdated.ToLocalTime().ToString("g")</dd>
+
+                <dt class="col-sm-3">SQL Server instance</dt>
+                <dd class="col-sm-9">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <code>@_environment.Details.SqlServerInstance</code>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                disabled="@_isBusy"
+                                @onclick="CopySqlServerInstanceAsync">
+                            Copy
+                        </button>
+                    </div>
+                </dd>
+
+                <dt class="col-sm-3">Build number</dt>
+                <dd class="col-sm-9">
+                    @if (!string.IsNullOrWhiteSpace(_workItemUrl))
+                    {
+                        <a href="@_workItemUrl" target="_blank" rel="noopener noreferrer">@_environment.Details.BuildNumber</a>
+                    }
+                    else if (!string.IsNullOrWhiteSpace(_environment.Details.BuildNumber))
+                    {
+                        @_environment.Details.BuildNumber
+                    }
+                    else
+                    {
+                        <span class="text-muted">—</span>
+                    }
+                </dd>
+
+                <dt class="col-sm-3">WIP branch</dt>
+                <dd class="col-sm-9">
+                    @if (!string.IsNullOrWhiteSpace(_environment.Details.WipBranch))
+                    {
+                        <code>@_environment.Details.WipBranch</code>
+                    }
+                    else
+                    {
+                        <span class="text-muted">—</span>
+                    }
+                </dd>
+            </dl>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Guid LocalId { get; set; }
+
+    private CachedEnvironment? _environment;
+    private string? _workItemUrl;
+    private bool _isLoading = true;
+    private bool _isBusy;
+    private bool _isRefreshing;
+    private string? _errorMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadEnvironmentAsync();
+    }
+
+    private async Task LoadEnvironmentAsync()
+    {
+        _errorMessage = null;
+        _isLoading = _environment is null;
+
+        try
+        {
+            _environment = await EnvironmentService.GetTrackedEnvironmentAsync(LocalId);
+            _workItemUrl = TfsWorkItemLinkBuilder.BuildWorkItemUrl(
+                TfsOptions.Value.WorkItemUrlTemplate,
+                _environment?.Details.BuildNumber);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Could not load environment: {ex.Message}";
+            _environment = null;
+            _workItemUrl = null;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        if (_environment is null)
+        {
+            return;
+        }
+
+        _errorMessage = null;
+        _isBusy = true;
+        _isRefreshing = true;
+
+        try
+        {
+            _environment = await EnvironmentService.RefreshEnvironmentAsync(_environment.RemoteId);
+            _workItemUrl = TfsWorkItemLinkBuilder.BuildWorkItemUrl(
+                TfsOptions.Value.WorkItemUrlTemplate,
+                _environment.Details.BuildNumber);
+
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Environment refreshed",
+                Detail = $"{_environment.Details.Name} updated at {_environment.DateLastUpdated.ToLocalTime():g}",
+                Duration = 4000
+            });
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Could not refresh environment: {ex.Message}";
+        }
+        finally
+        {
+            _isRefreshing = false;
+            _isBusy = false;
+        }
+    }
+
+    private async Task CopySqlServerInstanceAsync()
+    {
+        if (_environment is null || string.IsNullOrWhiteSpace(_environment.Details.SqlServerInstance))
+        {
+            return;
+        }
+
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("devDashClipboard.copyText", _environment.Details.SqlServerInstance);
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Copied",
+                Detail = "SQL Server instance copied to clipboard.",
+                Duration = 3000
+            });
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Copy failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
+    }
+}

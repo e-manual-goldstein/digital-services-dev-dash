@@ -10,4 +10,8 @@ public class RemoteEnvironmentDetails
     public string Name { get; set; } = string.Empty;
 
     public string SqlServerInstance { get; set; } = string.Empty;
+
+    public string? BuildNumber { get; set; }
+
+    public string? WipBranch { get; set; }
 }

@@ -24,7 +24,7 @@
 | [ENV-001](#env-001) | Done | SQLite bootstrap, tracked environment entity, API cache | FND-002 |
 | [ENV-003](#env-003) | Done | Mock remote environment Web API for local testing | ENV-001 |
 | [ENV-002](#env-002) | Done | Environment management UI | ENV-001 |
-| [ENV-004](#env-004) | Todo | Environment details page (SQL copy, BuildNumber/TFS, WIP branch) | ENV-002, ENV-003 |
+| [ENV-004](#env-004) | Done | Environment details page (SQL copy, BuildNumber/TFS, WIP branch) | ENV-002, ENV-003 |
 | [ENV-005](#env-005) | Todo | Deployed applications table on environment details | ENV-004, APP-002 |
 | [ENV-006](#env-006) | Todo | Deployed application packages page (DLL list + versions) | ENV-005, APP-002 |
 
@@ -216,9 +216,9 @@ Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-
 |-------|--------|
 | **ID** | ENV-004 |
 | **Title** | Environment details page (SQL copy, BuildNumber/TFS, WIP branch) |
-| **Status** | Todo |
-| **Description** | Add `BuildNumber` and `WipBranch` to `RemoteEnvironmentDetails` and the ENV-003 mock sample environments (and mock API tests). Add configurable `Tfs:WorkItemUrlTemplate`. New Blazor page `/environments/{localId}` loaded via `GetTrackedEnvironmentAsync`: environment name, remote id, last updated, SQL Server instance with a **Copy** button (clipboard + toast), BuildNumber as a TFS work item hyperlink (new tab) when the template is set, and WIP branch. Refresh on the detail page. On the Environments list, the name becomes a link to details. Unknown id → not-found message. |
-| **Test / demo** | Run mock API + DevDash → **Environments** → click **UAT-01** → details show SQL instance, build number, and WIP branch from the mock. Copy SQL → paste matches. Click BuildNumber → TFS URL opens with that build number substituted (or plain text if template is empty). Refresh updates last-updated. Direct URL with a bogus Guid shows not found. `dotnet test --filter MockRemoteApiTests` still passes and asserts the new fields. |
+| **Status** | Done |
+| **Description** | Extended `RemoteEnvironmentDetails` and mock API samples with `BuildNumber` and `WipBranch`. Added `Tfs:WorkItemUrlTemplate` config and `TfsWorkItemLinkBuilder`. New `/environments/{localId}` detail page: SQL Server instance with clipboard copy + toast, BuildNumber as TFS hyperlink (new tab) when configured, WIP branch, and per-environment Refresh. Environments list links names to details. Unknown local id shows not-found message. Unit tests cover mock API fields and TFS URL building. |
+| **Test / demo** | Run mock API + DevDash → **Environments** → click **UAT-01** → details show SQL instance, build `123456`, WIP branch `feature/123456-customer-portal`. Copy SQL → paste matches. Click BuildNumber → TFS URL opens with build number substituted. Refresh updates last-updated. Bogus Guid in URL shows not found. `dotnet test --filter "MockRemoteApiTests|TfsWorkItemLinkBuilderTests"` → pass. |
 | **Depends on** | ENV-002, ENV-003 |
 
 ### ENV-005
