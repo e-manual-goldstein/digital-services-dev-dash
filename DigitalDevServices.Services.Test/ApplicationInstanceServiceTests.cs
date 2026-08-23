@@ -45,6 +45,24 @@ public sealed class ApplicationInstanceServiceTests
     }
 
     [TestMethod]
+    public async Task UpsertAsync_PersistsHomepageUrl()
+    {
+        await using var fixture = await ApplicationInstanceServiceFixture.CreateAsync();
+        var application = await fixture.DeployableApplicationService.CreateAsync("Customer Portal", isWebApp: true);
+        var environment = await fixture.CreateTrackedEnvironmentAsync(16);
+
+        var created = await fixture.Service.UpsertAsync(new ApplicationInstanceUpsert
+        {
+            DeployableApplicationId = application.Id,
+            EnvironmentId = environment.Id,
+            BuildNumber = "1.2.3",
+            HomepageUrl = "https://uat-01.example/customer-portal"
+        });
+
+        Assert.AreEqual("https://uat-01.example/customer-portal", created.HomepageUrl);
+    }
+
+    [TestMethod]
     public async Task UpsertAsync_UpdatesExistingApplicationEnvironmentSlot()
     {
         await using var fixture = await ApplicationInstanceServiceFixture.CreateAsync();

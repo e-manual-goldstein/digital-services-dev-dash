@@ -11,6 +11,8 @@ public class DeployableApplication
 
     public string? ProjectKey { get; set; }
 
+    public bool IsWebApp { get; set; }
+
     public string? Notes { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }

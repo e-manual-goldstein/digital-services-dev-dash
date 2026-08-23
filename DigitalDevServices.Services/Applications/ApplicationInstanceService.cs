@@ -92,6 +92,7 @@ public sealed class ApplicationInstanceService : IApplicationInstanceService
         existing.DeployedAt = upsert.DeployedAt;
         existing.PhysicalPath = NormalizeOptionalText(upsert.PhysicalPath);
         existing.LogPath = NormalizeOptionalText(upsert.LogPath);
+        existing.HomepageUrl = NormalizeOptionalText(upsert.HomepageUrl);
         existing.SqlServerInstance = NormalizeOptionalText(upsert.SqlServerInstance);
         existing.Notes = NormalizeOptionalText(upsert.Notes);
         existing.UpdatedAt = now;

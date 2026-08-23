@@ -52,6 +52,16 @@
                         <div class="form-text">Optional repo or project identifier.</div>
                     </div>
                     <div class="col-12">
+                        <div class="form-check">
+                            <InputCheckbox id="app-is-web-app"
+                                           class="form-check-input"
+                                           @bind-Value="_formModel.IsWebApp"
+                                           disabled="@_isBusy" />
+                            <label class="form-check-label" for="app-is-web-app">Web application</label>
+                        </div>
+                        <div class="form-text">Enable when this app has a browser homepage in deployed environments.</div>
+                    </div>
+                    <div class="col-12">
                         <label class="form-label" for="app-notes">Notes</label>
                         <InputTextArea id="app-notes"
                                        class="form-control"
@@ -100,6 +110,7 @@ else
             <thead class="table-light">
                 <tr>
                     <th>Name</th>
+                    <th>Type</th>
                     <th>Project key</th>
                     <th>Notes</th>
                     <th>Created</th>
@@ -113,6 +124,16 @@ else
                     var isDeleting = _deletingId == application.Id;
                     <tr>
                         <td>@application.Name</td>
+                        <td>
+                            @if (application.IsWebApp)
+                            {
+                                <span class="badge bg-primary">Web</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
                         <td>
                             @if (string.IsNullOrWhiteSpace(application.ProjectKey))
                             {
@@ -235,6 +256,7 @@ else
         {
             Name = application.Name,
             ProjectKey = application.ProjectKey ?? string.Empty,
+            IsWebApp = application.IsWebApp,
             Notes = application.Notes ?? string.Empty
         };
         _isFormVisible = true;
@@ -262,7 +284,7 @@ else
 
             if (_editingId is null)
             {
-                await ApplicationService.CreateAsync(name, projectKey, notes);
+                await ApplicationService.CreateAsync(name, projectKey, notes, _formModel.IsWebApp);
                 NotificationService.Notify(new NotificationMessage
                 {
                     Severity = NotificationSeverity.Success,
@@ -273,7 +295,7 @@ else
             }
             else
             {
-                await ApplicationService.UpdateAsync(_editingId.Value, name, projectKey, notes);
+                await ApplicationService.UpdateAsync(_editingId.Value, name, projectKey, notes, _formModel.IsWebApp);
                 NotificationService.Notify(new NotificationMessage
                 {
                     Severity = NotificationSeverity.Success,
@@ -350,6 +372,8 @@ else
 
         [StringLength(200, ErrorMessage = "Project key must be 200 characters or fewer.")]
         public string ProjectKey { get; set; } = string.Empty;
+
+        public bool IsWebApp { get; set; }
 
         [StringLength(2000, ErrorMessage = "Notes must be 2000 characters or fewer.")]
         public string Notes { get; set; } = string.Empty;

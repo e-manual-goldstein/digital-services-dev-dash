@@ -1,5 +1,6 @@
 @page "/environments/{LocalId:guid}"
 @inject IEnvironmentService EnvironmentService
+@inject IApplicationInstanceService InstanceService
 @inject NotificationService NotificationService
 @inject IJSRuntime JSRuntime
 @inject IOptions<TfsOptions> TfsOptions
@@ -94,6 +95,72 @@ else
             </dl>
         </div>
     </div>
+
+    <div class="mt-4">
+        <h2 class="h4 mb-3">Deployed applications</h2>
+
+        @if (_instancesLoading)
+        {
+            <p class="text-muted">Loading deployed applications…</p>
+        }
+        else if (_instances.Count == 0)
+        {
+            <div class="alert alert-light border text-center py-4" role="status">
+                <p class="mb-0 text-muted">No applications are deployed in this environment yet.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Application</th>
+                            <th>Homepage</th>
+                            <th style="width: 18rem;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var instance in _instances)
+                        {
+                            <tr>
+                                <td>@instance.DeployableApplication.Name</td>
+                                <td>
+                                    @if (instance.DeployableApplication.IsWebApp
+                                         && !string.IsNullOrWhiteSpace(instance.HomepageUrl))
+                                    {
+                                        <a href="@instance.HomepageUrl"
+                                           target="_blank"
+                                           rel="noopener noreferrer">@instance.HomepageUrl</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        <a class="btn btn-sm btn-outline-secondary"
+                                           href="@($"/logs/{instance.Id}")">
+                                            Logs
+                                        </a>
+                                        <a class="btn btn-sm btn-outline-secondary"
+                                           href="@($"/configuration/{instance.Id}")">
+                                            Configuration
+                                        </a>
+                                        <a class="btn btn-sm btn-outline-secondary"
+                                           href="@($"/environments/{LocalId}/instances/{instance.Id}/packages")">
+                                            Packages
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
 }
 
 @code {
@@ -101,8 +168,10 @@ else
     public Guid LocalId { get; set; }
 
     private CachedEnvironment? _environment;
+    private IReadOnlyList<ApplicationInstance> _instances = [];
     private string? _workItemUrl;
     private bool _isLoading = true;
+    private bool _instancesLoading;
     private bool _isBusy;
     private bool _isRefreshing;
     private string? _errorMessage;
@@ -123,16 +192,45 @@ else
             _workItemUrl = TfsWorkItemLinkBuilder.BuildWorkItemUrl(
                 TfsOptions.Value.WorkItemUrlTemplate,
                 _environment?.Details.BuildNumber);
+
+            if (_environment is not null)
+            {
+                await LoadInstancesAsync();
+            }
+            else
+            {
+                _instances = [];
+            }
         }
         catch (Exception ex)
         {
             _errorMessage = $"Could not load environment: {ex.Message}";
             _environment = null;
             _workItemUrl = null;
+            _instances = [];
         }
         finally
         {
             _isLoading = false;
+        }
+    }
+
+    private async Task LoadInstancesAsync()
+    {
+        _instancesLoading = _instances.Count == 0;
+
+        try
+        {
+            _instances = await InstanceService.GetByEnvironmentIdAsync(LocalId);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Could not load deployed applications: {ex.Message}";
+            _instances = [];
+        }
+        finally
+        {
+            _instancesLoading = false;
         }
     }
 

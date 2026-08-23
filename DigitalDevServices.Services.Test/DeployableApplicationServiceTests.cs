@@ -50,6 +50,29 @@ public sealed class DeployableApplicationServiceTests
     }
 
     [TestMethod]
+    public async Task CreateAsync_PersistsIsWebAppFlag()
+    {
+        await using var fixture = await DeployableApplicationServiceFixture.CreateAsync();
+        var created = await fixture.Service.CreateAsync("Customer Portal", isWebApp: true);
+
+        var loaded = await fixture.Service.GetByIdAsync(created.Id);
+
+        Assert.IsNotNull(loaded);
+        Assert.IsTrue(loaded!.IsWebApp);
+    }
+
+    [TestMethod]
+    public async Task UpdateAsync_ChangesIsWebAppFlag()
+    {
+        await using var fixture = await DeployableApplicationServiceFixture.CreateAsync();
+        var created = await fixture.Service.CreateAsync("Reporting Service");
+
+        var updated = await fixture.Service.UpdateAsync(created.Id, "Reporting Service", isWebApp: true);
+
+        Assert.IsTrue(updated.IsWebApp);
+    }
+
+    [TestMethod]
     public async Task DeleteAsync_RemovesApplication()
     {
         await using var fixture = await DeployableApplicationServiceFixture.CreateAsync();

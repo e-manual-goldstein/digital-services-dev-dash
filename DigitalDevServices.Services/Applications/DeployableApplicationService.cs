@@ -50,6 +50,7 @@ public sealed class DeployableApplicationService : IDeployableApplicationService
         string name,
         string? projectKey = null,
         string? notes = null,
+        bool isWebApp = false,
         CancellationToken cancellationToken = default)
     {
         var normalizedName = NormalizeName(name)
@@ -62,6 +63,7 @@ public sealed class DeployableApplicationService : IDeployableApplicationService
             Id = Guid.NewGuid(),
             Name = normalizedName,
             ProjectKey = NormalizeOptionalText(projectKey),
+            IsWebApp = isWebApp,
             Notes = NormalizeOptionalText(notes),
             CreatedAt = DateTimeOffset.UtcNow
         };
@@ -76,6 +78,7 @@ public sealed class DeployableApplicationService : IDeployableApplicationService
         string name,
         string? projectKey = null,
         string? notes = null,
+        bool isWebApp = false,
         CancellationToken cancellationToken = default)
     {
         var normalizedName = NormalizeName(name)
@@ -90,6 +93,7 @@ public sealed class DeployableApplicationService : IDeployableApplicationService
 
         application.Name = normalizedName;
         application.ProjectKey = NormalizeOptionalText(projectKey);
+        application.IsWebApp = isWebApp;
         application.Notes = NormalizeOptionalText(notes);
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return application;

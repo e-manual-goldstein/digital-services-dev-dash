@@ -1,3 +1,4 @@
+using System.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,6 +27,8 @@ public static class DevDashDataServiceCollectionExtensions
         EnsurePipelineFeedsTableExists(db);
         EnsureDeployableApplicationsTableExists(db);
         EnsureApplicationInstancesTableExists(db);
+        EnsureDeployableApplicationsIsWebAppColumnExists(db);
+        EnsureApplicationInstancesHomepageUrlColumnExists(db);
     }
 
     private static void EnsurePipelineFeedsTableExists(DevDashDbContext db)
@@ -51,6 +54,7 @@ public static class DevDashDataServiceCollectionExtensions
                 "Id" TEXT NOT NULL CONSTRAINT "PK_DeployableApplications" PRIMARY KEY,
                 "Name" TEXT NOT NULL,
                 "ProjectKey" TEXT NULL,
+                "IsWebApp" INTEGER NOT NULL DEFAULT 0,
                 "Notes" TEXT NULL,
                 "CreatedAt" TEXT NOT NULL
             );
@@ -74,6 +78,7 @@ public static class DevDashDataServiceCollectionExtensions
                 "DeployedAt" TEXT NULL,
                 "PhysicalPath" TEXT NULL,
                 "LogPath" TEXT NULL,
+                "HomepageUrl" TEXT NULL,
                 "SqlServerInstance" TEXT NULL,
                 "Notes" TEXT NULL,
                 "CreatedAt" TEXT NOT NULL,
@@ -88,5 +93,50 @@ public static class DevDashDataServiceCollectionExtensions
             CREATE UNIQUE INDEX IF NOT EXISTS "IX_ApplicationInstances_DeployableApplicationId_EnvironmentId"
             ON "ApplicationInstances" ("DeployableApplicationId", "EnvironmentId");
             """);
+    }
+
+    private static void EnsureDeployableApplicationsIsWebAppColumnExists(DevDashDbContext db)
+    {
+        EnsureColumnExists(
+            db,
+            "DeployableApplications",
+            "IsWebApp",
+            "ALTER TABLE \"DeployableApplications\" ADD COLUMN \"IsWebApp\" INTEGER NOT NULL DEFAULT 0");
+    }
+
+    private static void EnsureApplicationInstancesHomepageUrlColumnExists(DevDashDbContext db)
+    {
+        EnsureColumnExists(
+            db,
+            "ApplicationInstances",
+            "HomepageUrl",
+            "ALTER TABLE \"ApplicationInstances\" ADD COLUMN \"HomepageUrl\" TEXT NULL");
+    }
+
+    private static void EnsureColumnExists(
+        DevDashDbContext db,
+        string tableName,
+        string columnName,
+        string addColumnSql)
+    {
+        var connection = db.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+        {
+            connection.Open();
+        }
+
+        using var command = connection.CreateCommand();
+        command.CommandText = $"PRAGMA table_info(\"{tableName}\")";
+
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            if (string.Equals(reader.GetString(1), columnName, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+        }
+
+        db.Database.ExecuteSqlRaw(addColumnSql);
     }
 }

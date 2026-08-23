@@ -46,6 +46,7 @@ public class DevDashDbContext : DbContext
             entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
             entity.HasIndex(e => e.Name).IsUnique();
             entity.Property(e => e.ProjectKey).HasMaxLength(200);
+            entity.Property(e => e.IsWebApp).IsRequired();
             entity.Property(e => e.Notes).HasMaxLength(2000);
             entity.Property(e => e.CreatedAt).IsRequired();
         });
@@ -58,6 +59,7 @@ public class DevDashDbContext : DbContext
             entity.Property(e => e.SourceBranch).HasMaxLength(500);
             entity.Property(e => e.PhysicalPath).HasMaxLength(2000);
             entity.Property(e => e.LogPath).HasMaxLength(2000);
+            entity.Property(e => e.HomepageUrl).HasMaxLength(2000);
             entity.Property(e => e.SqlServerInstance).HasMaxLength(500);
             entity.Property(e => e.Notes).HasMaxLength(2000);
             entity.Property(e => e.CreatedAt).IsRequired();

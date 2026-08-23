@@ -23,6 +23,8 @@ public class ApplicationInstance
 
     public string? LogPath { get; set; }
 
+    public string? HomepageUrl { get; set; }
+
     public string? SqlServerInstance { get; set; }
 
     public string? Notes { get; set; }

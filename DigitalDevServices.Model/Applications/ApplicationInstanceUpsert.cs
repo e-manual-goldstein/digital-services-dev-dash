@@ -18,6 +18,8 @@ public class ApplicationInstanceUpsert
 
     public string? LogPath { get; init; }
 
+    public string? HomepageUrl { get; init; }
+
     public string? SqlServerInstance { get; init; }
 
     public string? Notes { get; init; }

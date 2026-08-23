@@ -14,6 +14,7 @@ public interface IDeployableApplicationService
         string name,
         string? projectKey = null,
         string? notes = null,
+        bool isWebApp = false,
         CancellationToken cancellationToken = default);
 
     Task<DeployableApplication> UpdateAsync(
@@ -21,6 +22,7 @@ public interface IDeployableApplicationService
         string name,
         string? projectKey = null,
         string? notes = null,
+        bool isWebApp = false,
         CancellationToken cancellationToken = default);
 
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);

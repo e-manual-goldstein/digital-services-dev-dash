@@ -25,7 +25,7 @@
 | [ENV-003](#env-003) | Done | Mock remote environment Web API for local testing | ENV-001 |
 | [ENV-002](#env-002) | Done | Environment management UI | ENV-001 |
 | [ENV-004](#env-004) | Done | Environment details page (SQL copy, BuildNumber/TFS, WIP branch) | ENV-002, ENV-003 |
-| [ENV-005](#env-005) | Todo | Deployed applications table on environment details | ENV-004, APP-002 |
+| [ENV-005](#env-005) | Done | Deployed applications table on environment details | ENV-004, APP-002 |
 | [ENV-006](#env-006) | Todo | Deployed application packages page (DLL list + versions) | ENV-005, APP-002 |
 
 ---
@@ -227,9 +227,9 @@ Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-
 |-------|--------|
 | **ID** | ENV-005 |
 | **Title** | Deployed applications table on environment details |
-| **Status** | Todo |
-| **Description** | On the environment details page, list `ApplicationInstance` rows for that environment. Add `IsWebApp` to `DeployableApplication` (checkbox on `/applications`) and `HomepageUrl` to `ApplicationInstance` (schema upgrade; APP-004 collects it on the form). Table columns: application name; homepage hyperlink when `IsWebApp` and `HomepageUrl` are set (new tab); **Logs** (`/logs/{instanceId}`), **Configuration** (`/configuration/{instanceId}`), and **Packages** (`/environments/{localId}/instances/{instanceId}/packages`). Empty state when the environment has no deployments. Logs/config pages land in LOG-003 / CFG-003; packages page in ENV-006 — still wire the buttons now. |
-| **Test / demo** | Seed or (once APP-004 exists) register two apps in UAT-01, one web with a homepage URL and one not. Details table shows both; only the web app has a homepage link. Logs / Configuration / Packages buttons navigate to the documented routes. Empty environment shows an empty-state message. `dotnet test` covers the new `IsWebApp` / `HomepageUrl` persistence. |
+| **Status** | Done |
+| **Description** | Added `IsWebApp` to `DeployableApplication` (checkbox + Web badge on `/applications`) and `HomepageUrl` to `ApplicationInstance` (schema upgrade; APP-004 will collect it on the deployment form). Environment details page lists deployed applications for that environment: application name, homepage link when the app is a web app and a URL is set, and **Logs** (`/logs/{instanceId}`), **Configuration** (`/configuration/{instanceId}`), and **Packages** buttons. Empty state when no deployments exist. Unit tests cover `IsWebApp` and `HomepageUrl` persistence. |
+| **Test / demo** | Register a web app (`IsWebApp`) and a non-web app via service/tests; upsert instances in UAT-01 with a homepage URL on the web app only. Open UAT-01 details → both apps appear; only the web app shows a homepage link. Logs / Configuration / Packages buttons navigate to the documented routes. Environment with no deployments shows empty-state message. `dotnet test --filter "DeployableApplicationServiceTests|ApplicationInstanceServiceTests"` → pass. |
 | **Depends on** | ENV-004, APP-002 |
 
 ### ENV-006
