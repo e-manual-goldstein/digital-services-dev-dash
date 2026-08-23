@@ -1,0 +1,271 @@
+@page "/configuration/{InstanceId:guid}"
+@inject IEnvironmentService EnvironmentService
+@inject IApplicationInstanceService InstanceService
+@inject IConfigurationSettingService ConfigurationSettingService
+@inject IConfigurationImportService ConfigurationImportService
+@inject NotificationService NotificationService
+
+<PageTitle>@_pageTitle</PageTitle>
+
+<div class="mb-3">
+    @if (_environment is not null)
+    {
+        <a href="@($"/environments/{_environment.LocalId}")" class="text-decoration-none">&larr; Back to @_environment.Details.Name</a>
+    }
+    else
+    {
+        <a href="/configuration" class="text-decoration-none">&larr; Back to configuration</a>
+    }
+</div>
+
+@if (_isLoading)
+{
+    <p class="text-muted">Loading settings…</p>
+}
+else if (_instance is null)
+{
+    <div class="alert alert-warning" role="alert">
+        Application instance not found.
+    </div>
+}
+else
+{
+    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+        <div>
+            <h1 class="mb-1">Configuration</h1>
+            <p class="text-muted mb-0">
+                @(_environment?.Details.Name ?? "Environment") &middot; @_instance.DeployableApplication.Name
+            </p>
+            @if (!string.IsNullOrWhiteSpace(_instance.PhysicalPath))
+            {
+                <p class="text-muted small mb-0 mt-1">
+                    Physical path: <code>@_instance.PhysicalPath</code>
+                </p>
+            }
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button"
+                    class="btn btn-outline-secondary"
+                    disabled="@_isBusy"
+                    @onclick="RefreshAsync">
+                @(_isRefreshing ? "Refreshing…" : "Refresh settings")
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+    {
+        <div class="alert alert-danger" role="alert">@_errorMessage</div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(_refreshMessage))
+    {
+        <div class="alert alert-warning" role="alert">@_refreshMessage</div>
+    }
+
+  <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-lg-8">
+                    <label class="form-label" for="settings-search">Search settings</label>
+                    <InputText id="settings-search"
+                               class="form-control"
+                               @bind-Value="_searchText"
+                               placeholder="Filter by key or value" />
+                </div>
+                <div class="col-12 col-lg-4">
+                    <div class="form-check mt-lg-4">
+                        <InputCheckbox id="reveal-secrets"
+                                       class="form-check-input"
+                                       @bind-Value="_revealSecrets" />
+                        <label class="form-check-label" for="reveal-secrets">Show masked values</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (_settings.Count == 0)
+    {
+        <div class="alert alert-light border text-center py-4" role="status">
+            <p class="mb-2 text-muted">No settings have been captured for this instance yet.</p>
+            <p class="mb-0 text-muted small">
+                Set a physical path on the deployment, then use <strong>Refresh settings</strong> to import from <code>appsettings*.json</code>.
+            </p>
+        </div>
+    }
+    else if (FilteredSettings.Count == 0)
+    {
+        <div class="alert alert-light border" role="status">
+            No settings match the current search.
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+            <p class="text-muted small mb-0">
+                Showing @FilteredSettings.Count of @_settings.Count settings
+                @if (_lastCapturedAt is not null)
+                {
+                    <span>&middot; Last captured @_lastCapturedAt.Value.ToLocalTime().ToString("g")</span>
+                }
+            </p>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Key</th>
+                        <th>Value</th>
+                        <th>Source</th>
+                        <th>Captured</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var setting in FilteredSettings)
+                    {
+                        var isMasked = ConfigurationSecretMasker.ShouldMaskKey(setting.Key) && !_revealSecrets;
+                        <tr>
+                            <td><code>@setting.Key</code></td>
+                            <td>
+                                @if (isMasked)
+                                {
+                                    <span class="text-muted font-monospace">@ConfigurationSecretMasker.GetDisplayValue(setting.Key, setting.Value, _revealSecrets)</span>
+                                    <span class="badge bg-secondary ms-1">masked</span>
+                                }
+                                else
+                                {
+                                    <code class="text-break">@setting.Value</code>
+                                }
+                            </td>
+                            <td>
+                                @if (string.IsNullOrWhiteSpace(setting.Source))
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                                else
+                                {
+                                    @setting.Source
+                                }
+                            </td>
+                            <td class="text-nowrap">@setting.CapturedAt.ToLocalTime().ToString("g")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+@code {
+    [Parameter]
+    public Guid InstanceId { get; set; }
+
+    private CachedEnvironment? _environment;
+    private ApplicationInstance? _instance;
+    private IReadOnlyList<ConfigurationSetting> _settings = [];
+    private string _searchText = string.Empty;
+    private bool _revealSecrets;
+    private bool _isLoading = true;
+    private bool _isBusy;
+    private bool _isRefreshing;
+    private string? _errorMessage;
+    private string? _refreshMessage;
+    private string _pageTitle = "Configuration";
+
+    private DateTimeOffset? _lastCapturedAt =>
+        _settings.Count == 0 ? null : _settings.Max(setting => setting.CapturedAt);
+
+    private IReadOnlyList<ConfigurationSetting> FilteredSettings
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_searchText))
+            {
+                return _settings;
+            }
+
+            var term = _searchText.Trim();
+            return _settings
+                .Where(setting =>
+                    setting.Key.Contains(term, StringComparison.OrdinalIgnoreCase)
+                    || setting.Value.Contains(term, StringComparison.OrdinalIgnoreCase)
+                    || (setting.Source?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false))
+                .ToList();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+        _refreshMessage = null;
+        _environment = null;
+        _instance = null;
+        _settings = [];
+
+        try
+        {
+            _instance = await InstanceService.GetByIdAsync(InstanceId);
+            if (_instance is null)
+            {
+                _pageTitle = "Configuration";
+                return;
+            }
+
+            _environment = await EnvironmentService.GetTrackedEnvironmentAsync(_instance.EnvironmentId);
+            _pageTitle = $"Configuration — {_instance.DeployableApplication.Name}";
+            _settings = await ConfigurationSettingService.GetByApplicationInstanceIdAsync(InstanceId);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Could not load settings: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        _errorMessage = null;
+        _refreshMessage = null;
+        _isBusy = true;
+        _isRefreshing = true;
+
+        try
+        {
+            var result = await ConfigurationImportService.RefreshAsync(InstanceId);
+            if (!result.IsSuccess)
+            {
+                _refreshMessage = result.ErrorMessage;
+                return;
+            }
+
+            _settings = result.Settings;
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Settings refreshed",
+                Detail = $"{result.Settings.Count} setting(s) imported.",
+                Duration = 4000
+            });
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isRefreshing = false;
+            _isBusy = false;
+        }
+    }
+}

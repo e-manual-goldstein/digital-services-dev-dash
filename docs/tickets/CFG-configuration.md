@@ -21,7 +21,7 @@
 |----|--------|-------|------------|
 | [CFG-001](#cfg-001) | Done | Configuration setting model and storage | APP-002 |
 | [CFG-002](#cfg-002) | Done | Import settings from deployed application locations | CFG-001, APP-004 |
-| [CFG-003](#cfg-003) | Todo | Settings browser UI (view all settings for an instance) | CFG-002, ENV-005 |
+| [CFG-003](#cfg-003) | Done | Settings browser UI (view all settings for an instance) | CFG-002, ENV-005 |
 | [CFG-004](#cfg-004) | Todo | Compare setting by name across apps in one environment | CFG-002, ENV-002 |
 | [CFG-005](#cfg-005) | Todo | Compare setting by name for one app across environments | CFG-002, APP-004 |
 
@@ -100,9 +100,9 @@ Uniqueness: one row per (`ApplicationInstanceId`, `Key`) — refresh replaces va
 |-------|--------|
 | **ID** | CFG-003 |
 | **Title** | Settings browser UI (view all settings for an instance) |
-| **Status** | Todo |
-| **Description** | Blazor page at `/configuration/{instanceId}` (deep link from environment details Configuration button) and with pickers: environment → application instance → searchable table of all settings. Refresh button. Secret masking. |
-| **Test / demo** | From UAT-01 details, click **Configuration** on an instance → see settings → refresh → updated values. Also reachable from the Configuration sidebar. |
+| **Status** | Done |
+| **Description** | Blazor **Configuration** section: `/configuration` with environment → application instance pickers; `/configuration/{instanceId}` browse view (deep link from environment details **Configuration** button) with searchable settings table, **Refresh settings** (imports from `PhysicalPath`), secret masking for keys containing Secret/Password/Key (toggle to reveal), source file and captured timestamp columns. Nav and home card updated. |
+| **Test / demo** | Environment details → **Configuration** on an instance → settings table. Set `PhysicalPath` to `samples/config` → **Refresh settings** → keys appear. Sidebar **Configuration** → pick environment and app → **Browse**. Masked values for keys like `Api:ClientSecret`. |
 | **Depends on** | CFG-002, ENV-005 |
 
 ### CFG-004
