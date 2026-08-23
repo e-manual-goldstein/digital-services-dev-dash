@@ -26,7 +26,7 @@
 | [ENV-002](#env-002) | Done | Environment management UI | ENV-001 |
 | [ENV-004](#env-004) | Done | Environment details page (SQL copy, BuildNumber/TFS, WIP branch) | ENV-002, ENV-003 |
 | [ENV-005](#env-005) | Done | Deployed applications table on environment details | ENV-004, APP-002 |
-| [ENV-006](#env-006) | Todo | Deployed application packages page (DLL list + versions) | ENV-005, APP-002 |
+| [ENV-006](#env-006) | Done | Deployed application packages page (DLL list + versions) | ENV-005, APP-002 |
 
 ---
 
@@ -238,7 +238,7 @@ Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-
 |-------|--------|
 | **ID** | ENV-006 |
 | **Title** | Deployed application packages page (DLL list + versions) |
-| **Status** | Todo |
-| **Description** | New page `/environments/{localId}/instances/{instanceId}/packages` reached from the ENV-005 **Packages** button. Service scans `ApplicationInstance.PhysicalPath` for `*.dll` (recursive) and returns file name, file version, and assembly version. Table on the page; back link to environment details. Clear errors when path is missing, the folder does not exist, or files cannot be read. Not a NuGet inventory. |
-| **Test / demo** | Point an instance `PhysicalPath` at a folder that contains at least one DLL (copy the test assembly into a temp directory in unit tests). Open Packages from environment details → DLL name and versions appear. Missing path / missing folder → readable error, not a crash. `dotnet test --filter` for the new package-scan tests → pass. |
+| **Status** | Done |
+| **Description** | Added `IDeployedPackageService` to recursively scan `ApplicationInstance.PhysicalPath` for `*.dll` files and return file name, file version, and assembly version. New page `/environments/{localId}/instances/{instanceId}/packages` with a packages table, back link to environment details, and clear messages for missing instance, missing path, missing folder, or unreadable files. Unit tests cover successful scan, missing path, missing folder, and unknown instance. |
+| **Test / demo** | Point an instance `PhysicalPath` at a folder containing DLLs → open **Packages** from environment details → file names and versions appear. Missing path or folder → readable warning, no crash. `dotnet test --filter DeployedPackageServiceTests` → pass. |
 | **Depends on** | ENV-005, APP-002 |

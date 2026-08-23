@@ -22,7 +22,7 @@
 | [APP-001](#app-001) | Done | DeployableApplication entity and persistence | ENV-001 |
 | [APP-002](#app-002) | Done | ApplicationInstance entity and persistence | APP-001, ENV-001, PIP-001 |
 | [APP-003](#app-003) | Done | DeployableApplication admin UI | APP-001 |
-| [APP-004](#app-004) | Todo | ApplicationInstance admin UI | APP-002, ENV-004, ENV-005 |
+| [APP-004](#app-004) | Done | ApplicationInstance admin UI | APP-002, ENV-004, ENV-005 |
 
 ---
 
@@ -135,7 +135,7 @@ Uniqueness (v1 suggestion): one **ApplicationInstance** per (`DeployableApplicat
 |-------|--------|
 | **ID** | APP-004 |
 | **Title** | ApplicationInstance admin UI |
-| **Status** | Todo |
-| **Description** | Blazor UI to register/edit deployments from the environment details page (environment pre-selected) and/or a standalone **Deployments** page: pick deployable app, enter build number, pipeline feed, branch, deploy date, physical path, log path, and homepage URL (when the app is a web app). New rows appear in the ENV-005 table. |
-| **Test / demo** | From UAT-01 details, add a web app deployment with build number, paths, and homepage URL → row appears on the environment table with a working homepage link. Non-web app has no homepage link. |
+| **Status** | Done |
+| **Description** | Added add/edit deployment UI on the environment details page (`/environments/{localId}`): **Add deployment** opens a form with application picker (apps not yet deployed in this environment), build number, pipeline feed, source branch, deployed date, physical path, log path, homepage URL (when the app is a web app), SQL Server override, and notes. **Edit** on each row updates the existing slot. Saved deployments appear immediately in the deployed applications table with build number, homepage link, and action buttons. |
+| **Test / demo** | **Applications** → register a web app and a non-web app → **Environments** → **UAT-01** → **Add deployment** → fill form with build number, paths, and homepage URL for the web app → row appears with homepage link. Edit updates values. Non-web app has no homepage field or link. |
 | **Depends on** | APP-002, ENV-004, ENV-005 |

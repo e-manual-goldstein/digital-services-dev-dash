@@ -1,6 +1,8 @@
 @page "/environments/{LocalId:guid}"
 @inject IEnvironmentService EnvironmentService
 @inject IApplicationInstanceService InstanceService
+@inject IDeployableApplicationService DeployableApplicationService
+@inject IPipelineFeedService PipelineFeedService
 @inject NotificationService NotificationService
 @inject IJSRuntime JSRuntime
 @inject IOptions<TfsOptions> TfsOptions
@@ -97,16 +99,157 @@ else
     </div>
 
     <div class="mt-4">
-        <h2 class="h4 mb-3">Deployed applications</h2>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+            <h2 class="h4 mb-0">Deployed applications</h2>
+            @if (!_isDeploymentFormVisible && _deployableApplications.Count > 0)
+            {
+                <button type="button"
+                        class="btn btn-primary"
+                        disabled="@(_isBusy || !CanAddDeployment)"
+                        title="@(CanAddDeployment ? null : "All deployable applications are already registered in this environment.")"
+                        @onclick="ShowCreateDeploymentForm">
+                    Add deployment
+                </button>
+            }
+        </div>
 
-        @if (_instancesLoading)
+        @if (_isDeploymentFormVisible)
+        {
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h3 class="h5 mb-3">@(_editingInstanceId is null ? "Add deployment" : "Edit deployment")</h3>
+                    <EditForm Model="_deploymentForm" OnValidSubmit="SaveDeploymentAsync">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger mb-3" />
+
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="deployment-app">Application</label>
+                                <InputSelect id="deployment-app"
+                                             class="form-select"
+                                             @bind-Value="_deploymentForm.DeployableApplicationId"
+                                             disabled="@(_isBusy || _editingInstanceId is not null)">
+                                    <option value="">Select an application…</option>
+                                    @foreach (var application in GetAvailableApplicationsForForm())
+                                    {
+                                        <option value="@application.Id">@application.Name</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="deployment-build">Build number</label>
+                                <InputText id="deployment-build"
+                                           class="form-control"
+                                           @bind-Value="_deploymentForm.BuildNumber"
+                                           disabled="@_isBusy" />
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="deployment-feed">Pipeline feed</label>
+                                <InputSelect id="deployment-feed"
+                                             class="form-select"
+                                             @bind-Value="_deploymentForm.PipelineFeedId"
+                                             disabled="@_isBusy">
+                                    <option value="">(None)</option>
+                                    @foreach (var feed in _pipelineFeeds)
+                                    {
+                                        <option value="@feed.Id">@feed.Name</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="deployment-branch">Source branch</label>
+                                <InputText id="deployment-branch"
+                                           class="form-control"
+                                           @bind-Value="_deploymentForm.SourceBranch"
+                                           disabled="@_isBusy" />
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="deployment-deployed-at">Deployed at</label>
+                                <InputDate id="deployment-deployed-at"
+                                           class="form-control"
+                                           @bind-Value="_deploymentForm.DeployedAt"
+                                           disabled="@_isBusy" />
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="deployment-sql">SQL Server instance override</label>
+                                <InputText id="deployment-sql"
+                                           class="form-control"
+                                           @bind-Value="_deploymentForm.SqlServerInstance"
+                                           disabled="@_isBusy" />
+                                <div class="form-text">Optional — only if this app uses a different instance than the environment.</div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="deployment-path">Physical path</label>
+                                <InputText id="deployment-path"
+                                           class="form-control"
+                                           @bind-Value="_deploymentForm.PhysicalPath"
+                                           disabled="@_isBusy" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="deployment-log-path">Log path</label>
+                                <InputText id="deployment-log-path"
+                                           class="form-control"
+                                           @bind-Value="_deploymentForm.LogPath"
+                                           disabled="@_isBusy" />
+                            </div>
+                            @if (IsSelectedAppWebApp)
+                            {
+                                <div class="col-12">
+                                    <label class="form-label" for="deployment-homepage">Homepage URL</label>
+                                    <InputText id="deployment-homepage"
+                                               class="form-control"
+                                               @bind-Value="_deploymentForm.HomepageUrl"
+                                               disabled="@_isBusy" />
+                                </div>
+                            }
+                            <div class="col-12">
+                                <label class="form-label" for="deployment-notes">Notes</label>
+                                <InputTextArea id="deployment-notes"
+                                               class="form-control"
+                                               rows="2"
+                                               @bind-Value="_deploymentForm.Notes"
+                                               disabled="@_isBusy" />
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary" disabled="@_isBusy">
+                                @(_isSavingDeployment ? "Saving…" : "Save deployment")
+                            </button>
+                            <button type="button"
+                                    class="btn btn-outline-secondary"
+                                    disabled="@_isBusy"
+                                    @onclick="CancelDeploymentForm">
+                                Cancel
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        }
+
+        @if (_deployableApplications.Count == 0)
+        {
+            <div class="alert alert-light border" role="status">
+                <p class="mb-0 text-muted">
+                    Register a deployable application on the <a href="/applications">Applications</a> page before adding deployments.
+                </p>
+            </div>
+        }
+        else if (_instancesLoading)
         {
             <p class="text-muted">Loading deployed applications…</p>
         }
         else if (_instances.Count == 0)
         {
             <div class="alert alert-light border text-center py-4" role="status">
-                <p class="mb-0 text-muted">No applications are deployed in this environment yet.</p>
+                <p class="mb-3 text-muted">No applications are deployed in this environment yet.</p>
+                @if (!_isDeploymentFormVisible && CanAddDeployment)
+                {
+                    <button type="button" class="btn btn-primary" @onclick="ShowCreateDeploymentForm">
+                        Add your first deployment
+                    </button>
+                }
             </div>
         }
         else
@@ -116,8 +259,9 @@ else
                     <thead class="table-light">
                         <tr>
                             <th>Application</th>
+                            <th>Build</th>
                             <th>Homepage</th>
-                            <th style="width: 18rem;">Actions</th>
+                            <th style="width: 22rem;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -125,6 +269,7 @@ else
                         {
                             <tr>
                                 <td>@instance.DeployableApplication.Name</td>
+                                <td><code>@instance.BuildNumber</code></td>
                                 <td>
                                     @if (instance.DeployableApplication.IsWebApp
                                          && !string.IsNullOrWhiteSpace(instance.HomepageUrl))
@@ -140,6 +285,12 @@ else
                                 </td>
                                 <td>
                                     <div class="d-flex flex-wrap gap-1">
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-secondary"
+                                                disabled="@_isBusy"
+                                                @onclick="() => ShowEditDeploymentForm(instance)">
+                                            Edit
+                                        </button>
                                         <a class="btn btn-sm btn-outline-secondary"
                                            href="@($"/logs/{instance.Id}")">
                                             Logs
@@ -169,12 +320,24 @@ else
 
     private CachedEnvironment? _environment;
     private IReadOnlyList<ApplicationInstance> _instances = [];
+    private IReadOnlyList<DeployableApplication> _deployableApplications = [];
+    private IReadOnlyList<PipelineFeed> _pipelineFeeds = [];
     private string? _workItemUrl;
     private bool _isLoading = true;
     private bool _instancesLoading;
     private bool _isBusy;
     private bool _isRefreshing;
+    private bool _isDeploymentFormVisible;
+    private bool _isSavingDeployment;
+    private Guid? _editingInstanceId;
     private string? _errorMessage;
+    private DeploymentFormModel _deploymentForm = new();
+
+    private bool CanAddDeployment =>
+        _deployableApplications.Any(app => !_instances.Any(instance => instance.DeployableApplicationId == app.Id));
+
+    private bool IsSelectedAppWebApp =>
+        _deployableApplications.FirstOrDefault(app => app.Id == _deploymentForm.DeployableApplicationId)?.IsWebApp == true;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -195,11 +358,13 @@ else
 
             if (_environment is not null)
             {
-                await LoadInstancesAsync();
+                await LoadDeploymentDataAsync();
             }
             else
             {
                 _instances = [];
+                _deployableApplications = [];
+                _pipelineFeeds = [];
             }
         }
         catch (Exception ex)
@@ -232,6 +397,167 @@ else
         {
             _instancesLoading = false;
         }
+    }
+
+    private async Task LoadDeploymentDataAsync()
+    {
+        _instancesLoading = _instances.Count == 0;
+
+        try
+        {
+            _deployableApplications = await DeployableApplicationService.GetAllAsync();
+            _pipelineFeeds = await PipelineFeedService.GetAllAsync();
+            await LoadInstancesAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Could not load deployment data: {ex.Message}";
+            _instances = [];
+            _deployableApplications = [];
+            _pipelineFeeds = [];
+            _instancesLoading = false;
+        }
+    }
+
+    private IEnumerable<DeployableApplication> GetAvailableApplicationsForForm()
+    {
+        if (_editingInstanceId is not null)
+        {
+            var editing = _instances.First(instance => instance.Id == _editingInstanceId);
+            return _deployableApplications.Where(app => app.Id == editing.DeployableApplicationId);
+        }
+
+        var deployedAppIds = _instances.Select(instance => instance.DeployableApplicationId).ToHashSet();
+        return _deployableApplications.Where(app => !deployedAppIds.Contains(app.Id));
+    }
+
+    private void ShowCreateDeploymentForm()
+    {
+        _errorMessage = null;
+        _editingInstanceId = null;
+        _deploymentForm = new DeploymentFormModel();
+        _isDeploymentFormVisible = true;
+    }
+
+    private void ShowEditDeploymentForm(ApplicationInstance instance)
+    {
+        _errorMessage = null;
+        _editingInstanceId = instance.Id;
+        _deploymentForm = new DeploymentFormModel
+        {
+            DeployableApplicationId = instance.DeployableApplicationId,
+            BuildNumber = instance.BuildNumber,
+            PipelineFeedId = instance.PipelineFeedId,
+            SourceBranch = instance.SourceBranch ?? string.Empty,
+            DeployedAt = instance.DeployedAt?.LocalDateTime.Date,
+            PhysicalPath = instance.PhysicalPath ?? string.Empty,
+            LogPath = instance.LogPath ?? string.Empty,
+            HomepageUrl = instance.HomepageUrl ?? string.Empty,
+            SqlServerInstance = instance.SqlServerInstance ?? string.Empty,
+            Notes = instance.Notes ?? string.Empty
+        };
+        _isDeploymentFormVisible = true;
+    }
+
+    private void CancelDeploymentForm()
+    {
+        _isDeploymentFormVisible = false;
+        _editingInstanceId = null;
+        _deploymentForm = new DeploymentFormModel();
+    }
+
+    private async Task SaveDeploymentAsync()
+    {
+        if (_environment is null || _deploymentForm.DeployableApplicationId == Guid.Empty)
+        {
+            _errorMessage = "Select a deployable application.";
+            return;
+        }
+
+        _errorMessage = null;
+        _isBusy = true;
+        _isSavingDeployment = true;
+
+        try
+        {
+            var upsert = new ApplicationInstanceUpsert
+            {
+                DeployableApplicationId = _deploymentForm.DeployableApplicationId,
+                EnvironmentId = LocalId,
+                BuildNumber = _deploymentForm.BuildNumber.Trim(),
+                PipelineFeedId = _deploymentForm.PipelineFeedId,
+                SourceBranch = NormalizeOptional(_deploymentForm.SourceBranch),
+                DeployedAt = _deploymentForm.DeployedAt.HasValue
+                    ? new DateTimeOffset(_deploymentForm.DeployedAt.Value, TimeZoneInfo.Local.GetUtcOffset(_deploymentForm.DeployedAt.Value))
+                    : null,
+                PhysicalPath = NormalizeOptional(_deploymentForm.PhysicalPath),
+                LogPath = NormalizeOptional(_deploymentForm.LogPath),
+                HomepageUrl = IsSelectedAppWebApp ? NormalizeOptional(_deploymentForm.HomepageUrl) : null,
+                SqlServerInstance = NormalizeOptional(_deploymentForm.SqlServerInstance),
+                Notes = NormalizeOptional(_deploymentForm.Notes)
+            };
+
+            var saved = await InstanceService.UpsertAsync(upsert);
+            var appName = _deployableApplications.First(app => app.Id == saved.DeployableApplicationId).Name;
+
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = _editingInstanceId is null ? "Deployment added" : "Deployment updated",
+                Detail = $"{appName} saved for {_environment.Details.Name}.",
+                Duration = 4000
+            });
+
+            CancelDeploymentForm();
+            await LoadDeploymentDataAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSavingDeployment = false;
+            _isBusy = false;
+        }
+    }
+
+    private static string? NormalizeOptional(string value)
+    {
+        var trimmed = value.Trim();
+        return trimmed.Length == 0 ? null : trimmed;
+    }
+
+    private sealed class DeploymentFormModel
+    {
+        [Required(ErrorMessage = "Select an application.")]
+        public Guid DeployableApplicationId { get; set; }
+
+        [Required(ErrorMessage = "Build number is required.")]
+        [StringLength(100, ErrorMessage = "Build number must be 100 characters or fewer.")]
+        public string BuildNumber { get; set; } = string.Empty;
+
+        public Guid? PipelineFeedId { get; set; }
+
+        [StringLength(500, ErrorMessage = "Source branch must be 500 characters or fewer.")]
+        public string SourceBranch { get; set; } = string.Empty;
+
+        public DateTime? DeployedAt { get; set; }
+
+        [StringLength(2000, ErrorMessage = "Physical path must be 2000 characters or fewer.")]
+        public string PhysicalPath { get; set; } = string.Empty;
+
+        [StringLength(2000, ErrorMessage = "Log path must be 2000 characters or fewer.")]
+        public string LogPath { get; set; } = string.Empty;
+
+        [StringLength(2000, ErrorMessage = "Homepage URL must be 2000 characters or fewer.")]
+        public string HomepageUrl { get; set; } = string.Empty;
+
+        [StringLength(500, ErrorMessage = "SQL Server instance must be 500 characters or fewer.")]
+        public string SqlServerInstance { get; set; } = string.Empty;
+
+        [StringLength(2000, ErrorMessage = "Notes must be 2000 characters or fewer.")]
+        public string Notes { get; set; } = string.Empty;
     }
 
     private async Task RefreshAsync()
