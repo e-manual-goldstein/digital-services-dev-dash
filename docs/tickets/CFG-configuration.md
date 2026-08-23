@@ -101,7 +101,7 @@ Uniqueness: one row per (`ApplicationInstanceId`, `Key`) — refresh replaces va
 | **Title** | Settings browser UI (view all settings for an instance) |
 | **Status** | Todo |
 | **Description** | Blazor page: pick environment → application instance → searchable table of all settings. Refresh button. Secret masking. |
-| **Test / demo** | Select Partial16 + app instance → see settings → refresh → updated values. |
+| **Test / demo** | Select UAT-01 + app instance → see settings → refresh → updated values. |
 | **Depends on** | CFG-002 |
 
 ### CFG-004
@@ -112,7 +112,7 @@ Uniqueness: one row per (`ApplicationInstanceId`, `Key`) — refresh replaces va
 | **Title** | Compare setting by name across apps in one environment |
 | **Status** | Todo |
 | **Description** | Blazor compare view: pick environment + setting key (autocomplete from known keys) → grid of each deployed app and its value. Highlight differences. |
-| **Test / demo** | Pick `ConnectionStrings:Default` in Partial16 → see all apps’ values side by side. |
+| **Test / demo** | Pick `ConnectionStrings:Default` in UAT-01 → see all apps’ values side by side. |
 | **Depends on** | CFG-002, ENV-002 |
 
 ### CFG-005
@@ -123,5 +123,5 @@ Uniqueness: one row per (`ApplicationInstanceId`, `Key`) — refresh replaces va
 | **Title** | Compare setting by name for one app across environments |
 | **Status** | Todo |
 | **Description** | Blazor compare view: pick DeployableApplication + setting key → grid of each environment where deployed and value. Highlight differences. |
-| **Test / demo** | Pick “Customer Portal API” + `FeatureFlags:Beta` → see values in Partial16 vs other envs. |
+| **Test / demo** | Pick “Customer Portal API” + `FeatureFlags:Beta` → see values in UAT-01 vs other envs. |
 | **Depends on** | CFG-002, APP-004 |
