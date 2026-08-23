@@ -107,7 +107,7 @@ One profile per **DeployableApplication** — same format across all environment
 | **Title** | Log viewer UI (environment → instance picker) |
 | **Status** | Todo |
 | **Description** | Blazor **Log Viewer** page: cascade dropdowns Environment → ApplicationInstance. Display parsed log entries in readable table (time, level badge, message). Load more / tail refresh button. |
-| **Test / demo** | Pick Partial16 → pick app instance → see formatted log lines from disk. |
+| **Test / demo** | Pick UAT-01 → pick app instance → see formatted log lines from disk. |
 | **Depends on** | LOG-002, ENV-002, APP-004 |
 
 ### LOG-004
