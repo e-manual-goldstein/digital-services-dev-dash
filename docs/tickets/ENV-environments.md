@@ -44,7 +44,7 @@ Returned by the external Web API (shape may evolve):
 | Field | Type | Notes |
 |-------|------|--------|
 | `RemoteId` | `int` | Same as tracked `RemoteId` |
-| `Name` | `string` | e.g. `Partial16` |
+| `Name` | `string` | e.g. `UAT-01` |
 | `SqlServerInstance` | `string` | Dedicated SQL Server for this environment |
 
 Additional API fields can be added to this DTO as needed.
@@ -85,7 +85,7 @@ When `BaseUrl` is empty, API calls fail with a clear configuration error (until 
 
 ### Mock API (ENV-003)
 
-Rudimentary standalone ASP.NET Minimal API returning fixed sample environments (e.g. `Partial16`) at the same paths as `RemoteEnvironmentApi`. Run locally and set DevDash `RemoteEnvironmentApi:BaseUrl` to the mock host URL.
+Rudimentary standalone ASP.NET Minimal API returning fixed sample environments (e.g. `UAT-01`) at the same paths as `RemoteEnvironmentApi`. Run locally and set DevDash `RemoteEnvironmentApi:BaseUrl` to the mock host URL.
 
 ### Storage
 
@@ -142,8 +142,8 @@ Rudimentary standalone ASP.NET Minimal API returning fixed sample environments (
 | **ID** | ENV-003 |
 | **Title** | Mock remote environment Web API for local testing |
 | **Status** | Done |
-| **Description** | Added `DigitalDevServices.MockRemoteApi` Minimal API on `http://localhost:5280` with four sample environments (`Partial16`, Integration, UAT, Production). Endpoints match `RemoteEnvironmentApi` paths. DevDash `appsettings.Development.json` points at the mock by default. Unit tests verify list and get-by-id responses. |
-| **Test / demo** | Terminal 1: `dotnet run --project DigitalDevServices.MockRemoteApi`. Terminal 2: `curl http://localhost:5280/api/environments/1` → Partial16 JSON. Run DevDash in Development → environment API calls hit the mock. |
+| **Description** | Added `DigitalDevServices.MockRemoteApi` Minimal API on `http://localhost:5280` with four sample environments (`UAT-01`, Integration, UAT, Production). Endpoints match `RemoteEnvironmentApi` paths. DevDash `appsettings.Development.json` points at the mock by default. Unit tests verify list and get-by-id responses. |
+| **Test / demo** | Terminal 1: `dotnet run --project DigitalDevServices.MockRemoteApi`. Terminal 2: `curl http://localhost:5280/api/environments/1` → UAT-01 JSON. Run DevDash in Development → environment API calls hit the mock. |
 | **Depends on** | ENV-001 |
 
 ### ENV-002
@@ -154,5 +154,5 @@ Rudimentary standalone ASP.NET Minimal API returning fixed sample environments (
 | **Title** | Environment management UI |
 | **Status** | Done |
 | **Description** | Added `/environments` page that loads the full catalog from the remote Web API on open. Table shows name, remote id, SQL Server instance, and last updated. **Refresh all** and per-row **Refresh** bypass cache. Local tracking records sync automatically in the background. Nav link and home card enabled. |
-| **Test / demo** | Run mock API + DevDash → track remote id `1` → Partial16 appears → Refresh updates timestamp → restart DevDash → row persists. |
+| **Test / demo** | Run mock API + DevDash → track remote id `1` → UAT-01 appears → Refresh updates timestamp → restart DevDash → row persists. |
 | **Depends on** | ENV-001 |
