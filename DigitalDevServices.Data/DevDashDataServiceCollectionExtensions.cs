@@ -29,6 +29,8 @@ public static class DevDashDataServiceCollectionExtensions
         EnsureApplicationInstancesTableExists(db);
         EnsureDeployableApplicationsIsWebAppColumnExists(db);
         EnsureApplicationInstancesHomepageUrlColumnExists(db);
+        EnsureLogFormatProfilesTableExists(db);
+        EnsureConfigurationSettingsTableExists(db);
     }
 
     private static void EnsurePipelineFeedsTableExists(DevDashDbContext db)
@@ -111,6 +113,46 @@ public static class DevDashDataServiceCollectionExtensions
             "ApplicationInstances",
             "HomepageUrl",
             "ALTER TABLE \"ApplicationInstances\" ADD COLUMN \"HomepageUrl\" TEXT NULL");
+    }
+
+    private static void EnsureLogFormatProfilesTableExists(DevDashDbContext db)
+    {
+        db.Database.ExecuteSqlRaw("""
+            CREATE TABLE IF NOT EXISTS "LogFormatProfiles" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_LogFormatProfiles" PRIMARY KEY,
+                "DeployableApplicationId" TEXT NOT NULL,
+                "FormatName" TEXT NOT NULL,
+                "ParserConfig" TEXT NOT NULL,
+                "Notes" TEXT NULL,
+                "UpdatedAt" TEXT NULL,
+                FOREIGN KEY("DeployableApplicationId") REFERENCES "DeployableApplications" ("Id") ON DELETE CASCADE
+            );
+            """);
+
+        db.Database.ExecuteSqlRaw("""
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_LogFormatProfiles_DeployableApplicationId"
+            ON "LogFormatProfiles" ("DeployableApplicationId");
+            """);
+    }
+
+    private static void EnsureConfigurationSettingsTableExists(DevDashDbContext db)
+    {
+        db.Database.ExecuteSqlRaw("""
+            CREATE TABLE IF NOT EXISTS "ConfigurationSettings" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_ConfigurationSettings" PRIMARY KEY,
+                "ApplicationInstanceId" TEXT NOT NULL,
+                "Key" TEXT NOT NULL,
+                "Value" TEXT NOT NULL,
+                "Source" TEXT NULL,
+                "CapturedAt" TEXT NOT NULL,
+                FOREIGN KEY("ApplicationInstanceId") REFERENCES "ApplicationInstances" ("Id") ON DELETE CASCADE
+            );
+            """);
+
+        db.Database.ExecuteSqlRaw("""
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_ConfigurationSettings_ApplicationInstanceId_Key"
+            ON "ConfigurationSettings" ("ApplicationInstanceId", "Key");
+            """);
     }
 
     private static void EnsureColumnExists(

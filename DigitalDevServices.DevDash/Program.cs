@@ -16,6 +16,7 @@ builder.Services.AddEnvironmentServices(builder.Configuration);
 builder.Services.AddPipelineFeedServices();
 builder.Services.AddDeployableApplicationServices();
 builder.Services.AddLogServices();
+builder.Services.AddConfigurationServices();
 
 var app = builder.Build();
 

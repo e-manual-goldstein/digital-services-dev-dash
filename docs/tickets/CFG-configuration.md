@@ -19,7 +19,7 @@
 
 | ID | Status | Title | Depends on |
 |----|--------|-------|------------|
-| [CFG-001](#cfg-001) | Todo | Configuration setting model and storage | APP-002 |
+| [CFG-001](#cfg-001) | Done | Configuration setting model and storage | APP-002 |
 | [CFG-002](#cfg-002) | Todo | Import settings from deployed application locations | CFG-001, APP-004 |
 | [CFG-003](#cfg-003) | Todo | Settings browser UI (view all settings for an instance) | CFG-002, ENV-005 |
 | [CFG-004](#cfg-004) | Todo | Compare setting by name across apps in one environment | CFG-002, ENV-002 |
@@ -78,9 +78,9 @@ Uniqueness: one row per (`ApplicationInstanceId`, `Key`) — refresh replaces va
 |-------|--------|
 | **ID** | CFG-001 |
 | **Title** | Configuration setting model and storage |
-| **Status** | Todo |
-| **Description** | Add `ConfigurationSetting` entity, repository, upsert-by-key service. Link to `ApplicationInstance`. |
-| **Test / demo** | Upsert two keys for an instance → list by instance → update value → `CapturedAt` changes. |
+| **Status** | Done |
+| **Description** | Added `ConfigurationSetting` entity (FK to `ApplicationInstance`, unique per instance+key: `Key`, `Value`, `Source`, `CapturedAt`) with SQLite schema upgrade. `IConfigurationSettingService` lists settings by instance and upserts by key (refresh updates value and `CapturedAt`). Registered in DI via `AddConfigurationServices`. |
+| **Test / demo** | `dotnet test --filter ConfigurationSettingServiceTests` → pass. Upsert two keys for an instance → list by instance → update value → `CapturedAt` advances. |
 | **Depends on** | APP-002 |
 
 ### CFG-002

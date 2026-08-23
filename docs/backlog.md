@@ -10,14 +10,12 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~APP-004~~ | [APP](tickets/APP-applications.md) | ApplicationInstance admin UI |
+| ~~CFG-001~~ | [CFG](tickets/CFG-configuration.md) | Configuration setting model and storage |
 
 ## Active (recommended order)
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| LOG-001 | [LOG](tickets/LOG-log-interpreter.md) | LogFormatProfile per DeployableApplication |
-| CFG-001 | [CFG](tickets/CFG-configuration.md) | Configuration setting model and storage |
 | CFG-002 | [CFG](tickets/CFG-configuration.md) | Import settings from deployed application locations |
 | LOG-002 | [LOG](tickets/LOG-log-interpreter.md) | Log file reader using ApplicationInstance paths |
 | CFG-003 | [CFG](tickets/CFG-configuration.md) | Settings browser UI (view all settings for an instance) |
@@ -33,8 +31,8 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 | Epic | Description | Tickets Completed | Tickets Shelved | Total Tickets | Progress |
 |------|-------------|-------------------|-----------------|---------------|----------|
 | [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Named pipeline feeds (no branch matching v1) | 2 | 1 | 3 | 🟩🟩🟩🟩🟩🟩🟨🟨🟨⬜ 67% |
-| [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 0 | 0 | 5 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
-| [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | 0 | 0 | 4 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
+| [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 1 | 0 | 5 | 🟩🟨🟨🟨🟨🟨🟨🟨🟨⬜ 20% |
+| [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | 1 | 0 | 4 | 🟩🟩🟨🟨🟨🟨🟨🟨⬜⬜ 25% |
 
 *Progress bar: 10 squares — 🟩 completed, 🟨 shelved, ⬜ open; percentage = completed only.*
 

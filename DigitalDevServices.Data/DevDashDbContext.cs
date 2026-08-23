@@ -18,6 +18,10 @@ public class DevDashDbContext : DbContext
 
     public DbSet<ApplicationInstance> ApplicationInstances => Set<ApplicationInstance>();
 
+    public DbSet<LogFormatProfile> LogFormatProfiles => Set<LogFormatProfile>();
+
+    public DbSet<ConfigurationSetting> ConfigurationSettings => Set<ConfigurationSetting>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<TrackedEnvironment>(entity =>
@@ -79,6 +83,37 @@ public class DevDashDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.PipelineFeedId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<LogFormatProfile>(entity =>
+        {
+            entity.ToTable("LogFormatProfiles");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.FormatName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.ParserConfig).IsRequired().HasMaxLength(4000);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+            entity.HasIndex(e => e.DeployableApplicationId).IsUnique();
+
+            entity.HasOne(e => e.DeployableApplication)
+                .WithMany()
+                .HasForeignKey(e => e.DeployableApplicationId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ConfigurationSetting>(entity =>
+        {
+            entity.ToTable("ConfigurationSettings");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Key).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.Value).IsRequired();
+            entity.Property(e => e.Source).HasMaxLength(500);
+            entity.Property(e => e.CapturedAt).IsRequired();
+            entity.HasIndex(e => new { e.ApplicationInstanceId, e.Key }).IsUnique();
+
+            entity.HasOne(e => e.ApplicationInstance)
+                .WithMany()
+                .HasForeignKey(e => e.ApplicationInstanceId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

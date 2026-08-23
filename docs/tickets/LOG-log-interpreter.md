@@ -19,7 +19,7 @@
 
 | ID | Status | Title | Depends on |
 |----|--------|-------|------------|
-| [LOG-001](#log-001) | Todo | LogFormatProfile per DeployableApplication | APP-001 |
+| [LOG-001](#log-001) | Done | LogFormatProfile per DeployableApplication | APP-001 |
 | [LOG-002](#log-002) | Todo | Log file reader using ApplicationInstance paths | APP-002, LOG-001 |
 | [LOG-003](#log-003) | Todo | Log viewer UI (environment → instance picker) | LOG-002, ENV-005, APP-004 |
 | [LOG-004](#log-004) | Todo | Log filtering (level, text search) | LOG-003 |
@@ -87,9 +87,9 @@ Prototype sample files live in [`samples/logs/`](../../samples/logs/README.md) (
 |-------|--------|
 | **ID** | LOG-001 |
 | **Title** | LogFormatProfile per DeployableApplication |
-| **Status** | Todo |
-| **Description** | Add `LogFormatProfile` entity and admin hooks on DeployableApplication. Ship at least one parser (plain text line + simple timestamp/level regex) and extensibility point for plugins. |
-| **Test / demo** | Assign profile to deployable app → sample log lines parse to structured entries with level and message. |
+| **Status** | Done |
+| **Description** | Added `LogFormatProfile` entity (one per deployable app: `FormatName`, `ParserConfig`, `Notes`, `UpdatedAt`) with SQLite schema upgrade. `ILogFormatProfileService` upserts/deletes profiles; `ILogParsingService` parses content using the assigned profile via `LogParserRegistry` (Serilog JSON, plain text, NLog multiline, log4net pattern). Applications admin UI: log format dropdown and notes on add/edit; log format column in list. `ILogParserPlugin` marker in Plugins for future extensions. Unit tests cover profile persistence and parsing via assigned profile. |
+| **Test / demo** | **Applications** → edit app → set log format to **Plain text** → save → badge appears in list. `dotnet test --filter LogFormatProfileServiceTests` → pass. Assign profile → `ParseForDeployableApplicationAsync` returns structured entries with level and message. |
 | **Depends on** | APP-001 |
 
 ### LOG-002

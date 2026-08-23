@@ -1,6 +1,8 @@
 @page "/applications"
 @inject IDeployableApplicationService ApplicationService
 @inject IApplicationInstanceService InstanceService
+@inject ILogFormatProfileService LogFormatProfileService
+@inject ILogParsingService LogParsingService
 @inject NotificationService NotificationService
 
 <PageTitle>Applications</PageTitle>
@@ -62,6 +64,28 @@
                         <div class="form-text">Enable when this app has a browser homepage in deployed environments.</div>
                     </div>
                     <div class="col-12">
+                        <label class="form-label" for="app-log-format">Log format</label>
+                        <InputSelect id="app-log-format"
+                                     class="form-select"
+                                     @bind-Value="_formModel.LogFormatName"
+                                     disabled="@_isBusy">
+                            <option value="">(None)</option>
+                            @foreach (var formatName in _supportedLogFormats)
+                            {
+                                <option value="@formatName">@LogFormatNames.GetDisplayName(formatName)</option>
+                            }
+                        </InputSelect>
+                        <div class="form-text">How log files for this application are parsed in the log viewer.</div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="app-log-format-notes">Log format notes</label>
+                        <InputTextArea id="app-log-format-notes"
+                                       class="form-control"
+                                       rows="2"
+                                       @bind-Value="_formModel.LogFormatNotes"
+                                       disabled="@_isBusy" />
+                    </div>
+                    <div class="col-12">
                         <label class="form-label" for="app-notes">Notes</label>
                         <InputTextArea id="app-notes"
                                        class="form-control"
@@ -111,6 +135,7 @@ else
                 <tr>
                     <th>Name</th>
                     <th>Type</th>
+                    <th>Log format</th>
                     <th>Project key</th>
                     <th>Notes</th>
                     <th>Created</th>
@@ -128,6 +153,16 @@ else
                             @if (application.IsWebApp)
                             {
                                 <span class="badge bg-primary">Web</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td>
+                            @if (_logFormatsByApplicationId.TryGetValue(application.Id, out var formatName))
+                            {
+                                <span class="badge bg-secondary">@LogFormatNames.GetDisplayName(formatName)</span>
                             }
                             else
                             {
@@ -199,6 +234,8 @@ else
 
 @code {
     private IReadOnlyList<DeployableApplication> _applications = [];
+    private Dictionary<Guid, string> _logFormatsByApplicationId = [];
+    private IReadOnlyList<string> _supportedLogFormats = [];
     private HashSet<Guid> _applicationIdsWithInstances = [];
     private bool _isLoading = true;
     private bool _isBusy;
@@ -211,6 +248,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        _supportedLogFormats = LogParsingService.GetSupportedFormatNames();
         await LoadAsync();
     }
 
@@ -222,6 +260,10 @@ else
         try
         {
             _applications = await ApplicationService.GetAllAsync();
+            var profiles = await LogFormatProfileService.GetAllAsync();
+            _logFormatsByApplicationId = profiles.ToDictionary(
+                profile => profile.DeployableApplicationId,
+                profile => profile.FormatName);
             var instances = await InstanceService.GetAllAsync();
             _applicationIdsWithInstances = instances
                 .Select(instance => instance.DeployableApplicationId)
@@ -231,6 +273,7 @@ else
         {
             _errorMessage = $"Could not load applications: {ex.Message}";
             _applications = [];
+            _logFormatsByApplicationId = [];
             _applicationIdsWithInstances = [];
         }
         finally
@@ -248,16 +291,19 @@ else
         _deletingId = null;
     }
 
-    private void ShowEditForm(DeployableApplication application)
+    private async Task ShowEditForm(DeployableApplication application)
     {
         _errorMessage = null;
         _editingId = application.Id;
+        var profile = await LogFormatProfileService.GetByDeployableApplicationIdAsync(application.Id);
         _formModel = new ApplicationFormModel
         {
             Name = application.Name,
             ProjectKey = application.ProjectKey ?? string.Empty,
             IsWebApp = application.IsWebApp,
-            Notes = application.Notes ?? string.Empty
+            Notes = application.Notes ?? string.Empty,
+            LogFormatName = profile?.FormatName ?? string.Empty,
+            LogFormatNotes = profile?.Notes ?? string.Empty
         };
         _isFormVisible = true;
         _deletingId = null;
@@ -284,7 +330,8 @@ else
 
             if (_editingId is null)
             {
-                await ApplicationService.CreateAsync(name, projectKey, notes, _formModel.IsWebApp);
+                var created = await ApplicationService.CreateAsync(name, projectKey, notes, _formModel.IsWebApp);
+                await SaveLogFormatProfileAsync(created.Id);
                 NotificationService.Notify(new NotificationMessage
                 {
                     Severity = NotificationSeverity.Success,
@@ -296,6 +343,7 @@ else
             else
             {
                 await ApplicationService.UpdateAsync(_editingId.Value, name, projectKey, notes, _formModel.IsWebApp);
+                await SaveLogFormatProfileAsync(_editingId.Value);
                 NotificationService.Notify(new NotificationMessage
                 {
                     Severity = NotificationSeverity.Success,
@@ -358,6 +406,23 @@ else
         }
     }
 
+    private async Task SaveLogFormatProfileAsync(Guid deployableApplicationId)
+    {
+        var formatName = _formModel.LogFormatName.Trim();
+        if (string.IsNullOrWhiteSpace(formatName))
+        {
+            await LogFormatProfileService.DeleteByDeployableApplicationIdAsync(deployableApplicationId);
+            return;
+        }
+
+        await LogFormatProfileService.UpsertAsync(new LogFormatProfileUpsert
+        {
+            DeployableApplicationId = deployableApplicationId,
+            FormatName = formatName,
+            Notes = NormalizeOptional(_formModel.LogFormatNotes)
+        });
+    }
+
     private static string? NormalizeOptional(string value)
     {
         var trimmed = value.Trim();
@@ -374,6 +439,11 @@ else
         public string ProjectKey { get; set; } = string.Empty;
 
         public bool IsWebApp { get; set; }
+
+        public string LogFormatName { get; set; } = string.Empty;
+
+        [StringLength(2000, ErrorMessage = "Log format notes must be 2000 characters or fewer.")]
+        public string LogFormatNotes { get; set; } = string.Empty;
 
         [StringLength(2000, ErrorMessage = "Notes must be 2000 characters or fewer.")]
         public string Notes { get; set; } = string.Empty;
