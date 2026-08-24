@@ -1,8 +1,10 @@
 @page "/applications"
+@using DigitalDevServices.Model.Applications
 @inject IDeployableApplicationService ApplicationService
 @inject IApplicationInstanceService InstanceService
 @inject ILogFormatProfileService LogFormatProfileService
 @inject ILogParsingService LogParsingService
+@inject ILogPathTemplateService LogPathTemplateService
 @inject NotificationService NotificationService
 
 <PageTitle>Applications</PageTitle>
@@ -84,6 +86,24 @@
                                        rows="2"
                                        @bind-Value="_formModel.LogFormatNotes"
                                        disabled="@_isBusy" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="app-path-to-log-files">Path to log files</label>
+                        <InputText id="app-path-to-log-files"
+                                   class="form-control font-monospace"
+                                   @bind-Value="_formModel.PathToLogFiles"
+                                   disabled="@_isBusy" />
+                        <div class="form-text">
+                            Optional template resolved per deployment. Tokens:
+                            @string.Join(", ", LogPathTemplateTokens.All.Select(token => $"{{{token}}}")).
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(_formModel.PathToLogFiles))
+                        {
+                            <div class="form-text">
+                                Example:
+                                <code>@GetSampleLogPathPreview()</code>
+                            </div>
+                        }
                     </div>
                     <div class="col-12">
                         <label class="form-label" for="app-notes">Notes</label>
@@ -302,6 +322,7 @@ else
             ProjectKey = application.ProjectKey ?? string.Empty,
             IsWebApp = application.IsWebApp,
             Notes = application.Notes ?? string.Empty,
+            PathToLogFiles = application.PathToLogFiles ?? string.Empty,
             LogFormatName = profile?.FormatName ?? string.Empty,
             LogFormatNotes = profile?.Notes ?? string.Empty
         };
@@ -327,10 +348,16 @@ else
             var name = _formModel.Name.Trim();
             var projectKey = NormalizeOptional(_formModel.ProjectKey);
             var notes = NormalizeOptional(_formModel.Notes);
+            var pathToLogFiles = NormalizeOptional(_formModel.PathToLogFiles);
 
             if (_editingId is null)
             {
-                var created = await ApplicationService.CreateAsync(name, projectKey, notes, _formModel.IsWebApp);
+                var created = await ApplicationService.CreateAsync(
+                    name,
+                    projectKey,
+                    notes,
+                    _formModel.IsWebApp,
+                    pathToLogFiles);
                 await SaveLogFormatProfileAsync(created.Id);
                 NotificationService.Notify(new NotificationMessage
                 {
@@ -342,7 +369,13 @@ else
             }
             else
             {
-                await ApplicationService.UpdateAsync(_editingId.Value, name, projectKey, notes, _formModel.IsWebApp);
+                await ApplicationService.UpdateAsync(
+                    _editingId.Value,
+                    name,
+                    projectKey,
+                    notes,
+                    _formModel.IsWebApp,
+                    pathToLogFiles);
                 await SaveLogFormatProfileAsync(_editingId.Value);
                 NotificationService.Notify(new NotificationMessage
                 {
@@ -423,6 +456,23 @@ else
         });
     }
 
+    private string GetSampleLogPathPreview()
+    {
+        var appName = string.IsNullOrWhiteSpace(_formModel.Name)
+            ? "portal"
+            : _formModel.Name.Trim();
+
+        return LogPathTemplateService.Resolve(
+            _formModel.PathToLogFiles,
+            new LogPathTemplateContext
+            {
+                MachineName = "UAT-01-APP",
+                EnvironmentCode = "UAT-01",
+                EnvironmentName = "UAT-01",
+                AppName = appName
+            }).ResolvedPath;
+    }
+
     private static string? NormalizeOptional(string value)
     {
         var trimmed = value.Trim();
@@ -444,6 +494,9 @@ else
 
         [StringLength(2000, ErrorMessage = "Log format notes must be 2000 characters or fewer.")]
         public string LogFormatNotes { get; set; } = string.Empty;
+
+        [StringLength(2000, ErrorMessage = "Path to log files must be 2000 characters or fewer.")]
+        public string PathToLogFiles { get; set; } = string.Empty;
 
         [StringLength(2000, ErrorMessage = "Notes must be 2000 characters or fewer.")]
         public string Notes { get; set; } = string.Empty;

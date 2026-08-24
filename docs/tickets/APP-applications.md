@@ -23,7 +23,7 @@
 | [APP-002](#app-002) | Done | ApplicationInstance entity and persistence | APP-001, ENV-001, PIP-001 |
 | [APP-003](#app-003) | Done | DeployableApplication admin UI | APP-001 |
 | [APP-004](#app-004) | Done | ApplicationInstance admin UI | APP-002, ENV-004, ENV-005 |
-| [APP-005](#app-005) | Todo | `PathToLogFiles` template on DeployableApplication | APP-001, APP-003 |
+| [APP-005](#app-005) | Done | `PathToLogFiles` template on DeployableApplication | APP-001, APP-003 |
 
 ---
 
@@ -74,6 +74,10 @@ A specific deployment of a **DeployableApplication** in a specific **TrackedEnvi
 | `DeployedAt` | `HomepageUrl` |
 
 Uniqueness (v1 suggestion): one **ApplicationInstance** per (`DeployableApplicationId`, `EnvironmentId`) — redeploy updates the same row.
+
+### Log path templates (APP-005)
+
+`DeployableApplication.PathToLogFiles` stores a template (e.g. `{MachineName}\{EnvironmentCode}\{AppName}\Logs`). `ILogPathTemplateService.Resolve` substitutes tokens from `LogPathTemplateContext` when pre-filling or saving deployments (ENV-015). Unknown `{tokens}` are left unchanged. Resolved value is stored on `ApplicationInstance.LogPath`.
 
 ### Relationships
 
@@ -148,7 +152,7 @@ Uniqueness (v1 suggestion): one **ApplicationInstance** per (`DeployableApplicat
 |-------|--------|
 | **ID** | APP-005 |
 | **Title** | `PathToLogFiles` template on DeployableApplication |
-| **Status** | Todo |
-| **Description** | Add optional `PathToLogFiles` on `DeployableApplication` — a path **template** (not a literal path) stored in SQLite and editable on `/applications`. Provide `ILogPathTemplateService` (or similar) that resolves a template to a concrete path using token substitution in the same style as .NET composite formatting, e.g. `{MachineName}\{EnvironmentCode}\{AppName}\Logs`. **v1 tokens** (document in epic): `AppName`, `EnvironmentCode`, `EnvironmentName`, `MachineName`, `ApplicationPoolName`, `VirtualPath` (IIS path), `PhysicalPath`. Unknown tokens left unchanged or surfaced as a validation warning at resolve time (pick one rule and test it). Expose resolved preview in UI when helpful. Persist via schema upgrade; include in create/update service methods. Does **not** auto-write `ApplicationInstance.LogPath` until a deployment is saved — resolution is invoked when pre-filling or saving an instance (see ENV-015). |
-| **Test / demo** | `dotnet test --filter LogPathTemplateServiceTests` → pass. Template `{MachineName}\{EnvironmentCode}\{AppName}\Logs` with `MachineName=UAT-01-APP`, `EnvironmentCode=UAT-01`, `AppName=portal` → `UAT-01-APP\UAT-01\portal\Logs`. `/applications` → edit app → set template → save → reload shows value. |
+| **Status** | Done |
+| **Description** | Added optional `PathToLogFiles` on `DeployableApplication` (SQLite schema upgrade). `ILogPathTemplateService` resolves templates using `{AppName}`, `{EnvironmentCode}`, `{EnvironmentName}`, `{MachineName}`, `{ApplicationPoolName}`, `{VirtualPath}`, and `{PhysicalPath}` (case-insensitive); unknown tokens are left unchanged and reported in `UnknownTokens`. Persisted via create/update on `IDeployableApplicationService`. `/applications` form includes template field with token list and sample preview. |
+| **Test / demo** | `dotnet test --filter LogPathTemplateServiceTests` → pass. `/applications` → edit app → set `{MachineName}\{EnvironmentCode}\{AppName}\Logs` → save → reload shows template and example preview. |
 | **Depends on** | APP-001, APP-003 |

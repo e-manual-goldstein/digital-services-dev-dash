@@ -52,6 +52,7 @@ public class DevDashDbContext : DbContext
             entity.HasIndex(e => e.Name).IsUnique();
             entity.Property(e => e.ProjectKey).HasMaxLength(200);
             entity.Property(e => e.IsWebApp).IsRequired();
+            entity.Property(e => e.PathToLogFiles).HasMaxLength(2000);
             entity.Property(e => e.Notes).HasMaxLength(2000);
             entity.Property(e => e.CreatedAt).IsRequired();
         });

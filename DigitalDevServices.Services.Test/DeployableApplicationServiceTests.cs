@@ -73,6 +73,34 @@ public sealed class DeployableApplicationServiceTests
     }
 
     [TestMethod]
+    public async Task CreateAsync_PersistsPathToLogFilesTemplate()
+    {
+        await using var fixture = await DeployableApplicationServiceFixture.CreateAsync();
+        var created = await fixture.Service.CreateAsync(
+            "Customer Portal",
+            pathToLogFiles: @"{MachineName}\{EnvironmentCode}\{AppName}\Logs");
+
+        var loaded = await fixture.Service.GetByIdAsync(created.Id);
+
+        Assert.IsNotNull(loaded);
+        Assert.AreEqual(@"{MachineName}\{EnvironmentCode}\{AppName}\Logs", loaded!.PathToLogFiles);
+    }
+
+    [TestMethod]
+    public async Task UpdateAsync_ChangesPathToLogFilesTemplate()
+    {
+        await using var fixture = await DeployableApplicationServiceFixture.CreateAsync();
+        var created = await fixture.Service.CreateAsync("Reporting Service");
+
+        var updated = await fixture.Service.UpdateAsync(
+            created.Id,
+            "Reporting Service",
+            pathToLogFiles: @"{MachineName}\Logs");
+
+        Assert.AreEqual(@"{MachineName}\Logs", updated.PathToLogFiles);
+    }
+
+    [TestMethod]
     public async Task DeleteAsync_RemovesApplication()
     {
         await using var fixture = await DeployableApplicationServiceFixture.CreateAsync();

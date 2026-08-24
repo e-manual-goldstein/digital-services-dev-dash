@@ -10,6 +10,7 @@ public static class DeployableApplicationServiceCollectionExtensions
         services.AddScoped<IDeployableApplicationService, DeployableApplicationService>();
         services.AddScoped<IApplicationInstanceService, ApplicationInstanceService>();
         services.AddScoped<IDeployedPackageService, DeployedPackageService>();
+        services.AddSingleton<ILogPathTemplateService, LogPathTemplateService>();
         return services;
     }
 }

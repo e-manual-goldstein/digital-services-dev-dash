@@ -13,6 +13,8 @@ public class DeployableApplication
 
     public bool IsWebApp { get; set; }
 
+    public string? PathToLogFiles { get; set; }
+
     public string? Notes { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
