@@ -56,6 +56,22 @@ public sealed class RemoteEnvironmentDetailsTests
         Assert.IsTrue(details.AdditionalProperties?.ContainsKey("BuildNumber") ?? false);
     }
 
+    [TestMethod]
+    public void FormatAdditionalPropertiesJson_ReturnsPrettyPrintedJsonOrNull()
+    {
+        var empty = new RemoteEnvironmentDetails();
+        Assert.IsNull(empty.FormatAdditionalPropertiesJson());
+
+        var details = JsonSerializer.Deserialize<RemoteEnvironmentDetails>(SampleJson);
+        Assert.IsNotNull(details);
+
+        var formatted = details!.FormatAdditionalPropertiesJson();
+        Assert.IsNotNull(formatted);
+        StringAssert.Contains(formatted, "\"SqlServerInstance\":");
+        StringAssert.Contains(formatted, "\"BuildNumber\": \"123456\"");
+        StringAssert.Contains(formatted, Environment.NewLine);
+    }
+
     private sealed class RemoteEnvironmentDetailsWithSqlServer : RemoteEnvironmentDetails
     {
         public string? SqlServerInstance { get; set; }

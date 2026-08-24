@@ -22,6 +22,20 @@ public class RemoteEnvironmentDetails
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }
 
+    private static readonly JsonSerializerOptions PrettyJsonOptions = new() { WriteIndented = true };
+
+    public bool HasAdditionalProperties => AdditionalProperties is { Count: > 0 };
+
+    public string? FormatAdditionalPropertiesJson()
+    {
+        if (!HasAdditionalProperties)
+        {
+            return null;
+        }
+
+        return JsonSerializer.Serialize(AdditionalProperties, PrettyJsonOptions);
+    }
+
     public bool TryGetAdditionalString(string propertyName, out string? value)
     {
         value = null;

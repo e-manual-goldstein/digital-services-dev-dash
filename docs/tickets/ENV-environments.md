@@ -30,7 +30,7 @@
 | [ENV-007](#env-007) | Done | Extensible `RemoteEnvironmentDetails` (overflow JSON properties) | ENV-001 |
 | [ENV-008](#env-008) | Done | Environment favourites (local persistence + favourites table) | ENV-002 |
 | [ENV-009](#env-009) | Done | Environments list table columns (favourites + all environments) | ENV-008 |
-| [ENV-010](#env-010) | Todo | Environment details — additional properties (expandable JSON) | ENV-007 |
+| [ENV-010](#env-010) | Done | Environment details — additional properties (expandable JSON) | ENV-007 |
 
 ---
 
@@ -301,7 +301,7 @@ Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-
 |-------|--------|
 | **ID** | ENV-010 |
 | **Title** | Environment details — additional properties (expandable JSON) |
-| **Status** | Todo |
-| **Description** | On `/environments/{localId}`, below the card of named environment fields, add an expandable **Additional properties** section for `RemoteEnvironmentDetails.AdditionalProperties` (ENV-007). Reuse existing `CollapsibleSection` component; collapsed by default. When expanded, render the dictionary as pretty-printed JSON in a `<pre><code>` block (`System.Text.Json`, `WriteIndented`). Omit the section entirely when `AdditionalProperties` is null or empty. Optional small helper on the model or a static formatter keeps the Razor page thin. After **Refresh**, the JSON reflects the latest API payload. |
-| **Test / demo** | Run mock API + DevDash → open **UAT-01** details → **Additional properties** section appears (mock includes `SqlServerInstance`, `BuildNumber`, `WipBranch` in overflow) → expand → indented JSON with those keys → **Refresh** → content still correct. Environment with no overflow fields → section not shown. |
+| **Status** | Done |
+| **Description** | On `/environments/{localId}`, below the named-fields card, added collapsible **Additional properties** via `CollapsibleSection` when `AdditionalProperties` is non-empty. `RemoteEnvironmentDetails.FormatAdditionalPropertiesJson()` pretty-prints overflow JSON for display in `<pre><code>`. Section omitted when empty. |
+| **Test / demo** | Run mock API + DevDash → open **UAT-01** details → expand **Additional properties** → indented JSON with `SqlServerInstance`, `BuildNumber`, `WipBranch` → **Refresh** → content updates. Environment with no overflow → section hidden. `dotnet test --filter RemoteEnvironmentDetailsTests` → pass. |
 | **Depends on** | ENV-007 |

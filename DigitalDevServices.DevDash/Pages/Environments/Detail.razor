@@ -64,6 +64,17 @@ else
         </div>
     </div>
 
+    @if (_environment.Details.HasAdditionalProperties)
+    {
+        <div class="card mt-3">
+            <div class="card-body">
+                <CollapsibleSection Title="Additional properties">
+                    <pre class="mb-0 small"><code>@_environment.Details.FormatAdditionalPropertiesJson()</code></pre>
+                </CollapsibleSection>
+            </div>
+        </div>
+    }
+
     <div class="mt-4">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
             <h2 class="h4 mb-0">Deployed applications</h2>
