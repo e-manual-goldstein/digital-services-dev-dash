@@ -10,6 +10,9 @@
 *.userosscache
 *.sln.docstates
 
+# Machine-specific DevDash config (copy from appsettings.Local.json.example)
+**/appsettings.Local.json
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
