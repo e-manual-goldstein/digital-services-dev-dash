@@ -31,7 +31,7 @@
 | [ENV-008](#env-008) | Done | Environment favourites (local persistence + favourites table) | ENV-002 |
 | [ENV-009](#env-009) | Done | Environments list table columns (favourites + all environments) | ENV-008 |
 | [ENV-010](#env-010) | Done | Environment details — additional properties (expandable JSON) | ENV-007 |
-| [ENV-011](#env-011) | Todo | `Servers` on `RemoteEnvironmentDetails` (model + details UI) | ENV-007 |
+| [ENV-011](#env-011) | Done | `Servers` on `RemoteEnvironmentDetails` (model + details UI) | ENV-007 |
 | [ENV-012](#env-012) | Todo | `EnvironmentUrls` — model + register `ApplicationInstance` from URL | ENV-007, APP-002 |
 | [ENV-013](#env-013) | Todo | `WebSites` / `WebApplications` — model + register instances from IIS paths | ENV-012, APP-002 |
 | [ENV-014](#env-014) | Todo | `WindowsServices` on `RemoteEnvironmentDetails` (model + details UI) | ENV-007 |
@@ -391,9 +391,9 @@ Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-
 |-------|--------|
 | **ID** | ENV-011 |
 | **Title** | `Servers` on `RemoteEnvironmentDetails` (model + details UI) |
-| **Status** | Todo |
-| **Description** | Add `EnvironmentServer` DTO and `Servers` (`EnvironmentServer[]`) to `RemoteEnvironmentDetails`. Map API JSON property names (including lowercase `name` on server). Extend mock API samples with at least one server. Unit tests: deserialize list/get responses with `Servers` populated; promoted keys no longer in `AdditionalProperties`. On environment details page: **`CollapsibleSection` titled Servers (n)** when non-empty; expanded body is a read-only table — ComponentName, Name, ServerType, ComponentDescription, ComponentIdenifier, ComponentResourceNameResolved. |
-| **Test / demo** | Mock API + DevDash → **UAT-01** details → expand **Servers** → table shows sample rows → collapsed by default → environment with no servers omits section. `dotnet test --filter RemoteEnvironmentDetails` → pass. |
+| **Status** | Done |
+| **Description** | Added `EnvironmentServer` DTO and `Servers` on `RemoteEnvironmentDetails` (including JSON `name` mapping). Mock API UAT-01 includes two sample servers. `EnvironmentDetailsCollectionSection` reusable wrapper: `CollapsibleSection` + table with count in title. Environment details shows **Servers (n)** when non-empty. Unit tests cover deserialization and mock API round-trip. |
+| **Test / demo** | Mock API + DevDash → **UAT-01** details → expand **Servers (2)** → table shows rows → **Integration** omits section. `dotnet test --filter "RemoteEnvironmentDetailsTests|MockRemoteApiTests"` → pass. |
 | **Depends on** | ENV-007 |
 
 ### ENV-012

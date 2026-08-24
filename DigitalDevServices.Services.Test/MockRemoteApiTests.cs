@@ -30,6 +30,8 @@ public sealed class MockRemoteApiTests
         Assert.AreEqual(@"UAT-01\SQL2019", sqlServerInstance);
         Assert.IsTrue(uat01.TryGetAdditionalString("BuildNumber", out var buildNumber));
         Assert.AreEqual("123456", buildNumber);
+        Assert.HasCount(2, uat01.Servers);
+        Assert.AreEqual("UAT-01-SQL", uat01.Servers[0].Name);
     }
 
     [TestMethod]
@@ -52,6 +54,8 @@ public sealed class MockRemoteApiTests
         Assert.AreEqual(1, details.Id);
         Assert.IsTrue(details.TryGetAdditionalString("SqlServerInstance", out var sqlServerInstance));
         Assert.AreEqual(@"UAT-01\SQL2019", sqlServerInstance);
+        Assert.HasCount(2, details.Servers);
+        Assert.AreEqual("Database", details.Servers[0].ServerType);
 
         var missing = await client.PostAsJsonAsync("/api/environments", new GetEnvironmentRequest
         {

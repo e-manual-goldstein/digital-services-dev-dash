@@ -75,6 +75,29 @@ else
         </div>
     }
 
+    <EnvironmentDetailsCollectionSection Title="Servers" Items="_environment.Details.Servers">
+        <HeaderContent>
+            <tr>
+                <th>Component name</th>
+                <th>Name</th>
+                <th>Server type</th>
+                <th>Description</th>
+                <th>Identifier</th>
+                <th>Resource name</th>
+            </tr>
+        </HeaderContent>
+        <RowTemplate Context="server">
+            <tr>
+                <td>@(server.ComponentName ?? "—")</td>
+                <td>@(server.Name ?? "—")</td>
+                <td>@(server.ServerType ?? "—")</td>
+                <td>@(server.ComponentDescription ?? "—")</td>
+                <td><code>@(server.ComponentIdenifier ?? "—")</code></td>
+                <td><code>@(server.ComponentResourceNameResolved ?? "—")</code></td>
+            </tr>
+        </RowTemplate>
+    </EnvironmentDetailsCollectionSection>
+
     <div class="mt-4">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
             <h2 class="h4 mb-0">Deployed applications</h2>

@@ -13,7 +13,28 @@ internal static class SampleEnvironments
                 Id = 1,
                 Code = "UAT-01",
                 Name = "UAT-01",
-                EnvironmentType = "UAT"
+                EnvironmentType = "UAT",
+                Servers =
+                [
+                    new EnvironmentServer
+                    {
+                        ComponentName = "SQL Server",
+                        Name = "UAT-01-SQL",
+                        ServerType = "Database",
+                        ComponentDescription = "Primary database server",
+                        ComponentIdenifier = "sql-01",
+                        ComponentResourceNameResolved = @"UAT-01\SQL2019"
+                    },
+                    new EnvironmentServer
+                    {
+                        ComponentName = "Application Server",
+                        Name = "UAT-01-APP",
+                        ServerType = "Web",
+                        ComponentDescription = "IIS host",
+                        ComponentIdenifier = "app-01",
+                        ComponentResourceNameResolved = "UAT-01-APP.example.com"
+                    }
+                ]
             },
             ("SqlServerInstance", @"UAT-01\SQL2019"),
             ("BuildNumber", "123456"),

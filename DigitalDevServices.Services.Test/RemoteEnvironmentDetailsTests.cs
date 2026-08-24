@@ -72,6 +72,41 @@ public sealed class RemoteEnvironmentDetailsTests
         StringAssert.Contains(formatted, Environment.NewLine);
     }
 
+    [TestMethod]
+    public void Deserialize_MapsServersArrayAndExcludesFromAdditionalProperties()
+    {
+        const string json =
+            """
+            {
+              "Id": 1,
+              "Code": "UAT-01",
+              "Name": "UAT-01",
+              "EnvironmentType": "UAT",
+              "Servers": [
+                {
+                  "ComponentName": "SQL Server",
+                  "name": "UAT-01-SQL",
+                  "ServerType": "Database",
+                  "ComponentDescription": "Primary database server",
+                  "ComponentIdenifier": "sql-01",
+                  "ComponentResourceNameResolved": "UAT-01\\SQL2019"
+                }
+              ]
+            }
+            """;
+
+        var details = JsonSerializer.Deserialize<RemoteEnvironmentDetails>(json);
+
+        Assert.IsNotNull(details);
+        Assert.HasCount(1, details!.Servers);
+        Assert.AreEqual("SQL Server", details.Servers[0].ComponentName);
+        Assert.AreEqual("UAT-01-SQL", details.Servers[0].Name);
+        Assert.AreEqual("Database", details.Servers[0].ServerType);
+        Assert.AreEqual("sql-01", details.Servers[0].ComponentIdenifier);
+        Assert.AreEqual(@"UAT-01\SQL2019", details.Servers[0].ComponentResourceNameResolved);
+        Assert.IsTrue(details.AdditionalProperties is null || details.AdditionalProperties.Count == 0);
+    }
+
     private sealed class RemoteEnvironmentDetailsWithSqlServer : RemoteEnvironmentDetails
     {
         public string? SqlServerInstance { get; set; }

@@ -16,6 +16,8 @@ public class RemoteEnvironmentDetails
 
     public string Name { get; set; } = string.Empty;
 
+    public EnvironmentServer[] Servers { get; set; } = [];
+
     /// <summary>
     /// JSON properties not mapped to first-class members. Populated via <see cref="JsonExtensionDataAttribute"/>.
     /// </summary>

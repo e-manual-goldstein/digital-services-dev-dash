@@ -10,13 +10,12 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~ENV-010~~ | [ENV](tickets/ENV-environments.md) | Environment details — additional properties (expandable JSON) |
+| ~~ENV-011~~ | [ENV](tickets/ENV-environments.md) | `Servers` — model + collapsible table on details |
 
 ## Active (recommended order)
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ENV-011 | [ENV](tickets/ENV-environments.md) | `Servers` — model + collapsible table on details |
 | ENV-014 | [ENV](tickets/ENV-environments.md) | `WindowsServices` — model + collapsible table on details |
 | ENV-012 | [ENV](tickets/ENV-environments.md) | `EnvironmentUrls` — collapsible table + register instances |
 | ENV-013 | [ENV](tickets/ENV-environments.md) | `WebSites` — nested collapsible tables + register instances |
@@ -31,7 +30,7 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 
 | Epic | Description | Tickets Completed | Tickets Shelved | Total Tickets | Progress |
 |------|-------------|-------------------|-----------------|---------------|----------|
-| [Environments (ENV)](tickets/ENV-environments.md) | Remote API + local tracking + environment details hub | 10 | 0 | 14 | 🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟨🟨🟨🟨⬜ 71% |
+| [Environments (ENV)](tickets/ENV-environments.md) | Remote API + local tracking + environment details hub | 11 | 0 | 14 | 🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟨🟨🟨⬜ 79% |
 | [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Named pipeline feeds (no branch matching v1) | 2 | 1 | 3 | 🟩🟩🟩🟩🟩🟩🟨🟨🟨⬜ 67% |
 | [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 3 | 0 | 5 | 🟩🟩🟩🟩🟩🟨🟨🟨⬜⬜ 60% |
 | [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | 2 | 0 | 4 | 🟩🟩🟩🟩🟨🟨🟨⬜⬜⬜ 50% |
