@@ -48,9 +48,9 @@ public sealed class HttpRemoteEnvironmentApiClient : IRemoteEnvironmentApiClient
         response.EnsureSuccessStatusCode();
 
         var items = await response.Content
-            .ReadFromJsonAsync<List<RemoteEnvironmentDetails>>(cancellationToken: cancellationToken)
+            .ReadFromJsonAsync<GetEnvironmentsResponse>(cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
-        return items ?? [];
+        return items?.Result ?? [];
     }
 }

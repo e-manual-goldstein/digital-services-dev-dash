@@ -22,12 +22,6 @@ var app = builder.Build();
 
 DevDashDataServiceCollectionExtensions.EnsureDevDashDatabaseCreated(app.Services);
 
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Error");
-    app.UseHsts();
-}
-
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
