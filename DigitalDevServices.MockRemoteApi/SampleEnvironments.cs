@@ -1,3 +1,4 @@
+using System.Text.Json;
 using DigitalDevServices.Model.Environments;
 
 namespace DigitalDevServices.MockRemoteApi;
@@ -6,13 +7,17 @@ internal static class SampleEnvironments
 {
     public static IReadOnlyList<RemoteEnvironmentDetails> All { get; } =
     [
-        new RemoteEnvironmentDetails
-        {
-            Id = 1,
-            Code = "UAT-01",
-            Name = "UAT-01",
-            EnvironmentType = "UAT"
-        },
+        WithAdditionalProperties(
+            new RemoteEnvironmentDetails
+            {
+                Id = 1,
+                Code = "UAT-01",
+                Name = "UAT-01",
+                EnvironmentType = "UAT"
+            },
+            ("SqlServerInstance", @"UAT-01\SQL2019"),
+            ("BuildNumber", "123456"),
+            ("WipBranch", "feature/123456-customer-portal")),
         new RemoteEnvironmentDetails
         {
             Id = 2,
@@ -35,4 +40,15 @@ internal static class SampleEnvironments
             EnvironmentType = "Production"
         }
     ];
+
+    private static RemoteEnvironmentDetails WithAdditionalProperties(
+        RemoteEnvironmentDetails environment,
+        params (string Name, object Value)[] additionalProperties)
+    {
+        environment.AdditionalProperties = additionalProperties.ToDictionary(
+            property => property.Name,
+            property => JsonSerializer.SerializeToElement(property.Value));
+
+        return environment;
+    }
 }

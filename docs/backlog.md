@@ -10,12 +10,14 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~CFG-003~~ | [CFG](tickets/CFG-configuration.md) | Settings browser UI (view all settings for an instance) |
+| ~~ENV-007~~ | [ENV](tickets/ENV-environments.md) | Extensible `RemoteEnvironmentDetails` (overflow JSON properties) |
 
 ## Active (recommended order)
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
+| ENV-008 | [ENV](tickets/ENV-environments.md) | Environment favourites (local persistence + favourites table) |
+| ENV-009 | [ENV](tickets/ENV-environments.md) | Environments list table columns (favourites + all environments) |
 | CFG-004 | [CFG](tickets/CFG-configuration.md) | Compare setting by name across apps in one environment |
 | CFG-005 | [CFG](tickets/CFG-configuration.md) | Compare setting by name for one app across environments |
 | LOG-003 | [LOG](tickets/LOG-log-interpreter.md) | Log viewer UI (environment → instance picker) |
@@ -27,6 +29,7 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 
 | Epic | Description | Tickets Completed | Tickets Shelved | Total Tickets | Progress |
 |------|-------------|-------------------|-----------------|---------------|----------|
+| [Environments (ENV)](tickets/ENV-environments.md) | Remote API + local tracking + environment details hub | 7 | 0 | 9 | 🟩🟩🟩🟩🟩🟩🟩🟨🟨⬜ 78% |
 | [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Named pipeline feeds (no branch matching v1) | 2 | 1 | 3 | 🟩🟩🟩🟩🟩🟩🟨🟨🟨⬜ 67% |
 | [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 3 | 0 | 5 | 🟩🟩🟩🟩🟩🟨🟨🟨⬜⬜ 60% |
 | [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | 2 | 0 | 4 | 🟩🟩🟩🟩🟨🟨🟨⬜⬜⬜ 50% |
@@ -60,7 +63,6 @@ Unprioritized — not in the active queue. See [IDE-ideas.md](tickets/IDE-ideas.
 | Epic | Description | Completed |
 |------|-------------|-----------|
 | [Foundation (FND)](tickets/FND-foundation.md) | Blazor skeleton and layout | FND-001 – FND-002 |
-| [Environments (ENV)](tickets/ENV-environments.md) | Remote API + local tracking + environment details hub | ENV-001 – ENV-006 |
 | [Applications (APP)](tickets/APP-applications.md) | Deployable app vs instance | APP-001 – APP-004 |
 
 ## Domain model (overview)
@@ -75,6 +77,7 @@ erDiagram
     TrackedEnvironment {
         Guid Id
         int RemoteId
+        bool IsFavourite
         DateTimeOffset DateLastUpdated
     }
     PipelineFeed {

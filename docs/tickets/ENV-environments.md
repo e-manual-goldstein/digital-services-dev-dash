@@ -27,6 +27,9 @@
 | [ENV-004](#env-004) | Done | Environment details page (SQL copy, BuildNumber/TFS, WIP branch) | ENV-002, ENV-003 |
 | [ENV-005](#env-005) | Done | Deployed applications table on environment details | ENV-004, APP-002 |
 | [ENV-006](#env-006) | Done | Deployed application packages page (DLL list + versions) | ENV-005, APP-002 |
+| [ENV-007](#env-007) | Done | Extensible `RemoteEnvironmentDetails` (overflow JSON properties) | ENV-001 |
+| [ENV-008](#env-008) | Todo | Environment favourites (local persistence + favourites table) | ENV-002 |
+| [ENV-009](#env-009) | Todo | Environments list table columns (favourites + all environments) | ENV-008 |
 
 ---
 
@@ -40,21 +43,22 @@ Persisted in SQLite — **no** name or SQL Server instance stored locally.
 |-------|------|--------|
 | `Id` | `Guid` | Local DevDash PK |
 | `RemoteId` | `int` | External team's environment id — unique |
+| `IsFavourite` | `bool` | DevDash-only flag (ENV-008); default `false` |
 | `DateLastUpdated` | `DateTimeOffset` | UTC — last successful API fetch for this record |
 
 ### Remote DTO (`RemoteEnvironmentDetails`)
 
-Returned by the external Web API (shape may evolve):
+Returned by the external Web API (shape may evolve). Known fields are first-class properties; additional JSON properties are captured without model changes (ENV-007).
 
 | Field | Type | Notes |
 |-------|------|--------|
-| `RemoteId` | `int` | Same as tracked `RemoteId` |
+| `Id` | `int` | Remote environment id — maps to tracked `RemoteId` |
+| `Code` | `string` | Short environment code |
 | `Name` | `string` | e.g. `UAT-01` |
-| `SqlServerInstance` | `string` | Dedicated SQL Server for this environment |
-| `BuildNumber` | `string?` | Current environment build — also the TFS work item id |
-| `WipBranch` | `string?` | Git / WIP branch used to produce that build |
+| `EnvironmentType` | `string` | e.g. `UAT`, `Production` |
+| `AdditionalProperties` | `Dictionary<string, JsonElement>` | Overflow from API via `[JsonExtensionData]` — not serialized back to the API |
 
-These environment-level origin fields come from the **remote API**. They describe the environment as a whole (the work item / branch that produced the current environment build). They are distinct from `ApplicationInstance.BuildNumber` / `SourceBranch`, which remain per-app local records.
+Promote fields from `AdditionalProperties` to typed properties when the UI or services need them reliably (e.g. SQL Server instance, build number).
 
 ### Combined view (`CachedEnvironment`)
 
@@ -63,7 +67,8 @@ What consumers (UI, other services) use:
 | Field | Type | Notes |
 |-------|------|--------|
 | `LocalId` | `Guid` | From `TrackedEnvironment.Id` |
-| `RemoteId` | `int` | |
+| `RemoteId` | `int` | From `Details.Id` |
+| `IsFavourite` | `bool` | From `TrackedEnvironment` (local only) |
 | `Details` | `RemoteEnvironmentDetails` | From API |
 | `DateLastUpdated` | `DateTimeOffset` | From local record |
 | `IsFromCache` | `bool` | `true` when served from memory without an API call |
@@ -116,21 +121,25 @@ Rudimentary standalone ASP.NET Minimal API returning fixed sample environments (
 | `GetEnvironmentsAsync(forceRefresh?)` | Load full catalog from remote API (cached); sync local tracking records |
 | `GetTrackedEnvironmentAsync(localId)` | Single env by local id |
 | `RefreshEnvironmentAsync(remoteId)` | Force API refresh for one environment |
+| `SetFavouriteAsync(localId, isFavourite)` | Persist favourite flag on local record (ENV-008) |
 | `UntrackEnvironmentAsync(localId)` | Remove local link |
 
 ### Relationships
 
 - One **TrackedEnvironment** has many **ApplicationInstance** records (see [APP-applications.md](APP-applications.md)) — FK uses local `Guid`.
 
-### UI notes (ENV-002)
+### UI notes (ENV-002, ENV-008, ENV-009)
 
 - Sidebar: **Environments**
 - Page loads full environment list from remote API on open
-- Table: name, remote id, SQL Server instance, last updated
+- **Favourites** table at top (ENV-008): environments where `IsFavourite` is true
+- **All environments** table below: remaining environments (non-favourites)
+- Both tables share the same columns (ENV-009): **Code**, **Name**, **Type**, **Last updated**, favourite toggle, **Refresh**
+- Default sort: ascending by remote id (`Details.Id` / `RemoteId`) — **remote id is not shown** as a column
+- **Name** links to environment details (`/environments/{localId}`)
 - **Refresh all** and per-row **Refresh** bypass cache and call the API
+- Favourite toggle updates local SQLite only; does not call the remote API
 - Local tracking records are created automatically when the catalog is loaded (for downstream FK use)
-- No manual “track by id” step
-- Environment **name** is a link to the details page (ENV-004)
 
 ### Environment details (ENV-004+)
 
@@ -242,3 +251,36 @@ Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-
 | **Description** | Added `IDeployedPackageService` to recursively scan `ApplicationInstance.PhysicalPath` for `*.dll` files and return file name, file version, and assembly version. New page `/environments/{localId}/instances/{instanceId}/packages` with a packages table, back link to environment details, and clear messages for missing instance, missing path, missing folder, or unreadable files. Unit tests cover successful scan, missing path, missing folder, and unknown instance. |
 | **Test / demo** | Point an instance `PhysicalPath` at a folder containing DLLs → open **Packages** from environment details → file names and versions appear. Missing path or folder → readable warning, no crash. `dotnet test --filter DeployedPackageServiceTests` → pass. |
 | **Depends on** | ENV-005, APP-002 |
+
+### ENV-007
+
+| Field | Detail |
+|-------|--------|
+| **ID** | ENV-007 |
+| **Title** | Extensible `RemoteEnvironmentDetails` (overflow JSON properties) |
+| **Status** | Done |
+| **Description** | Added `[JsonExtensionData]` and `Dictionary<string, JsonElement>? AdditionalProperties` on `RemoteEnvironmentDetails` so unmapped API JSON is preserved on deserialize. Added `TryGetAdditionalString` for simple display lookups. Mock API sample **UAT-01** includes overflow fields (`SqlServerInstance`, `BuildNumber`, `WipBranch`). Unit tests cover deserialization of known + overflow properties and promotion of a field to a typed subclass property. |
+| **Test / demo** | `dotnet test --filter "RemoteEnvironmentDetailsTests|MockRemoteApiTests"` → pass. GET/POST mock environment for UAT-01 → overflow fields in `AdditionalProperties`. Deserialize same JSON to a type with `SqlServerInstance` property → binds to property, not overflow. |
+| **Depends on** | ENV-001 |
+
+### ENV-008
+
+| Field | Detail |
+|-------|--------|
+| **ID** | ENV-008 |
+| **Title** | Environment favourites (local persistence + favourites table) |
+| **Status** | Todo |
+| **Description** | Add `IsFavourite` (`bool`, default `false`) to `TrackedEnvironment` with SQLite schema upgrade. Extend `CachedEnvironment` and `IEnvironmentService` with `SetFavouriteAsync(localId, isFavourite)` (or toggle). On `/environments`, render a **Favourites** section at the top: table of environments where `IsFavourite` is true. Environments not favourited remain in the main list below (see ENV-009 for shared column layout). Favourite state survives app restart; it is DevDash-only and never sent to the remote API. Empty favourites section: short message (e.g. “No favourites yet — star an environment below.”). Unit tests: set favourite, reload from DB, clear favourite. |
+| **Test / demo** | Open **Environments** → favourite two environments → they appear in the top table → restart DevDash → still favourited → unfavourite one → moves to all-environments table only. `dotnet test --filter EnvironmentServiceTests` → favourite persistence passes. |
+| **Depends on** | ENV-002 |
+
+### ENV-009
+
+| Field | Detail |
+|-------|--------|
+| **ID** | ENV-009 |
+| **Title** | Environments list table columns (favourites + all environments) |
+| **Status** | Todo |
+| **Description** | Refactor `/environments` so **Favourites** and **All environments** tables share one row template / component. Columns in order: **Code** (`Details.Code`, `<code>`), **Name** (link to details), **Type** (`Details.EnvironmentType`), **Last updated** (`DateLastUpdated`, local time), **Favourite** (toggle button — filled star vs outline; calls `SetFavouriteAsync`), **Refresh** (per-row, existing behaviour). Remove the **Remote id** column from the UI. Default sort for both tables: ascending by `RemoteId` / `Details.Id`. Extract shared markup to avoid duplication (partial component or private render fragment). |
+| **Test / demo** | **Environments** page shows Code, Name, Type, Last updated, favourite control, Refresh — no Remote id column. Rows sorted by remote id ascending. Favourite toggle works in both tables. **Refresh all** still works. |
+| **Depends on** | ENV-008 |

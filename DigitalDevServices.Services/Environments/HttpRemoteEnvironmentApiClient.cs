@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using DigitalDevServices.Model;
 using DigitalDevServices.Model.Environments;
 using Microsoft.Extensions.Options;
 
@@ -34,9 +35,11 @@ public sealed class HttpRemoteEnvironmentApiClient : IRemoteEnvironmentApiClient
         }
 
         response.EnsureSuccessStatusCode();
-        return await response.Content
-            .ReadFromJsonAsync<RemoteEnvironmentDetails>(cancellationToken: cancellationToken)
+        var wrapped = await response.Content
+            .ReadFromJsonAsync<RemoteApiResponse<RemoteEnvironmentDetails>>(cancellationToken: cancellationToken)
             .ConfigureAwait(false);
+
+        return wrapped?.Result;
     }
 
     public async Task<IReadOnlyList<RemoteEnvironmentDetails>> ListEnvironmentsAsync(
@@ -47,10 +50,10 @@ public sealed class HttpRemoteEnvironmentApiClient : IRemoteEnvironmentApiClient
             .ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
 
-        var items = await response.Content
-            .ReadFromJsonAsync<GetEnvironmentsResponse>(cancellationToken: cancellationToken)
+        var wrapped = await response.Content
+            .ReadFromJsonAsync<RemoteApiResponse<RemoteEnvironmentDetails[]>>(cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
-        return items?.Result ?? [];
+        return wrapped?.Result ?? [];
     }
 }
