@@ -48,7 +48,7 @@ public sealed class EnvironmentService : IEnvironmentService
 
         foreach (var details in remoteEnvironments.OrderBy(environment => environment.Name, StringComparer.OrdinalIgnoreCase))
         {
-            var tracked = await EnsureTrackedAsync(details.RemoteId, updatedAt, cancellationToken).ConfigureAwait(false);
+            var tracked = await EnsureTrackedAsync(details.Id, updatedAt, cancellationToken).ConfigureAwait(false);
             var cachedEnvironment = ToCachedEnvironment(tracked, details, updatedAt, isFromCache: false);
             _memoryCache.Set(GetCacheKey(tracked.Id), cachedEnvironment, _cacheOptions.CacheLifetime);
             results.Add(cachedEnvironment);
@@ -77,11 +77,12 @@ public sealed class EnvironmentService : IEnvironmentService
     {
         _memoryCache.Remove(CatalogCacheKey);
 
-        var details = await _apiClient.GetEnvironmentAsync(remoteId, cancellationToken).ConfigureAwait(false)
+        var environmentCode = await ResolveEnvironmentCodeAsync(remoteId, cancellationToken).ConfigureAwait(false);
+        var details = await _apiClient.GetEnvironmentAsync(environmentCode, cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException($"Remote environment '{remoteId}' was not found via the Web API.");
 
         var updatedAt = DateTimeOffset.UtcNow;
-        var tracked = await EnsureTrackedAsync(remoteId, updatedAt, cancellationToken).ConfigureAwait(false);
+        var tracked = await EnsureTrackedAsync(details.Id, updatedAt, cancellationToken).ConfigureAwait(false);
         var result = ToCachedEnvironment(tracked, details, updatedAt, isFromCache: false);
         _memoryCache.Set(GetCacheKey(tracked.Id), result, _cacheOptions.CacheLifetime);
         return result;
@@ -102,6 +103,40 @@ public sealed class EnvironmentService : IEnvironmentService
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         _memoryCache.Remove(GetCacheKey(localId));
         _memoryCache.Remove(CatalogCacheKey);
+    }
+
+    private async Task<string> ResolveEnvironmentCodeAsync(int remoteId, CancellationToken cancellationToken)
+    {
+        if (_memoryCache.TryGetValue(CatalogCacheKey, out IReadOnlyList<CachedEnvironment>? catalog) && catalog is not null)
+        {
+            var catalogMatch = catalog.FirstOrDefault(environment => environment.RemoteId == remoteId);
+            if (!string.IsNullOrWhiteSpace(catalogMatch?.Details.Code))
+            {
+                return catalogMatch.Details.Code;
+            }
+        }
+
+        var tracked = await _db.TrackedEnvironments
+            .AsNoTracking()
+            .SingleOrDefaultAsync(environment => environment.RemoteId == remoteId, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (tracked is not null
+            && _memoryCache.TryGetValue(GetCacheKey(tracked.Id), out CachedEnvironment? cached)
+            && cached is not null
+            && !string.IsNullOrWhiteSpace(cached.Details.Code))
+        {
+            return cached.Details.Code;
+        }
+
+        var environments = await _apiClient.ListEnvironmentsAsync(cancellationToken).ConfigureAwait(false);
+        var match = environments.FirstOrDefault(environment => environment.Id == remoteId);
+        if (match is null || string.IsNullOrWhiteSpace(match.Code))
+        {
+            throw new InvalidOperationException($"Remote environment '{remoteId}' was not found via the Web API.");
+        }
+
+        return match.Code;
     }
 
     private async Task<TrackedEnvironment> EnsureTrackedAsync(

@@ -44,8 +44,9 @@ else
             <thead class="table-light">
                 <tr>
                     <th>Name</th>
+                    <th>Code</th>
+                    <th>Type</th>
                     <th>Remote id</th>
-                    <th>SQL Server instance</th>
                     <th>Last updated</th>
                     <th style="width: 7rem;"></th>
                 </tr>
@@ -58,8 +59,9 @@ else
                         <td>
                             <a href="@($"/environments/{environment.LocalId}")">@environment.Details.Name</a>
                         </td>
+                        <td><code>@environment.Details.Code</code></td>
+                        <td>@environment.Details.EnvironmentType</td>
                         <td>@environment.RemoteId</td>
-                        <td><code>@environment.Details.SqlServerInstance</code></td>
                         <td>@environment.DateLastUpdated.ToLocalTime().ToString("g")</td>
                         <td>
                             <button type="button"

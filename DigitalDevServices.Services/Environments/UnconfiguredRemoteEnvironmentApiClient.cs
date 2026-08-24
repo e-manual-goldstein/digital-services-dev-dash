@@ -7,7 +7,7 @@ namespace DigitalDevServices.Services.Environments;
 /// </summary>
 public sealed class UnconfiguredRemoteEnvironmentApiClient : IRemoteEnvironmentApiClient
 {
-    public Task<RemoteEnvironmentDetails?> GetEnvironmentAsync(int remoteId, CancellationToken cancellationToken = default)
+    public Task<RemoteEnvironmentDetails?> GetEnvironmentAsync(string environmentCode, CancellationToken cancellationToken = default)
     {
         throw new InvalidOperationException(
             "RemoteEnvironmentApi:BaseUrl is not configured. Set it in appsettings to fetch environment details.");

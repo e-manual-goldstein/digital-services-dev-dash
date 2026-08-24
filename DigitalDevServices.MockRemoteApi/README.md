@@ -15,16 +15,16 @@ Default URL: **http://localhost:5280**
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/environments` | All sample environments |
-| GET | `/api/environments/{id}` | One environment by remote id (404 if unknown) |
+| POST | `/api/environments` | One environment by code — body: `{ "EnvironmentCode": "UAT-01" }` (404 if unknown) |
 
 ## Sample environments
 
-| RemoteId | Name | SQL Server instance |
-|----------|------|---------------------|
-| 1 | Dev | `DEVSQL\SQL2019` |
-| 2 | Integration | `INT-SQL01\DEV` |
-| 3 | UAT | `UAT-SQL01\STD` |
-| 4 | Production | `PROD-SQL01\STD` |
+| Id | Code | Name | EnvironmentType |
+|----|------|------|-----------------|
+| 1 | UAT-01 | UAT-01 | UAT |
+| 2 | INT | Integration | Integration |
+| 3 | UAT | UAT | UAT |
+| 4 | PROD | Production | Production |
 
 ## Point DevDash at the mock
 
@@ -32,8 +32,9 @@ With the mock API running, DevDash uses `RemoteEnvironmentApi:BaseUrl` from `app
 
 ```json
 "RemoteEnvironmentApi": {
-  "BaseUrl": "http://localhost:5280/"
+  "BaseUrl": "http://localhost:5280/",
+  "UseNtlmAuthentication": false
 }
 ```
 
-Then run DevDash and call `IEnvironmentService.TrackEnvironmentAsync(1)` (or use the Environments UI once ENV-002 ships).
+Then run DevDash and open the **Environments** page.

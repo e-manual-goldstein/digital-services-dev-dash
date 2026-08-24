@@ -4,8 +4,6 @@
 @inject IDeployableApplicationService DeployableApplicationService
 @inject IPipelineFeedService PipelineFeedService
 @inject NotificationService NotificationService
-@inject IJSRuntime JSRuntime
-@inject IOptions<TfsOptions> TfsOptions
 
 <PageTitle>@(_environment?.Details.Name ?? "Environment")</PageTitle>
 
@@ -28,7 +26,7 @@ else
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
         <div>
             <h1 class="mb-1">@_environment.Details.Name</h1>
-            <p class="text-muted mb-0">Remote id @_environment.RemoteId</p>
+            <p class="text-muted mb-0">@_environment.Details.Code &middot; @_environment.Details.EnvironmentType</p>
         </div>
         <button type="button"
                 class="btn btn-outline-secondary"
@@ -54,46 +52,14 @@ else
                 <dt class="col-sm-3">Last updated</dt>
                 <dd class="col-sm-9">@_environment.DateLastUpdated.ToLocalTime().ToString("g")</dd>
 
-                <dt class="col-sm-3">SQL Server instance</dt>
-                <dd class="col-sm-9">
-                    <div class="d-flex flex-wrap align-items-center gap-2">
-                        <code>@_environment.Details.SqlServerInstance</code>
-                        <button type="button"
-                                class="btn btn-sm btn-outline-secondary"
-                                disabled="@_isBusy"
-                                @onclick="CopySqlServerInstanceAsync">
-                            Copy
-                        </button>
-                    </div>
-                </dd>
+                <dt class="col-sm-3">Code</dt>
+                <dd class="col-sm-9"><code>@_environment.Details.Code</code></dd>
 
-                <dt class="col-sm-3">Build number</dt>
-                <dd class="col-sm-9">
-                    @if (!string.IsNullOrWhiteSpace(_workItemUrl))
-                    {
-                        <a href="@_workItemUrl" target="_blank" rel="noopener noreferrer">@_environment.Details.BuildNumber</a>
-                    }
-                    else if (!string.IsNullOrWhiteSpace(_environment.Details.BuildNumber))
-                    {
-                        @_environment.Details.BuildNumber
-                    }
-                    else
-                    {
-                        <span class="text-muted">—</span>
-                    }
-                </dd>
+                <dt class="col-sm-3">Environment type</dt>
+                <dd class="col-sm-9">@_environment.Details.EnvironmentType</dd>
 
-                <dt class="col-sm-3">WIP branch</dt>
-                <dd class="col-sm-9">
-                    @if (!string.IsNullOrWhiteSpace(_environment.Details.WipBranch))
-                    {
-                        <code>@_environment.Details.WipBranch</code>
-                    }
-                    else
-                    {
-                        <span class="text-muted">—</span>
-                    }
-                </dd>
+                <dt class="col-sm-3">Remote id</dt>
+                <dd class="col-sm-9">@_environment.Details.Id</dd>
             </dl>
         </div>
     </div>
@@ -322,7 +288,6 @@ else
     private IReadOnlyList<ApplicationInstance> _instances = [];
     private IReadOnlyList<DeployableApplication> _deployableApplications = [];
     private IReadOnlyList<PipelineFeed> _pipelineFeeds = [];
-    private string? _workItemUrl;
     private bool _isLoading = true;
     private bool _instancesLoading;
     private bool _isBusy;
@@ -352,9 +317,6 @@ else
         try
         {
             _environment = await EnvironmentService.GetTrackedEnvironmentAsync(LocalId);
-            _workItemUrl = TfsWorkItemLinkBuilder.BuildWorkItemUrl(
-                TfsOptions.Value.WorkItemUrlTemplate,
-                _environment?.Details.BuildNumber);
 
             if (_environment is not null)
             {
@@ -371,7 +333,6 @@ else
         {
             _errorMessage = $"Could not load environment: {ex.Message}";
             _environment = null;
-            _workItemUrl = null;
             _instances = [];
         }
         finally
@@ -574,9 +535,6 @@ else
         try
         {
             _environment = await EnvironmentService.RefreshEnvironmentAsync(_environment.RemoteId);
-            _workItemUrl = TfsWorkItemLinkBuilder.BuildWorkItemUrl(
-                TfsOptions.Value.WorkItemUrlTemplate,
-                _environment.Details.BuildNumber);
 
             NotificationService.Notify(new NotificationMessage
             {
@@ -594,36 +552,6 @@ else
         {
             _isRefreshing = false;
             _isBusy = false;
-        }
-    }
-
-    private async Task CopySqlServerInstanceAsync()
-    {
-        if (_environment is null || string.IsNullOrWhiteSpace(_environment.Details.SqlServerInstance))
-        {
-            return;
-        }
-
-        try
-        {
-            await JSRuntime.InvokeVoidAsync("devDashClipboard.copyText", _environment.Details.SqlServerInstance);
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Success,
-                Summary = "Copied",
-                Detail = "SQL Server instance copied to clipboard.",
-                Duration = 3000
-            });
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Copy failed",
-                Detail = ex.Message,
-                Duration = 5000
-            });
         }
     }
 }

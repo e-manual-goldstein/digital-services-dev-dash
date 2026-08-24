@@ -23,9 +23,9 @@ public class RemoteEnvironmentApiOptions
     public string? Domain { get; set; }
 
     /// <summary>
-    /// Relative path template for a single environment. Use {id} for the remote id.
+    /// Relative path for fetching a single environment (POST with <see cref="GetEnvironmentRequest"/> body).
     /// </summary>
-    public string GetEnvironmentPath { get; set; } = "api/environments/{id}";
+    public string GetEnvironmentPath { get; set; } = "api/environments";
 
     /// <summary>
     /// Relative path for listing all environments.

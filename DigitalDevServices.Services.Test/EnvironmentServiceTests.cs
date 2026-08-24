@@ -19,15 +19,17 @@ public sealed class EnvironmentServiceTests
             {
                 [42] = new RemoteEnvironmentDetails
                 {
-                    RemoteId = 42,
+                    Id = 42,
+                    Code = "UAT-01",
                     Name = "UAT-01",
-                    SqlServerInstance = "sql-UAT-01.example"
+                    EnvironmentType = "UAT"
                 },
                 [2] = new RemoteEnvironmentDetails
                 {
-                    RemoteId = 2,
+                    Id = 2,
+                    Code = "INT",
                     Name = "Integration",
-                    SqlServerInstance = "sql-integration.example"
+                    EnvironmentType = "Integration"
                 }
             }
         });
@@ -50,9 +52,10 @@ public sealed class EnvironmentServiceTests
             {
                 [7] = new RemoteEnvironmentDetails
                 {
-                    RemoteId = 7,
+                    Id = 7,
+                    Code = "DEV",
                     Name = "Dev",
-                    SqlServerInstance = "sql-dev"
+                    EnvironmentType = "Development"
                 }
             }
         };
@@ -80,9 +83,10 @@ public sealed class EnvironmentServiceTests
             {
                 [99] = new RemoteEnvironmentDetails
                 {
-                    RemoteId = 99,
+                    Id = 99,
+                    Code = "QA",
                     Name = "QA",
-                    SqlServerInstance = "sql-qa"
+                    EnvironmentType = "QA"
                 }
             }
         };
@@ -94,8 +98,10 @@ public sealed class EnvironmentServiceTests
         var refreshed = await fixture.Service.RefreshEnvironmentAsync(99);
 
         Assert.AreEqual("QA", refreshed.Details.Name);
+        Assert.AreEqual("QA", refreshed.Details.Code);
         Assert.IsFalse(refreshed.IsFromCache);
         Assert.AreEqual(1, fakeApi.GetCallCount);
+        Assert.AreEqual("QA", fakeApi.LastRequestedEnvironmentCode);
     }
 
     private sealed class EnvironmentServiceFixture : IAsyncDisposable
@@ -152,14 +158,21 @@ public sealed class EnvironmentServiceTests
 
         public int ListCallCount { get; private set; }
 
-        public Task<RemoteEnvironmentDetails?> GetEnvironmentAsync(int remoteId, CancellationToken cancellationToken = default)
+        public string? LastRequestedEnvironmentCode { get; private set; }
+
+        public Task<RemoteEnvironmentDetails?> GetEnvironmentAsync(
+            string environmentCode,
+            CancellationToken cancellationToken = default)
         {
             GetCallCount++;
-            Environments.TryGetValue(remoteId, out var details);
+            LastRequestedEnvironmentCode = environmentCode;
+            var details = Environments.Values.FirstOrDefault(environment =>
+                environment.Code.Equals(environmentCode, StringComparison.OrdinalIgnoreCase));
             return Task.FromResult(details);
         }
 
-        public Task<IReadOnlyList<RemoteEnvironmentDetails>> ListEnvironmentsAsync(CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<RemoteEnvironmentDetails>> ListEnvironmentsAsync(
+            CancellationToken cancellationToken = default)
         {
             ListCallCount++;
             IReadOnlyList<RemoteEnvironmentDetails> items = Environments.Values.ToList();

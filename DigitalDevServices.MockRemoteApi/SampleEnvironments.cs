@@ -8,35 +8,31 @@ internal static class SampleEnvironments
     [
         new RemoteEnvironmentDetails
         {
-            RemoteId = 1,
+            Id = 1,
+            Code = "UAT-01",
             Name = "UAT-01",
-            SqlServerInstance = @"UAT-01\SQL2019",
-            BuildNumber = "123456",
-            WipBranch = "feature/123456-customer-portal"
+            EnvironmentType = "UAT"
         },
         new RemoteEnvironmentDetails
         {
-            RemoteId = 2,
+            Id = 2,
+            Code = "INT",
             Name = "Integration",
-            SqlServerInstance = @"INT-SQL01\DEV",
-            BuildNumber = "118902",
-            WipBranch = "develop"
+            EnvironmentType = "Integration"
         },
         new RemoteEnvironmentDetails
         {
-            RemoteId = 3,
+            Id = 3,
+            Code = "UAT",
             Name = "UAT",
-            SqlServerInstance = @"UAT-SQL01\STD",
-            BuildNumber = "120001",
-            WipBranch = "release/12.0"
+            EnvironmentType = "UAT"
         },
         new RemoteEnvironmentDetails
         {
-            RemoteId = 4,
+            Id = 4,
+            Code = "PROD",
             Name = "Production",
-            SqlServerInstance = @"PROD-SQL01\STD",
-            BuildNumber = "119500",
-            WipBranch = "release/11.9"
+            EnvironmentType = "Production"
         }
     ];
 }

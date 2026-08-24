@@ -5,13 +5,11 @@ namespace DigitalDevServices.Model.Environments;
 /// </summary>
 public class RemoteEnvironmentDetails
 {
-    public int RemoteId { get; set; }
+    public string Code { get; set; } = string.Empty;
+
+    public string EnvironmentType { get; set; } = string.Empty;
+
+    public int Id { get; set; }
 
     public string Name { get; set; } = string.Empty;
-
-    public string SqlServerInstance { get; set; } = string.Empty;
-
-    public string? BuildNumber { get; set; }
-
-    public string? WipBranch { get; set; }
 }

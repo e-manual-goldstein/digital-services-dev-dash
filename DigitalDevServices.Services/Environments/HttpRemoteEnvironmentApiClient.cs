@@ -15,10 +15,18 @@ public sealed class HttpRemoteEnvironmentApiClient : IRemoteEnvironmentApiClient
         _options = options.Value;
     }
 
-    public async Task<RemoteEnvironmentDetails?> GetEnvironmentAsync(int remoteId, CancellationToken cancellationToken = default)
+    public async Task<RemoteEnvironmentDetails?> GetEnvironmentAsync(
+        string environmentCode,
+        CancellationToken cancellationToken = default)
     {
-        var path = _options.GetEnvironmentPath.Replace("{id}", remoteId.ToString(), StringComparison.Ordinal);
-        var response = await _httpClient.GetAsync(path, cancellationToken).ConfigureAwait(false);
+        var request = new GetEnvironmentRequest
+        {
+            EnvironmentCode = environmentCode
+        };
+
+        var response = await _httpClient
+            .PostAsJsonAsync(_options.GetEnvironmentPath, request, cancellationToken)
+            .ConfigureAwait(false);
 
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
@@ -26,23 +34,21 @@ public sealed class HttpRemoteEnvironmentApiClient : IRemoteEnvironmentApiClient
         }
 
         response.EnsureSuccessStatusCode();
-        var details = await response.Content.ReadFromJsonAsync<RemoteEnvironmentDetails>(cancellationToken: cancellationToken)
+        return await response.Content
+            .ReadFromJsonAsync<RemoteEnvironmentDetails>(cancellationToken: cancellationToken)
             .ConfigureAwait(false);
-
-        if (details is not null)
-        {
-            details.RemoteId = remoteId;
-        }
-
-        return details;
     }
 
-    public async Task<IReadOnlyList<RemoteEnvironmentDetails>> ListEnvironmentsAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<RemoteEnvironmentDetails>> ListEnvironmentsAsync(
+        CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.GetAsync(_options.ListEnvironmentsPath, cancellationToken).ConfigureAwait(false);
+        var response = await _httpClient
+            .GetAsync(_options.ListEnvironmentsPath, cancellationToken)
+            .ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
 
-        var items = await response.Content.ReadFromJsonAsync<List<RemoteEnvironmentDetails>>(cancellationToken: cancellationToken)
+        var items = await response.Content
+            .ReadFromJsonAsync<List<RemoteEnvironmentDetails>>(cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
         return items ?? [];
