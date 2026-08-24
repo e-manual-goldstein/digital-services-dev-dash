@@ -39,58 +39,117 @@ else
         <p class="text-muted small mb-2">Showing cached data. Use Refresh all or refresh a row to fetch the latest from the API.</p>
     }
 
-    <div class="table-responsive">
-        <table class="table table-striped table-hover align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th>Name</th>
-                    <th>Code</th>
-                    <th>Type</th>
-                    <th>Remote id</th>
-                    <th>Last updated</th>
-                    <th style="width: 7rem;"></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var environment in _environments)
-                {
-                    var isRefreshing = _refreshingRemoteId == environment.RemoteId;
+    <h2 class="h5 mb-3">Favourites</h2>
+    @if (_favouriteEnvironments.Count == 0)
+    {
+        <p class="text-muted mb-4">No favourites yet — star an environment below.</p>
+    }
+    else
+    {
+        <div class="table-responsive mb-4">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
                     <tr>
-                        <td>
-                            <a href="@($"/environments/{environment.LocalId}")">@environment.Details.Name</a>
-                        </td>
-                        <td><code>@environment.Details.Code</code></td>
-                        <td>@environment.Details.EnvironmentType</td>
-                        <td>@environment.RemoteId</td>
-                        <td>@environment.DateLastUpdated.ToLocalTime().ToString("g")</td>
-                        <td>
-                            <button type="button"
-                                    class="btn btn-sm btn-outline-secondary"
-                                    disabled="@(_isBusy || isRefreshing)"
-                                    @onclick="() => RefreshEnvironmentAsync(environment.RemoteId)">
-                                @(isRefreshing ? "Refreshing…" : "Refresh")
-                            </button>
-                        </td>
+                        <th>Name</th>
+                        <th>Code</th>
+                        <th>Type</th>
+                        <th>Remote id</th>
+                        <th>Last updated</th>
+                        <th style="width: 3rem;"></th>
+                        <th style="width: 7rem;"></th>
                     </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                    @foreach (var environment in _favouriteEnvironments)
+                    {
+                        @EnvironmentRow(environment)
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    <h2 class="h5 mb-3">All environments</h2>
+    @if (_otherEnvironments.Count == 0)
+    {
+        <p class="text-muted">Every environment is in your favourites list.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Code</th>
+                        <th>Type</th>
+                        <th>Remote id</th>
+                        <th>Last updated</th>
+                        <th style="width: 3rem;"></th>
+                        <th style="width: 7rem;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var environment in _otherEnvironments)
+                    {
+                        @EnvironmentRow(environment)
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 }
 
 @code {
     private IReadOnlyList<CachedEnvironment> _environments = [];
+    private IReadOnlyList<CachedEnvironment> _favouriteEnvironments = [];
+    private IReadOnlyList<CachedEnvironment> _otherEnvironments = [];
     private bool _isLoading = true;
     private bool _isBusy;
     private bool _isRefreshingAll;
     private bool _loadedFromCache;
     private int? _refreshingRemoteId;
+    private Guid? _togglingFavouriteLocalId;
     private string? _errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadEnvironmentsAsync(forceRefresh: false);
     }
+
+    private RenderFragment EnvironmentRow(CachedEnvironment environment) => __builder =>
+    {
+        var isRefreshing = _refreshingRemoteId == environment.RemoteId;
+        var isTogglingFavourite = _togglingFavouriteLocalId == environment.LocalId;
+
+        <tr>
+            <td>
+                <a href="@($"/environments/{environment.LocalId}")" class="text-decoration-none">@environment.Details.Name</a>
+            </td>
+            <td><code>@environment.Details.Code</code></td>
+            <td>@environment.Details.EnvironmentType</td>
+            <td>@environment.RemoteId</td>
+            <td>@environment.DateLastUpdated.ToLocalTime().ToString("g")</td>
+            <td>
+                <button type="button"
+                        class="btn btn-sm btn-link @(environment.IsFavourite ? "text-warning" : "text-secondary") p-0"
+                        title="@(environment.IsFavourite ? "Remove from favourites" : "Add to favourites")"
+                        aria-label="@(environment.IsFavourite ? "Remove from favourites" : "Add to favourites")"
+                        disabled="@(_isBusy || isTogglingFavourite)"
+                        @onclick="() => ToggleFavouriteAsync(environment)">
+                    @(environment.IsFavourite ? "★" : "☆")
+                </button>
+            </td>
+            <td>
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        disabled="@(_isBusy || isRefreshing)"
+                        @onclick="() => RefreshEnvironmentAsync(environment.RemoteId)">
+                    @(isRefreshing ? "Refreshing…" : "Refresh")
+                </button>
+            </td>
+        </tr>
+    };
 
     private async Task LoadEnvironmentsAsync(bool forceRefresh)
     {
@@ -101,11 +160,21 @@ else
         {
             _environments = await EnvironmentService.GetEnvironmentsAsync(forceRefresh);
             _loadedFromCache = !forceRefresh && _environments.Any(environment => environment.IsFromCache);
+            _favouriteEnvironments = _environments
+                .Where(environment => environment.IsFavourite)
+                .OrderBy(environment => environment.RemoteId)
+                .ToList();
+            _otherEnvironments = _environments
+                .Where(environment => !environment.IsFavourite)
+                .OrderBy(environment => environment.RemoteId)
+                .ToList();
         }
         catch (Exception ex)
         {
             _errorMessage = $"Could not load environments: {ex.Message}";
             _environments = [];
+            _favouriteEnvironments = [];
+            _otherEnvironments = [];
             _loadedFromCache = false;
         }
         finally
@@ -168,6 +237,36 @@ else
         finally
         {
             _refreshingRemoteId = null;
+            _isBusy = false;
+        }
+    }
+
+    private async Task ToggleFavouriteAsync(CachedEnvironment environment)
+    {
+        _errorMessage = null;
+        _isBusy = true;
+        _togglingFavouriteLocalId = environment.LocalId;
+
+        try
+        {
+            var isFavourite = !environment.IsFavourite;
+            await EnvironmentService.SetFavouriteAsync(environment.LocalId, isFavourite);
+            await LoadEnvironmentsAsync(forceRefresh: false);
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = isFavourite ? "Added to favourites" : "Removed from favourites",
+                Detail = environment.Details.Name,
+                Duration = 3000
+            });
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Could not update favourite: {ex.Message}";
+        }
+        finally
+        {
+            _togglingFavouriteLocalId = null;
             _isBusy = false;
         }
     }

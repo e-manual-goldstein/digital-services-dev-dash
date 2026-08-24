@@ -31,6 +31,7 @@ public static class DevDashDataServiceCollectionExtensions
         EnsureApplicationInstancesHomepageUrlColumnExists(db);
         EnsureLogFormatProfilesTableExists(db);
         EnsureConfigurationSettingsTableExists(db);
+        EnsureTrackedEnvironmentsIsFavouriteColumnExists(db);
     }
 
     private static void EnsurePipelineFeedsTableExists(DevDashDbContext db)
@@ -153,6 +154,15 @@ public static class DevDashDataServiceCollectionExtensions
             CREATE UNIQUE INDEX IF NOT EXISTS "IX_ConfigurationSettings_ApplicationInstanceId_Key"
             ON "ConfigurationSettings" ("ApplicationInstanceId", "Key");
             """);
+    }
+
+    private static void EnsureTrackedEnvironmentsIsFavouriteColumnExists(DevDashDbContext db)
+    {
+        EnsureColumnExists(
+            db,
+            "TrackedEnvironments",
+            "IsFavourite",
+            "ALTER TABLE \"TrackedEnvironments\" ADD COLUMN \"IsFavourite\" INTEGER NOT NULL DEFAULT 0");
     }
 
     private static void EnsureColumnExists(

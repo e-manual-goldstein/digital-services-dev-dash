@@ -9,6 +9,8 @@ public record CachedEnvironment
 
     public required int RemoteId { get; init; }
 
+    public required bool IsFavourite { get; init; }
+
     public required RemoteEnvironmentDetails Details { get; init; }
 
     public required DateTimeOffset DateLastUpdated { get; init; }

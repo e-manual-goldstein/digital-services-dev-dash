@@ -10,5 +10,7 @@ public class TrackedEnvironment
 
     public int RemoteId { get; set; }
 
+    public bool IsFavourite { get; set; }
+
     public DateTimeOffset DateLastUpdated { get; set; }
 }

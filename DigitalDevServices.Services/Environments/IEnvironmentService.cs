@@ -13,5 +13,7 @@ public interface IEnvironmentService
 
     Task<CachedEnvironment> RefreshEnvironmentAsync(int remoteId, CancellationToken cancellationToken = default);
 
+    Task<CachedEnvironment> SetFavouriteAsync(Guid localId, bool isFavourite, CancellationToken cancellationToken = default);
+
     Task UntrackEnvironmentAsync(Guid localId, CancellationToken cancellationToken = default);
 }

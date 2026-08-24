@@ -28,8 +28,9 @@
 | [ENV-005](#env-005) | Done | Deployed applications table on environment details | ENV-004, APP-002 |
 | [ENV-006](#env-006) | Done | Deployed application packages page (DLL list + versions) | ENV-005, APP-002 |
 | [ENV-007](#env-007) | Done | Extensible `RemoteEnvironmentDetails` (overflow JSON properties) | ENV-001 |
-| [ENV-008](#env-008) | Todo | Environment favourites (local persistence + favourites table) | ENV-002 |
+| [ENV-008](#env-008) | Done | Environment favourites (local persistence + favourites table) | ENV-002 |
 | [ENV-009](#env-009) | Todo | Environments list table columns (favourites + all environments) | ENV-008 |
+| [ENV-010](#env-010) | Todo | Environment details — additional properties (expandable JSON) | ENV-007 |
 
 ---
 
@@ -154,6 +155,15 @@ Route: `/environments/{localId}` (`CachedEnvironment.LocalId`).
 | WIP branch | Plain text from `WipBranch` |
 | Refresh | Per-environment refresh (same as list row refresh) |
 
+**Additional properties** (ENV-010) — below the main details card.
+
+| Surface | Behaviour |
+|---------|-----------|
+| Section | Reuse `CollapsibleSection`; title **Additional properties**; collapsed by default |
+| Empty | Omit the section when `AdditionalProperties` is null or empty |
+| Content | On expand, show `AdditionalProperties` as pretty-printed JSON (`JsonSerializer` with `WriteIndented`) in `<pre><code>` |
+| Refresh | Content reflects the latest API response after per-environment **Refresh** |
+
 **Deployed applications table** (ENV-005) — `IApplicationInstanceService.GetByEnvironmentIdAsync`. Empty state until deployments exist (APP-004).
 
 | Row action | Behaviour |
@@ -269,9 +279,9 @@ Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-
 |-------|--------|
 | **ID** | ENV-008 |
 | **Title** | Environment favourites (local persistence + favourites table) |
-| **Status** | Todo |
-| **Description** | Add `IsFavourite` (`bool`, default `false`) to `TrackedEnvironment` with SQLite schema upgrade. Extend `CachedEnvironment` and `IEnvironmentService` with `SetFavouriteAsync(localId, isFavourite)` (or toggle). On `/environments`, render a **Favourites** section at the top: table of environments where `IsFavourite` is true. Environments not favourited remain in the main list below (see ENV-009 for shared column layout). Favourite state survives app restart; it is DevDash-only and never sent to the remote API. Empty favourites section: short message (e.g. “No favourites yet — star an environment below.”). Unit tests: set favourite, reload from DB, clear favourite. |
-| **Test / demo** | Open **Environments** → favourite two environments → they appear in the top table → restart DevDash → still favourited → unfavourite one → moves to all-environments table only. `dotnet test --filter EnvironmentServiceTests` → favourite persistence passes. |
+| **Status** | Done |
+| **Description** | Added `IsFavourite` to `TrackedEnvironment` with SQLite schema upgrade. Extended `CachedEnvironment` and `IEnvironmentService.SetFavouriteAsync`. `/environments` shows a **Favourites** table at the top (star toggle, empty-state message) and **All environments** below for non-favourites. Favourite state is local-only and survives restart; memory cache is patched on toggle. |
+| **Test / demo** | Open **Environments** → star two environments → they appear in Favourites → restart DevDash → still favourited → unstar one → moves to All environments only. `dotnet test --filter EnvironmentServiceTests` → pass. |
 | **Depends on** | ENV-002 |
 
 ### ENV-009
@@ -284,3 +294,14 @@ Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-
 | **Description** | Refactor `/environments` so **Favourites** and **All environments** tables share one row template / component. Columns in order: **Code** (`Details.Code`, `<code>`), **Name** (link to details), **Type** (`Details.EnvironmentType`), **Last updated** (`DateLastUpdated`, local time), **Favourite** (toggle button — filled star vs outline; calls `SetFavouriteAsync`), **Refresh** (per-row, existing behaviour). Remove the **Remote id** column from the UI. Default sort for both tables: ascending by `RemoteId` / `Details.Id`. Extract shared markup to avoid duplication (partial component or private render fragment). |
 | **Test / demo** | **Environments** page shows Code, Name, Type, Last updated, favourite control, Refresh — no Remote id column. Rows sorted by remote id ascending. Favourite toggle works in both tables. **Refresh all** still works. |
 | **Depends on** | ENV-008 |
+
+### ENV-010
+
+| Field | Detail |
+|-------|--------|
+| **ID** | ENV-010 |
+| **Title** | Environment details — additional properties (expandable JSON) |
+| **Status** | Todo |
+| **Description** | On `/environments/{localId}`, below the card of named environment fields, add an expandable **Additional properties** section for `RemoteEnvironmentDetails.AdditionalProperties` (ENV-007). Reuse existing `CollapsibleSection` component; collapsed by default. When expanded, render the dictionary as pretty-printed JSON in a `<pre><code>` block (`System.Text.Json`, `WriteIndented`). Omit the section entirely when `AdditionalProperties` is null or empty. Optional small helper on the model or a static formatter keeps the Razor page thin. After **Refresh**, the JSON reflects the latest API payload. |
+| **Test / demo** | Run mock API + DevDash → open **UAT-01** details → **Additional properties** section appears (mock includes `SqlServerInstance`, `BuildNumber`, `WipBranch` in overflow) → expand → indented JSON with those keys → **Refresh** → content still correct. Environment with no overflow fields → section not shown. |
+| **Depends on** | ENV-007 |

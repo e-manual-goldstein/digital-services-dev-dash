@@ -104,6 +104,59 @@ public sealed class EnvironmentServiceTests
         Assert.AreEqual("QA", fakeApi.LastRequestedEnvironmentCode);
     }
 
+    [TestMethod]
+    public async Task SetFavouriteAsync_PersistsToDatabaseAndUpdatesCachedEnvironment()
+    {
+        var fakeApi = new FakeRemoteEnvironmentApiClient
+        {
+            Environments =
+            {
+                [42] = new RemoteEnvironmentDetails
+                {
+                    Id = 42,
+                    Code = "UAT-01",
+                    Name = "UAT-01",
+                    EnvironmentType = "UAT"
+                },
+                [2] = new RemoteEnvironmentDetails
+                {
+                    Id = 2,
+                    Code = "INT",
+                    Name = "Integration",
+                    EnvironmentType = "Integration"
+                }
+            }
+        };
+
+        await using var fixture = await EnvironmentServiceFixture.CreateAsync(fakeApi);
+        var environments = await fixture.Service.GetEnvironmentsAsync();
+        var uat01 = environments.Single(environment => environment.RemoteId == 42);
+        Assert.IsFalse(uat01.IsFavourite);
+
+        var favourited = await fixture.Service.SetFavouriteAsync(uat01.LocalId, isFavourite: true);
+        Assert.IsTrue(favourited.IsFavourite);
+
+        var fromService = await fixture.Service.GetTrackedEnvironmentAsync(uat01.LocalId);
+        Assert.IsNotNull(fromService);
+        Assert.IsTrue(fromService!.IsFavourite);
+
+        var fromCatalog = await fixture.Service.GetEnvironmentsAsync();
+        Assert.IsTrue(fromCatalog.Single(environment => environment.LocalId == uat01.LocalId).IsFavourite);
+
+        var tracked = await fixture.Db.TrackedEnvironments
+            .AsNoTracking()
+            .SingleAsync(environment => environment.Id == uat01.LocalId);
+        Assert.IsTrue(tracked.IsFavourite);
+
+        var cleared = await fixture.Service.SetFavouriteAsync(uat01.LocalId, isFavourite: false);
+        Assert.IsFalse(cleared.IsFavourite);
+
+        tracked = await fixture.Db.TrackedEnvironments
+            .AsNoTracking()
+            .SingleAsync(environment => environment.Id == uat01.LocalId);
+        Assert.IsFalse(tracked.IsFavourite);
+    }
+
     private sealed class EnvironmentServiceFixture : IAsyncDisposable
     {
         private readonly ServiceProvider _serviceProvider;

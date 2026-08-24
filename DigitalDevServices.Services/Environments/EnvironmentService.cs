@@ -88,6 +88,27 @@ public sealed class EnvironmentService : IEnvironmentService
         return result;
     }
 
+    public async Task<CachedEnvironment> SetFavouriteAsync(
+        Guid localId,
+        bool isFavourite,
+        CancellationToken cancellationToken = default)
+    {
+        var tracked = await _db.TrackedEnvironments
+            .SingleOrDefaultAsync(environment => environment.Id == localId, cancellationToken)
+            .ConfigureAwait(false)
+            ?? throw new InvalidOperationException($"Environment '{localId}' is not tracked.");
+
+        tracked.IsFavourite = isFavourite;
+        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        UpdateCachedFavourite(localId, isFavourite);
+
+        var cached = await GetTrackedEnvironmentAsync(localId, cancellationToken).ConfigureAwait(false)
+            ?? throw new InvalidOperationException($"Environment '{localId}' is not tracked.");
+
+        return cached with { IsFavourite = isFavourite };
+    }
+
     public async Task UntrackEnvironmentAsync(Guid localId, CancellationToken cancellationToken = default)
     {
         var tracked = await _db.TrackedEnvironments
@@ -192,10 +213,31 @@ public sealed class EnvironmentService : IEnvironmentService
         {
             LocalId = tracked.Id,
             RemoteId = tracked.RemoteId,
+            IsFavourite = tracked.IsFavourite,
             Details = details,
             DateLastUpdated = updatedAt,
             IsFromCache = isFromCache
         };
+    }
+
+    private void UpdateCachedFavourite(Guid localId, bool isFavourite)
+    {
+        var cacheKey = GetCacheKey(localId);
+        if (_memoryCache.TryGetValue(cacheKey, out CachedEnvironment? cached) && cached is not null)
+        {
+            _memoryCache.Set(cacheKey, cached with { IsFavourite = isFavourite }, _cacheOptions.CacheLifetime);
+        }
+
+        if (_memoryCache.TryGetValue(CatalogCacheKey, out IReadOnlyList<CachedEnvironment>? catalog) && catalog is not null)
+        {
+            var updatedCatalog = catalog
+                .Select(environment => environment.LocalId == localId
+                    ? environment with { IsFavourite = isFavourite }
+                    : environment)
+                .ToList();
+
+            _memoryCache.Set(CatalogCacheKey, updatedCatalog, _cacheOptions.CacheLifetime);
+        }
     }
 
     private static string GetCacheKey(Guid localId) => CacheKeyPrefix + localId.ToString("N");
