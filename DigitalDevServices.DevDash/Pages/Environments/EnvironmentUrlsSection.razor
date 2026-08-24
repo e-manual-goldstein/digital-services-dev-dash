@@ -1,0 +1,99 @@
+@namespace DigitalDevServices.DevDash.Pages.Environments
+@inject IRemoteEnvironmentRegistrationService RegistrationService
+@inject NotificationService NotificationService
+
+<EnvironmentDetailsCollectionSection Title="Environment URLs" Items="EnvironmentUrls">
+    <HeaderContent>
+        <tr>
+            <th>Application name</th>
+            <th>URL</th>
+            <th style="width: 9rem;"></th>
+        </tr>
+    </HeaderContent>
+    <RowTemplate Context="environmentUrl">
+        <tr>
+            <td>@environmentUrl.ApplicationName</td>
+            <td>
+                <a href="@environmentUrl.Url"
+                   target="_blank"
+                   rel="noopener noreferrer">@environmentUrl.Url</a>
+            </td>
+            <td>
+                <div class="d-flex align-items-center gap-2">
+                    @if (IsRegistered(environmentUrl))
+                    {
+                        <span class="badge text-bg-success">Registered</span>
+                    }
+                    <button type="button"
+                            class="btn btn-sm btn-outline-primary"
+                            disabled="@(IsBusy || _registeringApplicationName == environmentUrl.ApplicationName)"
+                            @onclick="() => RegisterAsync(environmentUrl)">
+                        @(_registeringApplicationName == environmentUrl.ApplicationName
+                            ? "Registering…"
+                            : IsRegistered(environmentUrl) ? "Update" : "Register")
+                    </button>
+                </div>
+            </td>
+        </tr>
+    </RowTemplate>
+</EnvironmentDetailsCollectionSection>
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<EnvironmentUrl> EnvironmentUrls { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public Guid EnvironmentId { get; set; }
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<ApplicationInstance> Instances { get; set; } = [];
+
+    [Parameter]
+    public bool IsBusy { get; set; }
+
+    [Parameter]
+    public EventCallback OnRegistrationComplete { get; set; }
+
+    private string? _registeringApplicationName;
+
+    private bool IsRegistered(EnvironmentUrl environmentUrl) =>
+        Instances.Any(instance =>
+            instance.DeployableApplication.Name.Equals(
+                environmentUrl.ApplicationName,
+                StringComparison.OrdinalIgnoreCase));
+
+    private async Task RegisterAsync(EnvironmentUrl environmentUrl)
+    {
+        _registeringApplicationName = environmentUrl.ApplicationName;
+
+        try
+        {
+            var instance = await RegistrationService.RegisterFromEnvironmentUrlAsync(
+                EnvironmentId,
+                environmentUrl);
+            await OnRegistrationComplete.InvokeAsync();
+
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Application registered",
+                Detail = $"{instance.DeployableApplication.Name} linked with homepage URL.",
+                Duration = 4000
+            });
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Registration failed",
+                Detail = ex.Message,
+                Duration = 6000
+            });
+        }
+        finally
+        {
+            _registeringApplicationName = null;
+        }
+    }
+}

@@ -35,6 +35,41 @@ internal static class SampleEnvironments
                         ComponentResourceNameResolved = "UAT-01-APP.example.com"
                     }
                 ],
+                EnvironmentUrls =
+                [
+                    new EnvironmentUrl
+                    {
+                        ApplicationName = "Customer Portal",
+                        Url = "https://uat-01.example.com/portal"
+                    },
+                    new EnvironmentUrl
+                    {
+                        ApplicationName = "Admin API",
+                        Url = "https://uat-01.example.com/api"
+                    }
+                ],
+                WebSites =
+                [
+                    new EnvironmentWebSite
+                    {
+                        MachineName = "UAT-01-APP",
+                        WebApplications =
+                        [
+                            new EnvironmentWebApplication
+                            {
+                                ApplicationPoolName = "CustomerPortalAppPool",
+                                Path = "/portal",
+                                PhysicalPath = @"C:\inetpub\wwwroot\CustomerPortal"
+                            },
+                            new EnvironmentWebApplication
+                            {
+                                ApplicationPoolName = "AdminApiAppPool",
+                                Path = "/api",
+                                PhysicalPath = @"C:\inetpub\wwwroot\AdminApi"
+                            }
+                        ]
+                    }
+                ],
                 WindowsServices =
                 [
                     new EnvironmentWindowsService

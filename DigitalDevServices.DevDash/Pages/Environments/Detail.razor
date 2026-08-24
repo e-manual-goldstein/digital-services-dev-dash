@@ -98,6 +98,18 @@ else
         </RowTemplate>
     </EnvironmentDetailsCollectionSection>
 
+    <EnvironmentUrlsSection EnvironmentUrls="_environment.Details.EnvironmentUrls"
+                            EnvironmentId="LocalId"
+                            Instances="_instances"
+                            IsBusy="@(_isBusy || _isSavingDeployment)"
+                            OnRegistrationComplete="LoadDeploymentDataAsync" />
+
+    <WebSitesSection WebSites="_environment.Details.WebSites"
+                     EnvironmentId="LocalId"
+                     Instances="_instances"
+                     IsBusy="@(_isBusy || _isSavingDeployment)"
+                     OnRegistrationComplete="LoadDeploymentDataAsync" />
+
     <EnvironmentDetailsCollectionSection Title="Windows services" Items="_environment.Details.WindowsServices">
         <HeaderContent>
             <tr>

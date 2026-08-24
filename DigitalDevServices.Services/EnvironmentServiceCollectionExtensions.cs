@@ -35,6 +35,7 @@ public static class EnvironmentServiceCollectionExtensions
         }
 
         services.AddScoped<IEnvironmentService, EnvironmentService>();
+        services.AddScoped<IRemoteEnvironmentRegistrationService, RemoteEnvironmentRegistrationService>();
 
         return services;
     }

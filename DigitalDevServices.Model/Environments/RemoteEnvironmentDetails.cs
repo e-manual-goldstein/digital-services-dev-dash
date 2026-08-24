@@ -20,6 +20,10 @@ public class RemoteEnvironmentDetails
 
     public EnvironmentWindowsService[] WindowsServices { get; set; } = [];
 
+    public EnvironmentUrl[] EnvironmentUrls { get; set; } = [];
+
+    public EnvironmentWebSite[] WebSites { get; set; } = [];
+
     /// <summary>
     /// JSON properties not mapped to first-class members. Populated via <see cref="JsonExtensionDataAttribute"/>.
     /// </summary>

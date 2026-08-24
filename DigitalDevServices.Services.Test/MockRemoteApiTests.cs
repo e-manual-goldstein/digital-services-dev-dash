@@ -34,6 +34,12 @@ public sealed class MockRemoteApiTests
         Assert.AreEqual("UAT-01-SQL", uat01.Servers[0].Name);
         Assert.HasCount(2, uat01.WindowsServices);
         Assert.AreEqual("Digital Services Worker", uat01.WindowsServices[0].DisplayName);
+        Assert.HasCount(2, uat01.EnvironmentUrls);
+        Assert.AreEqual("Customer Portal", uat01.EnvironmentUrls[0].ApplicationName);
+        Assert.HasCount(1, uat01.WebSites);
+        Assert.AreEqual("UAT-01-APP", uat01.WebSites[0].MachineName);
+        Assert.HasCount(2, uat01.WebSites[0].WebApplications);
+        Assert.AreEqual("/portal", uat01.WebSites[0].WebApplications[0].Path);
     }
 
     [TestMethod]
@@ -60,6 +66,10 @@ public sealed class MockRemoteApiTests
         Assert.AreEqual("Database", details.Servers[0].ServerType);
         Assert.HasCount(2, details.WindowsServices);
         Assert.AreEqual(@"C:\Services\DigitalServices.Worker.exe", details.WindowsServices[0].BinaryPathName);
+        Assert.HasCount(2, details.EnvironmentUrls);
+        Assert.AreEqual("https://uat-01.example.com/api", details.EnvironmentUrls[1].Url);
+        Assert.HasCount(1, details.WebSites);
+        Assert.AreEqual(@"C:\inetpub\wwwroot\AdminApi", details.WebSites[0].WebApplications[1].PhysicalPath);
 
         var missing = await client.PostAsJsonAsync("/api/environments", new GetEnvironmentRequest
         {

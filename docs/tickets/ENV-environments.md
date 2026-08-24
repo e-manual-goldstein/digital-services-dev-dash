@@ -32,8 +32,8 @@
 | [ENV-009](#env-009) | Done | Environments list table columns (favourites + all environments) | ENV-008 |
 | [ENV-010](#env-010) | Done | Environment details — additional properties (expandable JSON) | ENV-007 |
 | [ENV-011](#env-011) | Done | `Servers` on `RemoteEnvironmentDetails` (model + details UI) | ENV-007 |
-| [ENV-012](#env-012) | Todo | `EnvironmentUrls` — model + register `ApplicationInstance` from URL | ENV-007, APP-002 |
-| [ENV-013](#env-013) | Todo | `WebSites` / `WebApplications` — model + register instances from IIS paths | ENV-012, APP-002 |
+| [ENV-012](#env-012) | Done | `EnvironmentUrls` — model + register `ApplicationInstance` from URL | ENV-007, APP-002 |
+| [ENV-013](#env-013) | Done | `WebSites` / `WebApplications` — model + register instances from IIS paths | ENV-012, APP-002 |
 | [ENV-014](#env-014) | Done | `WindowsServices` on `RemoteEnvironmentDetails` (model + details UI) | ENV-007 |
 
 ---
@@ -119,7 +119,7 @@ Remote environment payloads can seed local **`ApplicationInstance`** rows (and *
 | Source | Deployable app | Instance fields |
 |--------|----------------|-----------------|
 | `EnvironmentUrl` | Find or create by `ApplicationName`; set `IsWebApp = true` | `HomepageUrl` ← `Url` |
-| `WebApplication` | Find or create by `Path` or `ApplicationPoolName` (document chosen rule in implementation); set `IsWebApp = true` | `PhysicalPath` ← `PhysicalPath` |
+| `WebApplication` | Find or create by last segment of `Path`, or `ApplicationPoolName` when path is empty; set `IsWebApp = true` | `PhysicalPath` ← `PhysicalPath` |
 
 Use existing `IApplicationInstanceService.UpsertAsync` / deployable-app services. Origin fields (`BuildNumber`, feed, branch) remain manual or empty until filled elsewhere. One instance per (`DeployableApplicationId`, `EnvironmentId`) — re-register updates the row.
 
@@ -402,9 +402,9 @@ Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-
 |-------|--------|
 | **ID** | ENV-012 |
 | **Title** | `EnvironmentUrls` — model + register `ApplicationInstance` from URL |
-| **Status** | Todo |
-| **Description** | Add `EnvironmentUrl` DTO and `EnvironmentUrls` array to `RemoteEnvironmentDetails`. Mock API samples + deserialization tests. On environment details page: **`CollapsibleSection` titled Environment URLs (n)** with a table inside — **Application name**, **URL** (external link), **Register** / registered state per row. Register: resolve `DeployableApplication` by `ApplicationName` (create if missing, `IsWebApp = true`); upsert `ApplicationInstance` with `HomepageUrl = Url`. Extract registration helper for ENV-013. |
-| **Test / demo** | Expand **Environment URLs** section → table visible → **Register** on one row → appears in **Deployed applications** with homepage URL → register again → updates same instance slot. |
+| **Status** | Done |
+| **Description** | Added `EnvironmentUrl` DTO and `EnvironmentUrls` on `RemoteEnvironmentDetails`. `IRemoteEnvironmentRegistrationService.RegisterFromEnvironmentUrlAsync` finds or creates `DeployableApplication` (`IsWebApp = true`) and upserts `ApplicationInstance` with `HomepageUrl`. `EnvironmentUrlsSection` UI: collapsible table with external links, **Register** / **Update**, and **Registered** badge. Mock UAT-01 includes sample URLs. |
+| **Test / demo** | Expand **Environment URLs (2)** → **Register** → row appears in **Deployed applications** with homepage → **Update** changes URL. `dotnet test --filter RemoteEnvironmentRegistrationServiceTests` → pass. |
 | **Depends on** | ENV-007, APP-002 |
 
 ### ENV-013
@@ -413,9 +413,9 @@ Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-
 |-------|--------|
 | **ID** | ENV-013 |
 | **Title** | `WebSites` / `WebApplications` — model + register instances from IIS paths |
-| **Status** | Todo |
-| **Description** | Add `EnvironmentWebSite` and `EnvironmentWebApplication` DTOs and `WebSites` array on `RemoteEnvironmentDetails`. Mock samples + deserialization tests. UI: **`CollapsibleSection` titled Web sites (n)**; inside, one nested **`CollapsibleSection` per site** (title = machine name) containing a **Web applications** table — Application pool, Path, Physical path (`<code>`), **Register** / registered state. Register (reuse ENV-012 helper): find or create `DeployableApplication` by `ApplicationPoolName` or last segment of `Path`; `IsWebApp = true`; upsert instance with `PhysicalPath`. |
-| **Test / demo** | Expand **Web sites** → expand a site → web applications table → **Register** on a row → **Deployed applications** shows instance with physical path. |
+| **Status** | Done |
+| **Description** | Added `EnvironmentWebSite` and `EnvironmentWebApplication` DTOs and `WebSites` on `RemoteEnvironmentDetails`. `ResolveDeployableApplicationName()` uses the last path segment, falling back to `ApplicationPoolName`. `RegisterFromWebApplicationAsync` reuses the ENV-012 registration flow and upserts `PhysicalPath`. `WebSitesSection` UI: outer **Web sites (n)** collapsible with nested per-machine sections and register/update actions. Mock UAT-01 includes sample IIS data. |
+| **Test / demo** | Expand **Web sites (1)** → expand **UAT-01-APP** → **Register** on `/portal` → **Deployed applications** shows `portal` with physical path. `dotnet test --filter "RemoteEnvironmentRegistrationServiceTests|RemoteEnvironmentDetailsTests|MockRemoteApiTests"` → pass. |
 | **Depends on** | ENV-012, APP-002 |
 
 ### ENV-014

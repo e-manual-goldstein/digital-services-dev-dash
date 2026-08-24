@@ -136,6 +136,70 @@ public sealed class RemoteEnvironmentDetailsTests
         Assert.AreEqual(@"C:\Services\DigitalServices.Worker.exe", details.WindowsServices[0].BinaryPathName);
     }
 
+    [TestMethod]
+    public void Deserialize_MapsEnvironmentUrlsArray()
+    {
+        const string json =
+            """
+            {
+              "Id": 1,
+              "Code": "UAT-01",
+              "Name": "UAT-01",
+              "EnvironmentType": "UAT",
+              "EnvironmentUrls": [
+                {
+                  "ApplicationName": "Customer Portal",
+                  "Url": "https://uat-01.example.com/portal"
+                }
+              ]
+            }
+            """;
+
+        var details = JsonSerializer.Deserialize<RemoteEnvironmentDetails>(json);
+
+        Assert.IsNotNull(details);
+        Assert.HasCount(1, details!.EnvironmentUrls);
+        Assert.AreEqual("Customer Portal", details.EnvironmentUrls[0].ApplicationName);
+        Assert.AreEqual("https://uat-01.example.com/portal", details.EnvironmentUrls[0].Url);
+    }
+
+    [TestMethod]
+    public void Deserialize_MapsWebSitesArray()
+    {
+        const string json =
+            """
+            {
+              "Id": 1,
+              "Code": "UAT-01",
+              "Name": "UAT-01",
+              "EnvironmentType": "UAT",
+              "WebSites": [
+                {
+                  "MachineName": "UAT-01-APP",
+                  "WebApplications": [
+                    {
+                      "ApplicationPoolName": "CustomerPortalAppPool",
+                      "Path": "/portal",
+                      "PhysicalPath": "C:\\\\inetpub\\\\wwwroot\\\\CustomerPortal"
+                    }
+                  ]
+                }
+              ]
+            }
+            """;
+
+        var details = JsonSerializer.Deserialize<RemoteEnvironmentDetails>(json);
+
+        Assert.IsNotNull(details);
+        Assert.HasCount(1, details!.WebSites);
+        Assert.AreEqual("UAT-01-APP", details.WebSites[0].MachineName);
+        Assert.HasCount(1, details.WebSites[0].WebApplications);
+        Assert.AreEqual("CustomerPortalAppPool", details.WebSites[0].WebApplications[0].ApplicationPoolName);
+        Assert.AreEqual("/portal", details.WebSites[0].WebApplications[0].Path);
+        Assert.AreEqual(@"C:\\inetpub\\wwwroot\\CustomerPortal", details.WebSites[0].WebApplications[0].PhysicalPath);
+        Assert.AreEqual("portal", details.WebSites[0].WebApplications[0].ResolveDeployableApplicationName());
+    }
+
     private sealed class RemoteEnvironmentDetailsWithSqlServer : RemoteEnvironmentDetails
     {
         public string? SqlServerInstance { get; set; }
