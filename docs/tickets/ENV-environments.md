@@ -35,6 +35,7 @@
 | [ENV-012](#env-012) | Done | `EnvironmentUrls` — model + register `ApplicationInstance` from URL | ENV-007, APP-002 |
 | [ENV-013](#env-013) | Done | `WebSites` / `WebApplications` — model + register instances from IIS paths | ENV-012, APP-002 |
 | [ENV-014](#env-014) | Done | `WindowsServices` on `RemoteEnvironmentDetails` (model + details UI) | ENV-007 |
+| [ENV-015](#env-015) | Todo | Register from remote data → pre-filled application/deployment forms | ENV-012, ENV-013, APP-003, APP-004, APP-005 |
 
 ---
 
@@ -113,16 +114,22 @@ Promote fields from `AdditionalProperties` to typed properties when the UI or se
 | `DisplayName` | `string?` | |
 | `BinaryPathName` | `string?` | Installed service binary path |
 
-### Registering deployments from remote data (ENV-012, ENV-013)
+### Registering deployments from remote data (ENV-012, ENV-013, ENV-015)
 
-Remote environment payloads can seed local **`ApplicationInstance`** rows (and **`DeployableApplication`** records when no name match exists):
+Remote environment payloads can seed local **`ApplicationInstance`** rows (and **`DeployableApplication`** records when no name match exists).
 
-| Source | Deployable app | Instance fields |
-|--------|----------------|-----------------|
-| `EnvironmentUrl` | Find or create by `ApplicationName`; set `IsWebApp = true` | `HomepageUrl` ← `Url` |
-| `WebApplication` | Find or create by last segment of `Path`, or `ApplicationPoolName` when path is empty; set `IsWebApp = true` | `PhysicalPath` ← `PhysicalPath` |
+**Current behaviour (ENV-012 / ENV-013):** **Register** on environment details immediately finds or creates `DeployableApplication` and upserts `ApplicationInstance` via `IRemoteEnvironmentRegistrationService`.
 
-Use existing `IApplicationInstanceService.UpsertAsync` / deployable-app services. Origin fields (`BuildNumber`, feed, branch) remain manual or empty until filled elsewhere. One instance per (`DeployableApplicationId`, `EnvironmentId`) — re-register updates the row.
+**Planned behaviour (ENV-015):** **Register** navigates to guided creation instead of saving immediately — pre-filled **Add application** (`/applications`) when no matching deployable app exists, then pre-filled **Add deployment** on the originating environment details page. **Update** (when already registered) opens the existing deployment edit form with refreshed remote values. `IRemoteEnvironmentRegistrationService` may remain for tests/programmatic use or be narrowed to shared field-mapping helpers.
+
+| Source | Deployable app prefill | Instance prefill |
+|--------|------------------------|------------------|
+| `EnvironmentUrl` | `Name` ← `ApplicationName`; `IsWebApp` ← `true` | `HomepageUrl` ← `Url`; `LogPath` ← resolve `DeployableApplication.PathToLogFiles` when set (APP-005) |
+| `WebApplication` (+ parent `WebSite`) | `Name` ← `ResolveDeployableApplicationName()`; `IsWebApp` ← `true` | `PhysicalPath` ← `PhysicalPath`; `LogPath` ← resolve template with `MachineName` from site, `VirtualPath` ← `Path`, `ApplicationPoolName`, etc. |
+
+Use existing `IApplicationInstanceService.UpsertAsync` / deployable-app services on final **Save**. Origin fields (`BuildNumber`, feed, branch) remain manual unless also mapped from `AdditionalProperties` later. One instance per (`DeployableApplicationId`, `EnvironmentId`) — save updates the same row.
+
+**Prefill transport (implementation hint):** scoped `IRegistrationPrefillState` (or query-string for simple fields) carrying environment local id, source type, and mapped field bag; return URL after application create so the user lands back on deployment form.
 
 ### Remote collections UI (ENV-011 – ENV-014)
 
@@ -133,8 +140,8 @@ Inside each expanded section: a Bootstrap **`table`** (`table-striped`, `table-h
 | Collection | Section title | Table content |
 |------------|---------------|---------------|
 | `Servers` | **Servers** | One row per server — columns per ENV-011 |
-| `EnvironmentUrls` | **Environment URLs** | One row per URL — application name, URL link, register action |
-| `WebSites` | **Web sites** | One nested **`CollapsibleSection` per site** (title = `{Name} - {MachineName}`) with a **Web applications** table (pool, path, physical path, register) |
+| `EnvironmentUrls` | **Environment URLs** | One row per URL — application name, URL link, **Register** / **Update** (ENV-015: navigate to pre-filled forms) |
+| `WebSites` | **Web sites** | One nested **`CollapsibleSection` per site** (title = `{Name} - {MachineName}`) with a **Web applications** table (pool, path, physical path, **Register** / **Update**) |
 | `WindowsServices` | **Windows services** | One row per service — machine, display name, binary path |
 
 Place these sections after the main details card and **Additional properties** (ENV-010), before **Deployed applications**. Consider a shared wrapper component (e.g. `EnvironmentDetailsCollectionSection`) that renders `CollapsibleSection` + table header/body to keep `Detail.razor` thin.
@@ -429,3 +436,14 @@ Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-
 | **Description** | Added `EnvironmentWindowsService` DTO and `WindowsServices` on `RemoteEnvironmentDetails`. Mock UAT-01 includes two sample services. Environment details shows **Windows services (n)** via `EnvironmentDetailsCollectionSection` — machine name, display name, binary path. |
 | **Test / demo** | **UAT-01** details → expand **Windows services (2)** → table rows visible → **Integration** omits section. `dotnet test --filter "RemoteEnvironmentDetailsTests|MockRemoteApiTests"` → pass. |
 | **Depends on** | ENV-007 |
+
+### ENV-015
+
+| Field | Detail |
+|-------|--------|
+| **ID** | ENV-015 |
+| **Title** | Register from remote data → pre-filled application/deployment forms |
+| **Status** | Todo |
+| **Description** | Replace immediate register-on-click (ENV-012 / ENV-013) with a guided flow. **Register** on `EnvironmentUrlsSection` / `WebSitesSection`: if no matching `DeployableApplication` by name, navigate to `/applications` with the add form open and fields pre-filled from the remote row (name, `IsWebApp`, optional `PathToLogFiles` suggestion); after **Save**, return to `/environments/{localId}` with **Add deployment** open and instance fields pre-filled (`HomepageUrl`, `PhysicalPath`, resolved `LogPath` via APP-005, environment pre-selected). If the deployable app already exists but no instance in this environment → skip straight to pre-filled **Add deployment**. If instance already exists → **Update** opens **Edit deployment** with remote values pre-filled (user confirms **Save**). Remove auto-save notifications from register buttons. Shared mapping helper from `EnvironmentUrl` / `EnvironmentWebApplication` + parent `EnvironmentWebSite` + `RemoteEnvironmentDetails`. |
+| **Test / demo** | **UAT-01** → **Environment URLs** → **Register** on Customer Portal (new app) → `/applications` form shows name + web app checked → **Save** → returns to UAT-01 deployment form with homepage URL filled → **Save** → row in **Deployed applications**. **Web sites** → **Register** on `/portal` with `PathToLogFiles` template on app → log path field shows resolved path. Existing instance → **Update** opens edit form, does not duplicate rows. |
+| **Depends on** | ENV-012, ENV-013, APP-003, APP-004, APP-005 |

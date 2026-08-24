@@ -23,6 +23,7 @@
 | [APP-002](#app-002) | Done | ApplicationInstance entity and persistence | APP-001, ENV-001, PIP-001 |
 | [APP-003](#app-003) | Done | DeployableApplication admin UI | APP-001 |
 | [APP-004](#app-004) | Done | ApplicationInstance admin UI | APP-002, ENV-004, ENV-005 |
+| [APP-005](#app-005) | Todo | `PathToLogFiles` template on DeployableApplication | APP-001, APP-003 |
 
 ---
 
@@ -38,6 +39,7 @@ Represents a compilable/deployable project in the wider codebase — the logical
 | `Name` | `string` | Required, unique — human name |
 | `ProjectKey` | `string?` | Optional repo/project identifier |
 | `IsWebApp` | `bool` | `true` when this app has a browser homepage (ENV-005) |
+| `PathToLogFiles` | `string?` | Optional template for resolving `ApplicationInstance.LogPath` per environment (APP-005) |
 | `Notes` | `string?` | |
 | `CreatedAt` | `DateTimeOffset` | UTC |
 
@@ -139,3 +141,14 @@ Uniqueness (v1 suggestion): one **ApplicationInstance** per (`DeployableApplicat
 | **Description** | Added add/edit deployment UI on the environment details page (`/environments/{localId}`): **Add deployment** opens a form with application picker (apps not yet deployed in this environment), build number, pipeline feed, source branch, deployed date, physical path, log path, homepage URL (when the app is a web app), SQL Server override, and notes. **Edit** on each row updates the existing slot. Saved deployments appear immediately in the deployed applications table with build number, homepage link, and action buttons. |
 | **Test / demo** | **Applications** → register a web app and a non-web app → **Environments** → **UAT-01** → **Add deployment** → fill form with build number, paths, and homepage URL for the web app → row appears with homepage link. Edit updates values. Non-web app has no homepage field or link. |
 | **Depends on** | APP-002, ENV-004, ENV-005 |
+
+### APP-005
+
+| Field | Detail |
+|-------|--------|
+| **ID** | APP-005 |
+| **Title** | `PathToLogFiles` template on DeployableApplication |
+| **Status** | Todo |
+| **Description** | Add optional `PathToLogFiles` on `DeployableApplication` — a path **template** (not a literal path) stored in SQLite and editable on `/applications`. Provide `ILogPathTemplateService` (or similar) that resolves a template to a concrete path using token substitution in the same style as .NET composite formatting, e.g. `{MachineName}\{EnvironmentCode}\{AppName}\Logs`. **v1 tokens** (document in epic): `AppName`, `EnvironmentCode`, `EnvironmentName`, `MachineName`, `ApplicationPoolName`, `VirtualPath` (IIS path), `PhysicalPath`. Unknown tokens left unchanged or surfaced as a validation warning at resolve time (pick one rule and test it). Expose resolved preview in UI when helpful. Persist via schema upgrade; include in create/update service methods. Does **not** auto-write `ApplicationInstance.LogPath` until a deployment is saved — resolution is invoked when pre-filling or saving an instance (see ENV-015). |
+| **Test / demo** | `dotnet test --filter LogPathTemplateServiceTests` → pass. Template `{MachineName}\{EnvironmentCode}\{AppName}\Logs` with `MachineName=UAT-01-APP`, `EnvironmentCode=UAT-01`, `AppName=portal` → `UAT-01-APP\UAT-01\portal\Logs`. `/applications` → edit app → set template → save → reload shows value. |
+| **Depends on** | APP-001, APP-003 |
