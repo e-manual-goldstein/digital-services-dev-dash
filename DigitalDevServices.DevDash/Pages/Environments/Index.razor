@@ -46,27 +46,13 @@ else
     }
     else
     {
-        <div class="table-responsive mb-4">
-            <table class="table table-striped table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>Name</th>
-                        <th>Code</th>
-                        <th>Type</th>
-                        <th>Remote id</th>
-                        <th>Last updated</th>
-                        <th style="width: 3rem;"></th>
-                        <th style="width: 7rem;"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var environment in _favouriteEnvironments)
-                    {
-                        @EnvironmentRow(environment)
-                    }
-                </tbody>
-            </table>
-        </div>
+        <EnvironmentListTable Environments="_favouriteEnvironments"
+                            CssClass="mb-4"
+                            IsBusy="_isBusy"
+                            RefreshingRemoteId="_refreshingRemoteId"
+                            TogglingFavouriteLocalId="_togglingFavouriteLocalId"
+                            OnToggleFavourite="ToggleFavouriteAsync"
+                            OnRefresh="RefreshEnvironmentAsync" />
     }
 
     <h2 class="h5 mb-3">All environments</h2>
@@ -76,27 +62,12 @@ else
     }
     else
     {
-        <div class="table-responsive">
-            <table class="table table-striped table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>Name</th>
-                        <th>Code</th>
-                        <th>Type</th>
-                        <th>Remote id</th>
-                        <th>Last updated</th>
-                        <th style="width: 3rem;"></th>
-                        <th style="width: 7rem;"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var environment in _otherEnvironments)
-                    {
-                        @EnvironmentRow(environment)
-                    }
-                </tbody>
-            </table>
-        </div>
+        <EnvironmentListTable Environments="_otherEnvironments"
+                            IsBusy="_isBusy"
+                            RefreshingRemoteId="_refreshingRemoteId"
+                            TogglingFavouriteLocalId="_togglingFavouriteLocalId"
+                            OnToggleFavourite="ToggleFavouriteAsync"
+                            OnRefresh="RefreshEnvironmentAsync" />
     }
 }
 
@@ -116,40 +87,6 @@ else
     {
         await LoadEnvironmentsAsync(forceRefresh: false);
     }
-
-    private RenderFragment EnvironmentRow(CachedEnvironment environment) => __builder =>
-    {
-        var isRefreshing = _refreshingRemoteId == environment.RemoteId;
-        var isTogglingFavourite = _togglingFavouriteLocalId == environment.LocalId;
-
-        <tr>
-            <td>
-                <a href="@($"/environments/{environment.LocalId}")" class="text-decoration-none">@environment.Details.Name</a>
-            </td>
-            <td><code>@environment.Details.Code</code></td>
-            <td>@environment.Details.EnvironmentType</td>
-            <td>@environment.RemoteId</td>
-            <td>@environment.DateLastUpdated.ToLocalTime().ToString("g")</td>
-            <td>
-                <button type="button"
-                        class="btn btn-sm btn-link @(environment.IsFavourite ? "text-warning" : "text-secondary") p-0"
-                        title="@(environment.IsFavourite ? "Remove from favourites" : "Add to favourites")"
-                        aria-label="@(environment.IsFavourite ? "Remove from favourites" : "Add to favourites")"
-                        disabled="@(_isBusy || isTogglingFavourite)"
-                        @onclick="() => ToggleFavouriteAsync(environment)">
-                    @(environment.IsFavourite ? "★" : "☆")
-                </button>
-            </td>
-            <td>
-                <button type="button"
-                        class="btn btn-sm btn-outline-secondary"
-                        disabled="@(_isBusy || isRefreshing)"
-                        @onclick="() => RefreshEnvironmentAsync(environment.RemoteId)">
-                    @(isRefreshing ? "Refreshing…" : "Refresh")
-                </button>
-            </td>
-        </tr>
-    };
 
     private async Task LoadEnvironmentsAsync(bool forceRefresh)
     {

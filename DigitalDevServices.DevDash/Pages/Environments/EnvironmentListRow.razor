@@ -1,0 +1,48 @@
+@namespace DigitalDevServices.DevDash.Pages.Environments
+
+<tr>
+    <td><code>@Environment.Details.Code</code></td>
+    <td>
+        <a href="@($"/environments/{Environment.LocalId}")" class="text-decoration-none">@Environment.Details.Name</a>
+    </td>
+    <td>@Environment.Details.EnvironmentType</td>
+    <td>@Environment.DateLastUpdated.ToLocalTime().ToString("g")</td>
+    <td>
+        <button type="button"
+                class="btn btn-sm btn-link @(Environment.IsFavourite ? "text-warning" : "text-secondary") p-0"
+                title="@(Environment.IsFavourite ? "Remove from favourites" : "Add to favourites")"
+                aria-label="@(Environment.IsFavourite ? "Remove from favourites" : "Add to favourites")"
+                disabled="@(IsBusy || IsTogglingFavourite)"
+                @onclick="() => OnToggleFavourite.InvokeAsync(Environment)">
+            @(Environment.IsFavourite ? "★" : "☆")
+        </button>
+    </td>
+    <td>
+        <button type="button"
+                class="btn btn-sm btn-outline-secondary"
+                disabled="@(IsBusy || IsRefreshing)"
+                @onclick="() => OnRefresh.InvokeAsync(Environment.RemoteId)">
+            @(IsRefreshing ? "Refreshing…" : "Refresh")
+        </button>
+    </td>
+</tr>
+
+@code {
+    [Parameter, EditorRequired]
+    public CachedEnvironment Environment { get; set; } = null!;
+
+    [Parameter]
+    public bool IsBusy { get; set; }
+
+    [Parameter]
+    public bool IsRefreshing { get; set; }
+
+    [Parameter]
+    public bool IsTogglingFavourite { get; set; }
+
+    [Parameter]
+    public EventCallback<CachedEnvironment> OnToggleFavourite { get; set; }
+
+    [Parameter]
+    public EventCallback<int> OnRefresh { get; set; }
+}

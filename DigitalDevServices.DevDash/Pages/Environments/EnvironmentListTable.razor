@@ -1,0 +1,50 @@
+@namespace DigitalDevServices.DevDash.Pages.Environments
+
+<div class="table-responsive @CssClass">
+    <table class="table table-striped table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Last updated</th>
+                <th style="width: 3rem;"></th>
+                <th style="width: 7rem;"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var environment in Environments)
+            {
+                <EnvironmentListRow Environment="environment"
+                                    IsBusy="IsBusy"
+                                    IsRefreshing="RefreshingRemoteId == environment.RemoteId"
+                                    IsTogglingFavourite="TogglingFavouriteLocalId == environment.LocalId"
+                                    OnToggleFavourite="OnToggleFavourite"
+                                    OnRefresh="OnRefresh" />
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<CachedEnvironment> Environments { get; set; } = [];
+
+    [Parameter]
+    public string CssClass { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool IsBusy { get; set; }
+
+    [Parameter]
+    public int? RefreshingRemoteId { get; set; }
+
+    [Parameter]
+    public Guid? TogglingFavouriteLocalId { get; set; }
+
+    [Parameter]
+    public EventCallback<CachedEnvironment> OnToggleFavourite { get; set; }
+
+    [Parameter]
+    public EventCallback<int> OnRefresh { get; set; }
+}

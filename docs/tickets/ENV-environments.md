@@ -29,7 +29,7 @@
 | [ENV-006](#env-006) | Done | Deployed application packages page (DLL list + versions) | ENV-005, APP-002 |
 | [ENV-007](#env-007) | Done | Extensible `RemoteEnvironmentDetails` (overflow JSON properties) | ENV-001 |
 | [ENV-008](#env-008) | Done | Environment favourites (local persistence + favourites table) | ENV-002 |
-| [ENV-009](#env-009) | Todo | Environments list table columns (favourites + all environments) | ENV-008 |
+| [ENV-009](#env-009) | Done | Environments list table columns (favourites + all environments) | ENV-008 |
 | [ENV-010](#env-010) | Todo | Environment details — additional properties (expandable JSON) | ENV-007 |
 
 ---
@@ -290,8 +290,8 @@ Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-
 |-------|--------|
 | **ID** | ENV-009 |
 | **Title** | Environments list table columns (favourites + all environments) |
-| **Status** | Todo |
-| **Description** | Refactor `/environments` so **Favourites** and **All environments** tables share one row template / component. Columns in order: **Code** (`Details.Code`, `<code>`), **Name** (link to details), **Type** (`Details.EnvironmentType`), **Last updated** (`DateLastUpdated`, local time), **Favourite** (toggle button — filled star vs outline; calls `SetFavouriteAsync`), **Refresh** (per-row, existing behaviour). Remove the **Remote id** column from the UI. Default sort for both tables: ascending by `RemoteId` / `Details.Id`. Extract shared markup to avoid duplication (partial component or private render fragment). |
+| **Status** | Done |
+| **Description** | Refactored `/environments` with shared `EnvironmentListTable` and `EnvironmentListRow` components. Columns: **Code**, **Name** (link), **Type**, **Last updated**, favourite toggle, **Refresh**. Removed **Remote id** column; both tables sort by `RemoteId` ascending. |
 | **Test / demo** | **Environments** page shows Code, Name, Type, Last updated, favourite control, Refresh — no Remote id column. Rows sorted by remote id ascending. Favourite toggle works in both tables. **Refresh all** still works. |
 | **Depends on** | ENV-008 |
 
