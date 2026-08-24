@@ -25,4 +25,8 @@
     <ProjectReference Include="..\DigitalDevServices.Plugins\DigitalDevServices.Plugins.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="DigitalDevServices.Services.Test" />
+  </ItemGroup>
+
 </Project>

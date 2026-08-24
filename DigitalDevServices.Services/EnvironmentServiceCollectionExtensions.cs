@@ -24,9 +24,10 @@ public static class EnvironmentServiceCollectionExtensions
         if (!string.IsNullOrWhiteSpace(apiOptions.BaseUrl))
         {
             services.AddHttpClient<IRemoteEnvironmentApiClient, HttpRemoteEnvironmentApiClient>(client =>
-            {
-                client.BaseAddress = new Uri(apiOptions.BaseUrl.TrimEnd('/') + "/");
-            });
+                {
+                    client.BaseAddress = new Uri(apiOptions.BaseUrl.TrimEnd('/') + "/");
+                })
+                .ConfigurePrimaryHttpMessageHandler(() => RemoteEnvironmentApiHttpHandlerFactory.Create(apiOptions));
         }
         else
         {
