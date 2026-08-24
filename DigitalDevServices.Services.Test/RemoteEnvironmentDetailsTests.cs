@@ -107,6 +107,35 @@ public sealed class RemoteEnvironmentDetailsTests
         Assert.IsTrue(details.AdditionalProperties is null || details.AdditionalProperties.Count == 0);
     }
 
+    [TestMethod]
+    public void Deserialize_MapsWindowsServicesArray()
+    {
+        const string json =
+            """
+            {
+              "Id": 1,
+              "Code": "UAT-01",
+              "Name": "UAT-01",
+              "EnvironmentType": "UAT",
+              "WindowsServices": [
+                {
+                  "MachineName": "UAT-01-APP",
+                  "DisplayName": "Digital Services Worker",
+                  "BinaryPathName": "C:\\Services\\DigitalServices.Worker.exe"
+                }
+              ]
+            }
+            """;
+
+        var details = JsonSerializer.Deserialize<RemoteEnvironmentDetails>(json);
+
+        Assert.IsNotNull(details);
+        Assert.HasCount(1, details!.WindowsServices);
+        Assert.AreEqual("UAT-01-APP", details.WindowsServices[0].MachineName);
+        Assert.AreEqual("Digital Services Worker", details.WindowsServices[0].DisplayName);
+        Assert.AreEqual(@"C:\Services\DigitalServices.Worker.exe", details.WindowsServices[0].BinaryPathName);
+    }
+
     private sealed class RemoteEnvironmentDetailsWithSqlServer : RemoteEnvironmentDetails
     {
         public string? SqlServerInstance { get; set; }

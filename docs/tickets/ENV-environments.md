@@ -34,7 +34,7 @@
 | [ENV-011](#env-011) | Done | `Servers` on `RemoteEnvironmentDetails` (model + details UI) | ENV-007 |
 | [ENV-012](#env-012) | Todo | `EnvironmentUrls` — model + register `ApplicationInstance` from URL | ENV-007, APP-002 |
 | [ENV-013](#env-013) | Todo | `WebSites` / `WebApplications` — model + register instances from IIS paths | ENV-012, APP-002 |
-| [ENV-014](#env-014) | Todo | `WindowsServices` on `RemoteEnvironmentDetails` (model + details UI) | ENV-007 |
+| [ENV-014](#env-014) | Done | `WindowsServices` on `RemoteEnvironmentDetails` (model + details UI) | ENV-007 |
 
 ---
 
@@ -424,7 +424,7 @@ Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-
 |-------|--------|
 | **ID** | ENV-014 |
 | **Title** | `WindowsServices` on `RemoteEnvironmentDetails` (model + details UI) |
-| **Status** | Todo |
-| **Description** | Add `EnvironmentWindowsService` DTO and `WindowsServices` array to `RemoteEnvironmentDetails`. Mock API samples + deserialization tests. Environment details page: **`CollapsibleSection` titled Windows services (n)** when non-empty; expanded body is a read-only table — Machine name, Display name, Binary path (`<code>`). No instance registration in this ticket. |
-| **Test / demo** | Expand **Windows services** → table shows sample rows → empty array omits section. `dotnet test` deserialization tests pass. |
+| **Status** | Done |
+| **Description** | Added `EnvironmentWindowsService` DTO and `WindowsServices` on `RemoteEnvironmentDetails`. Mock UAT-01 includes two sample services. Environment details shows **Windows services (n)** via `EnvironmentDetailsCollectionSection` — machine name, display name, binary path. |
+| **Test / demo** | **UAT-01** details → expand **Windows services (2)** → table rows visible → **Integration** omits section. `dotnet test --filter "RemoteEnvironmentDetailsTests|MockRemoteApiTests"` → pass. |
 | **Depends on** | ENV-007 |

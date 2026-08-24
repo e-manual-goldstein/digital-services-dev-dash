@@ -34,6 +34,21 @@ internal static class SampleEnvironments
                         ComponentIdenifier = "app-01",
                         ComponentResourceNameResolved = "UAT-01-APP.example.com"
                     }
+                ],
+                WindowsServices =
+                [
+                    new EnvironmentWindowsService
+                    {
+                        MachineName = "UAT-01-APP",
+                        DisplayName = "Digital Services Worker",
+                        BinaryPathName = @"C:\Services\DigitalServices.Worker.exe"
+                    },
+                    new EnvironmentWindowsService
+                    {
+                        MachineName = "UAT-01-APP",
+                        DisplayName = "Message Queue Listener",
+                        BinaryPathName = @"C:\Services\MessageQueue.Listener.exe"
+                    }
                 ]
             },
             ("SqlServerInstance", @"UAT-01\SQL2019"),
