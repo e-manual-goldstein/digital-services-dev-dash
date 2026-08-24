@@ -19,9 +19,4 @@
     <Content Include="..\samples\logs\**\*" LinkBase="samples\logs" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Pages\Admin\" />
-    <Folder Include="Services\" />
-  </ItemGroup>
-
 </Project>
