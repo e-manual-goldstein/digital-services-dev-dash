@@ -93,6 +93,7 @@ Promote fields from `AdditionalProperties` to typed properties when the UI or se
 
 | Field | Type | Notes |
 |-------|------|--------|
+| `Name` | `string?` | IIS site name |
 | `MachineName` | `string?` | Host running the site |
 | `WebApplications` | `EnvironmentWebApplication[]` | IIS applications under the site |
 
@@ -133,7 +134,7 @@ Inside each expanded section: a Bootstrap **`table`** (`table-striped`, `table-h
 |------------|---------------|---------------|
 | `Servers` | **Servers** | One row per server — columns per ENV-011 |
 | `EnvironmentUrls` | **Environment URLs** | One row per URL — application name, URL link, register action |
-| `WebSites` | **Web sites** | One row per site (machine name); nested **`CollapsibleSection` per site** with a **Web applications** table (pool, path, physical path, register) |
+| `WebSites` | **Web sites** | One nested **`CollapsibleSection` per site** (title = `{Name} - {MachineName}`) with a **Web applications** table (pool, path, physical path, register) |
 | `WindowsServices` | **Windows services** | One row per service — machine, display name, binary path |
 
 Place these sections after the main details card and **Additional properties** (ENV-010), before **Deployed applications**. Consider a shared wrapper component (e.g. `EnvironmentDetailsCollectionSection`) that renders `CollapsibleSection` + table header/body to keep `Detail.razor` thin.

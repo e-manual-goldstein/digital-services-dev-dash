@@ -37,6 +37,7 @@ public sealed class MockRemoteApiTests
         Assert.HasCount(2, uat01.EnvironmentUrls);
         Assert.AreEqual("Customer Portal", uat01.EnvironmentUrls[0].ApplicationName);
         Assert.HasCount(1, uat01.WebSites);
+        Assert.AreEqual("Default Web Site", uat01.WebSites[0].Name);
         Assert.AreEqual("UAT-01-APP", uat01.WebSites[0].MachineName);
         Assert.HasCount(2, uat01.WebSites[0].WebApplications);
         Assert.AreEqual("/portal", uat01.WebSites[0].WebApplications[0].Path);

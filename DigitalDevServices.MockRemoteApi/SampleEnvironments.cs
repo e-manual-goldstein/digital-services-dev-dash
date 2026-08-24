@@ -52,6 +52,7 @@ internal static class SampleEnvironments
                 [
                     new EnvironmentWebSite
                     {
+                        Name = "Default Web Site",
                         MachineName = "UAT-01-APP",
                         WebApplications =
                         [

@@ -175,6 +175,7 @@ public sealed class RemoteEnvironmentDetailsTests
               "EnvironmentType": "UAT",
               "WebSites": [
                 {
+                  "Name": "Default Web Site",
                   "MachineName": "UAT-01-APP",
                   "WebApplications": [
                     {
@@ -192,7 +193,9 @@ public sealed class RemoteEnvironmentDetailsTests
 
         Assert.IsNotNull(details);
         Assert.HasCount(1, details!.WebSites);
+        Assert.AreEqual("Default Web Site", details.WebSites[0].Name);
         Assert.AreEqual("UAT-01-APP", details.WebSites[0].MachineName);
+        Assert.AreEqual("Default Web Site - UAT-01-APP", details.WebSites[0].FormatSectionTitle());
         Assert.HasCount(1, details.WebSites[0].WebApplications);
         Assert.AreEqual("CustomerPortalAppPool", details.WebSites[0].WebApplications[0].ApplicationPoolName);
         Assert.AreEqual("/portal", details.WebSites[0].WebApplications[0].Path);
