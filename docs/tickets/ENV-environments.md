@@ -31,6 +31,10 @@
 | [ENV-008](#env-008) | Done | Environment favourites (local persistence + favourites table) | ENV-002 |
 | [ENV-009](#env-009) | Done | Environments list table columns (favourites + all environments) | ENV-008 |
 | [ENV-010](#env-010) | Done | Environment details — additional properties (expandable JSON) | ENV-007 |
+| [ENV-011](#env-011) | Todo | `Servers` on `RemoteEnvironmentDetails` (model + details UI) | ENV-007 |
+| [ENV-012](#env-012) | Todo | `EnvironmentUrls` — model + register `ApplicationInstance` from URL | ENV-007, APP-002 |
+| [ENV-013](#env-013) | Todo | `WebSites` / `WebApplications` — model + register instances from IIS paths | ENV-012, APP-002 |
+| [ENV-014](#env-014) | Todo | `WindowsServices` on `RemoteEnvironmentDetails` (model + details UI) | ENV-007 |
 
 ---
 
@@ -57,9 +61,82 @@ Returned by the external Web API (shape may evolve). Known fields are first-clas
 | `Code` | `string` | Short environment code |
 | `Name` | `string` | e.g. `UAT-01` |
 | `EnvironmentType` | `string` | e.g. `UAT`, `Production` |
+| `Servers` | `EnvironmentServer[]` | Infrastructure servers (ENV-011) |
+| `EnvironmentUrls` | `EnvironmentUrl[]` | Named application URLs (ENV-012) |
+| `WebSites` | `EnvironmentWebSite[]` | IIS sites and web applications (ENV-013) |
+| `WindowsServices` | `EnvironmentWindowsService[]` | Windows services on environment machines (ENV-014) |
 | `AdditionalProperties` | `Dictionary<string, JsonElement>` | Overflow from API via `[JsonExtensionData]` — not serialized back to the API |
 
-Promote fields from `AdditionalProperties` to typed properties when the UI or services need them reliably (e.g. SQL Server instance, build number).
+Promote fields from `AdditionalProperties` to typed properties when the UI or services need them reliably. Once promoted, they no longer appear in the overflow dictionary.
+
+### Remote child DTOs (ENV-011 – ENV-014)
+
+**`EnvironmentServer`** (`Servers[]`)
+
+| Field | Type | Notes |
+|-------|------|--------|
+| `ComponentDescription` | `string?` | |
+| `ComponentIdenifier` | `string?` | API spelling — use `[JsonPropertyName]` if JSON key differs |
+| `ComponentName` | `string?` | |
+| `ComponentResourceNameResolved` | `string?` | |
+| `Name` | `string?` | JSON property `name` (lowercase) |
+| `ServerType` | `string?` | |
+
+**`EnvironmentUrl`** (`EnvironmentUrls[]`)
+
+| Field | Type | Notes |
+|-------|------|--------|
+| `ApplicationName` | `string` | Maps to `DeployableApplication.Name` when registering instances |
+| `Url` | `string` | Maps to `ApplicationInstance.HomepageUrl`; implies web app |
+
+**`EnvironmentWebSite`** (`WebSites[]`)
+
+| Field | Type | Notes |
+|-------|------|--------|
+| `MachineName` | `string?` | Host running the site |
+| `WebApplications` | `EnvironmentWebApplication[]` | IIS applications under the site |
+
+**`EnvironmentWebApplication`** (nested under `WebSite`)
+
+| Field | Type | Notes |
+|-------|------|--------|
+| `ApplicationPoolName` | `string?` | |
+| `Path` | `string?` | Virtual path — candidate deployable app name |
+| `PhysicalPath` | `string?` | Maps to `ApplicationInstance.PhysicalPath` |
+
+**`EnvironmentWindowsService`** (`WindowsServices[]`)
+
+| Field | Type | Notes |
+|-------|------|--------|
+| `MachineName` | `string?` | |
+| `DisplayName` | `string?` | |
+| `BinaryPathName` | `string?` | Installed service binary path |
+
+### Registering deployments from remote data (ENV-012, ENV-013)
+
+Remote environment payloads can seed local **`ApplicationInstance`** rows (and **`DeployableApplication`** records when no name match exists):
+
+| Source | Deployable app | Instance fields |
+|--------|----------------|-----------------|
+| `EnvironmentUrl` | Find or create by `ApplicationName`; set `IsWebApp = true` | `HomepageUrl` ← `Url` |
+| `WebApplication` | Find or create by `Path` or `ApplicationPoolName` (document chosen rule in implementation); set `IsWebApp = true` | `PhysicalPath` ← `PhysicalPath` |
+
+Use existing `IApplicationInstanceService.UpsertAsync` / deployable-app services. Origin fields (`BuildNumber`, feed, branch) remain manual or empty until filled elsewhere. One instance per (`DeployableApplicationId`, `EnvironmentId`) — re-register updates the row.
+
+### Remote collections UI (ENV-011 – ENV-014)
+
+On environment details, each non-empty remote array is shown as its own **`CollapsibleSection`** (same component as ENV-010), **collapsed by default**. Omit the section when the array is null or empty. Section title includes the collection name and row count (e.g. **Servers (3)**).
+
+Inside each expanded section: a Bootstrap **`table`** (`table-striped`, `table-hover`, `align-middle`) — not a bare list.
+
+| Collection | Section title | Table content |
+|------------|---------------|---------------|
+| `Servers` | **Servers** | One row per server — columns per ENV-011 |
+| `EnvironmentUrls` | **Environment URLs** | One row per URL — application name, URL link, register action |
+| `WebSites` | **Web sites** | One row per site (machine name); nested **`CollapsibleSection` per site** with a **Web applications** table (pool, path, physical path, register) |
+| `WindowsServices` | **Windows services** | One row per service — machine, display name, binary path |
+
+Place these sections after the main details card and **Additional properties** (ENV-010), before **Deployed applications**. Consider a shared wrapper component (e.g. `EnvironmentDetailsCollectionSection`) that renders `CollapsibleSection` + table header/body to keep `Detail.razor` thin.
 
 ### Combined view (`CachedEnvironment`)
 
@@ -163,6 +240,8 @@ Route: `/environments/{localId}` (`CachedEnvironment.LocalId`).
 | Empty | Omit the section when `AdditionalProperties` is null or empty |
 | Content | On expand, show `AdditionalProperties` as pretty-printed JSON (`JsonSerializer` with `WriteIndented`) in `<pre><code>` |
 | Refresh | Content reflects the latest API response after per-environment **Refresh** |
+
+**Remote collections** (ENV-011 – ENV-014) — each non-empty array is a **`CollapsibleSection`** containing a **table** (collapsed by default; section omitted when empty). See [Remote collections UI](#remote-collections-ui-env-011--env-014) design notes.
 
 **Deployed applications table** (ENV-005) — `IApplicationInstanceService.GetByEnvironmentIdAsync`. Empty state until deployments exist (APP-004).
 
@@ -304,4 +383,48 @@ Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-
 | **Status** | Done |
 | **Description** | On `/environments/{localId}`, below the named-fields card, added collapsible **Additional properties** via `CollapsibleSection` when `AdditionalProperties` is non-empty. `RemoteEnvironmentDetails.FormatAdditionalPropertiesJson()` pretty-prints overflow JSON for display in `<pre><code>`. Section omitted when empty. |
 | **Test / demo** | Run mock API + DevDash → open **UAT-01** details → expand **Additional properties** → indented JSON with `SqlServerInstance`, `BuildNumber`, `WipBranch` → **Refresh** → content updates. Environment with no overflow → section hidden. `dotnet test --filter RemoteEnvironmentDetailsTests` → pass. |
+| **Depends on** | ENV-007 |
+
+### ENV-011
+
+| Field | Detail |
+|-------|--------|
+| **ID** | ENV-011 |
+| **Title** | `Servers` on `RemoteEnvironmentDetails` (model + details UI) |
+| **Status** | Todo |
+| **Description** | Add `EnvironmentServer` DTO and `Servers` (`EnvironmentServer[]`) to `RemoteEnvironmentDetails`. Map API JSON property names (including lowercase `name` on server). Extend mock API samples with at least one server. Unit tests: deserialize list/get responses with `Servers` populated; promoted keys no longer in `AdditionalProperties`. On environment details page: **`CollapsibleSection` titled Servers (n)** when non-empty; expanded body is a read-only table — ComponentName, Name, ServerType, ComponentDescription, ComponentIdenifier, ComponentResourceNameResolved. |
+| **Test / demo** | Mock API + DevDash → **UAT-01** details → expand **Servers** → table shows sample rows → collapsed by default → environment with no servers omits section. `dotnet test --filter RemoteEnvironmentDetails` → pass. |
+| **Depends on** | ENV-007 |
+
+### ENV-012
+
+| Field | Detail |
+|-------|--------|
+| **ID** | ENV-012 |
+| **Title** | `EnvironmentUrls` — model + register `ApplicationInstance` from URL |
+| **Status** | Todo |
+| **Description** | Add `EnvironmentUrl` DTO and `EnvironmentUrls` array to `RemoteEnvironmentDetails`. Mock API samples + deserialization tests. On environment details page: **`CollapsibleSection` titled Environment URLs (n)** with a table inside — **Application name**, **URL** (external link), **Register** / registered state per row. Register: resolve `DeployableApplication` by `ApplicationName` (create if missing, `IsWebApp = true`); upsert `ApplicationInstance` with `HomepageUrl = Url`. Extract registration helper for ENV-013. |
+| **Test / demo** | Expand **Environment URLs** section → table visible → **Register** on one row → appears in **Deployed applications** with homepage URL → register again → updates same instance slot. |
+| **Depends on** | ENV-007, APP-002 |
+
+### ENV-013
+
+| Field | Detail |
+|-------|--------|
+| **ID** | ENV-013 |
+| **Title** | `WebSites` / `WebApplications` — model + register instances from IIS paths |
+| **Status** | Todo |
+| **Description** | Add `EnvironmentWebSite` and `EnvironmentWebApplication` DTOs and `WebSites` array on `RemoteEnvironmentDetails`. Mock samples + deserialization tests. UI: **`CollapsibleSection` titled Web sites (n)**; inside, one nested **`CollapsibleSection` per site** (title = machine name) containing a **Web applications** table — Application pool, Path, Physical path (`<code>`), **Register** / registered state. Register (reuse ENV-012 helper): find or create `DeployableApplication` by `ApplicationPoolName` or last segment of `Path`; `IsWebApp = true`; upsert instance with `PhysicalPath`. |
+| **Test / demo** | Expand **Web sites** → expand a site → web applications table → **Register** on a row → **Deployed applications** shows instance with physical path. |
+| **Depends on** | ENV-012, APP-002 |
+
+### ENV-014
+
+| Field | Detail |
+|-------|--------|
+| **ID** | ENV-014 |
+| **Title** | `WindowsServices` on `RemoteEnvironmentDetails` (model + details UI) |
+| **Status** | Todo |
+| **Description** | Add `EnvironmentWindowsService` DTO and `WindowsServices` array to `RemoteEnvironmentDetails`. Mock API samples + deserialization tests. Environment details page: **`CollapsibleSection` titled Windows services (n)** when non-empty; expanded body is a read-only table — Machine name, Display name, Binary path (`<code>`). No instance registration in this ticket. |
+| **Test / demo** | Expand **Windows services** → table shows sample rows → empty array omits section. `dotnet test` deserialization tests pass. |
 | **Depends on** | ENV-007 |
