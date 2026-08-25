@@ -90,6 +90,26 @@ public sealed class ApplicationInstanceServiceTests
     }
 
     [TestMethod]
+    public async Task DeleteAsync_RemovesInstance()
+    {
+        await using var fixture = await ApplicationInstanceServiceFixture.CreateAsync();
+        var application = await fixture.DeployableApplicationService.CreateAsync("Admin Portal");
+        var environment = await fixture.CreateTrackedEnvironmentAsync(7);
+
+        var created = await fixture.Service.UpsertAsync(new ApplicationInstanceUpsert
+        {
+            DeployableApplicationId = application.Id,
+            EnvironmentId = environment.Id,
+            BuildNumber = "2.0.0"
+        });
+
+        await fixture.Service.DeleteAsync(created.Id);
+
+        Assert.AreEqual(0, await fixture.Db.ApplicationInstances.CountAsync());
+        Assert.IsEmpty(await fixture.Service.GetByEnvironmentIdAsync(environment.Id));
+    }
+
+    [TestMethod]
     public async Task DeleteDeployableApplication_IsBlockedWhenInstancesExist()
     {
         await using var fixture = await ApplicationInstanceServiceFixture.CreateAsync();

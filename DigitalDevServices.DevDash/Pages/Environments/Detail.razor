@@ -296,6 +296,7 @@ else
                     <tbody>
                         @foreach (var instance in _instances)
                         {
+                            var isDeleting = _deletingInstanceId == instance.Id;
                             <tr>
                                 <td>@instance.DeployableApplication.Name</td>
                                 <td><code>@instance.BuildNumber</code></td>
@@ -332,6 +333,31 @@ else
                                            href="@($"/environments/{LocalId}/instances/{instance.Id}/packages")">
                                             Packages
                                         </a>
+                                        @if (isDeleting)
+                                        {
+                                            <button type="button"
+                                                    class="btn btn-sm btn-danger"
+                                                    disabled="@_isBusy"
+                                                    @onclick="() => ConfirmDeleteDeploymentAsync(instance.Id)">
+                                                Confirm
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-secondary"
+                                                    disabled="@_isBusy"
+                                                    @onclick="CancelDeleteDeployment">
+                                                Cancel
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    disabled="@_isBusy"
+                                                    title="Remove this deployment from the environment"
+                                                    @onclick="() => PromptDeleteDeployment(instance.Id)">
+                                                Delete
+                                            </button>
+                                        }
                                     </div>
                                 </td>
                             </tr>
@@ -358,6 +384,7 @@ else
     private bool _isDeploymentFormVisible;
     private bool _isSavingDeployment;
     private Guid? _editingInstanceId;
+    private Guid? _deletingInstanceId;
     private string? _errorMessage;
     private DeploymentFormModel _deploymentForm = new();
 
@@ -488,6 +515,61 @@ else
         _isDeploymentFormVisible = false;
         _editingInstanceId = null;
         _deploymentForm = new DeploymentFormModel();
+    }
+
+    private void PromptDeleteDeployment(Guid instanceId)
+    {
+        _errorMessage = null;
+        _deletingInstanceId = instanceId;
+        _isDeploymentFormVisible = false;
+        _editingInstanceId = null;
+    }
+
+    private void CancelDeleteDeployment()
+    {
+        _deletingInstanceId = null;
+    }
+
+    private async Task ConfirmDeleteDeploymentAsync(Guid instanceId)
+    {
+        if (_environment is null)
+        {
+            return;
+        }
+
+        var instance = _instances.FirstOrDefault(item => item.Id == instanceId);
+        if (instance is null)
+        {
+            _deletingInstanceId = null;
+            return;
+        }
+
+        _errorMessage = null;
+        _isBusy = true;
+
+        try
+        {
+            await InstanceService.DeleteAsync(instanceId);
+
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Deployment removed",
+                Detail = $"{instance.DeployableApplication.Name} was removed from {_environment.Details.Name}.",
+                Duration = 4000
+            });
+
+            _deletingInstanceId = null;
+            await LoadDeploymentDataAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isBusy = false;
+        }
     }
 
     private async Task SaveDeploymentAsync()
