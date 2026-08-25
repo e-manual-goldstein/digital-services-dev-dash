@@ -21,6 +21,14 @@ public sealed class UnconfiguredRemoteEnvironmentApiClient : IRemoteEnvironmentA
             "RemoteEnvironmentApi:BaseUrl is not configured. Set it in appsettings to fetch environment details.");
     }
 
+    public Task<RemoteBuildVersionDetails?> GetBuildVersionDetailsAsync(
+        int buildNumber,
+        CancellationToken cancellationToken = default)
+    {
+        throw new InvalidOperationException(
+            "RemoteEnvironmentApi:BaseUrl is not configured. Set it in appsettings to fetch build version details.");
+    }
+
     public Task<IReadOnlyList<RemoteEnvironmentDetails>> ListEnvironmentsAsync(CancellationToken cancellationToken = default)
     {
         throw new InvalidOperationException(

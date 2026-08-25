@@ -104,4 +104,34 @@ public sealed class MockRemoteApiTests
         });
         Assert.AreEqual(System.Net.HttpStatusCode.NotFound, missing.StatusCode);
     }
+
+    [TestMethod]
+    public async Task GetBuildVersionDetails_ReturnsMatchOrNotFound()
+    {
+        await using var factory = new WebApplicationFactory<global::Program>();
+        using var client = factory.CreateClient();
+
+        var found = await client.PostAsJsonAsync("/api/builds/version-details", new GetBuildVersionDetailsRequest
+        {
+            BuildNumber = "123456",
+            IncludeVersionControlLog = true
+        });
+        Assert.IsTrue(found.IsSuccessStatusCode);
+        var wrapped = await found.Content.ReadFromJsonAsync<RemoteApiResponse<RemoteBuildVersionDetails>>();
+        Assert.IsNotNull(wrapped);
+        var details = wrapped!.Result;
+        Assert.IsNotNull(details);
+        Assert.AreEqual(123456, details!.BuildNumber);
+        Assert.AreEqual("a1b2c3d4e5f6", details.FromShaId);
+        Assert.AreEqual("DigitalServices/CustomerPortal", details.Project);
+        Assert.AreEqual("feature/123456-customer-portal", details.SourceBranch);
+        Assert.IsTrue(details.HasAdditionalProperties);
+
+        var missing = await client.PostAsJsonAsync("/api/builds/version-details", new GetBuildVersionDetailsRequest
+        {
+            BuildNumber = "999999",
+            IncludeVersionControlLog = true
+        });
+        Assert.AreEqual(System.Net.HttpStatusCode.NotFound, missing.StatusCode);
+    }
 }

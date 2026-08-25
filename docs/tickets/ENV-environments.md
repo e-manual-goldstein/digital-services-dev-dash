@@ -37,7 +37,7 @@
 | [ENV-014](#env-014) | Done | `WindowsServices` on `RemoteEnvironmentDetails` (model + details UI) | ENV-007 |
 | [ENV-015](#env-015) | Todo | Register from remote data → pre-filled application/deployment forms | ENV-012, ENV-013, APP-003, APP-004, APP-005 |
 | [ENV-016](#env-016) | Done | Fetch deployment/build details on environment refresh | ENV-004, ENV-007 |
-| [ENV-017](#env-017) | Todo | `GetBuildVersionDetails` — version control metadata for a build | ENV-016 |
+| [ENV-017](#env-017) | Done | `GetBuildVersionDetails` — version control metadata for a build | ENV-016 |
 
 ---
 
@@ -582,7 +582,7 @@ Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-
 |-------|--------|
 | **ID** | ENV-017 |
 | **Title** | `GetBuildVersionDetails` — version control metadata for a build |
-| **Status** | Todo |
+| **Status** | Done |
 | **Description** | Add **`GetBuildVersionDetails`** — POST with `GetBuildVersionDetailsRequest`: `BuildNumber` (string), `IncludeVersionControlLog: true`. Response: `RemoteApiResponse<RemoteBuildVersionDetails>` with `BuildNumber` (`int`), `FromShaId`, `Project`, `SourceBranch`, and `[JsonExtensionData]` overflow (version-control log fields may land here). Extend `IRemoteEnvironmentApiClient`, `HttpRemoteEnvironmentApiClient`, `RemoteEnvironmentApiOptions.GetBuildVersionDetailsPath`, and `appsettings.json`. Service method (e.g. on API client or thin `IBuildVersionDetailsService`) — on-demand only, not on environment refresh. **Mock API:** POST route returning sample data for build `123456`. **UI:** from ENV-016 build tables, user action (e.g. **Version details** or build-number drill-down) fetches and displays `FromShaId`, `Project`, `SourceBranch`; optional collapsible JSON for overflow when log is returned. Short-lived cache per build number optional. |
 | **Test / demo** | **UAT-01** → refresh (ENV-016) → open version details for build `123456` → shows SHA, project, branch. `dotnet test --filter "MockRemoteApiTests|RemoteBuildVersionDetailsTests"` → pass. |
 | **Depends on** | ENV-016 |

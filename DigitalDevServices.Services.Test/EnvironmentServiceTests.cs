@@ -284,6 +284,11 @@ public sealed class EnvironmentServiceTests
             return Task.FromResult(details);
         }
 
+        public Task<RemoteBuildVersionDetails?> GetBuildVersionDetailsAsync(
+            int buildNumber,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<RemoteBuildVersionDetails?>(null);
+
         public Task<RemoteEnvironmentDetails?> GetEnvironmentAsync(
             string environmentCode,
             CancellationToken cancellationToken = default)

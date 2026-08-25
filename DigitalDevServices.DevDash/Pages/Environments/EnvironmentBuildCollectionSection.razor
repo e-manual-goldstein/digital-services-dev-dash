@@ -1,58 +1,90 @@
 @namespace DigitalDevServices.DevDash.Pages.Environments
 @using DigitalDevServices.Model.Tfs
 
-<EnvironmentDetailsCollectionSection Title="@Title" Items="Builds">
-    <HeaderContent>
-        <tr>
-            <th>Build number</th>
-            <th>Name</th>
-            <th>Deployment type</th>
-            <th>Result</th>
-            <th>Colour</th>
-            <th>Parameters</th>
-        </tr>
-    </HeaderContent>
-    <RowTemplate Context="build">
-        <tr>
-            <td>
-                @{
-                    var buildNumberText = build.BuildNumber.ToString();
-                    var workItemUrl = TfsWorkItemLinkBuilder.BuildWorkItemUrl(WorkItemUrlTemplate, buildNumberText);
-                }
-                @if (workItemUrl is not null)
-                {
-                    <a href="@workItemUrl" target="_blank" rel="noopener noreferrer">@buildNumberText</a>
-                }
-                else
-                {
-                    <code>@buildNumberText</code>
-                }
-            </td>
-            <td>@(build.Name ?? "—")</td>
-            <td>@(build.DeploymentType ?? "—")</td>
-            <td>@(build.Result ?? "—")</td>
-            <td>@(build.Color ?? "—")</td>
-            <td>
-                @if (build.Parameters.Length == 0)
-                {
-                    <span class="text-muted">—</span>
-                }
-                else
-                {
-                    <ul class="list-unstyled mb-0 small">
-                        @foreach (var parameter in build.Parameters)
-                        {
-                            <li>
-                                <span class="text-muted">@(parameter.NameAsLabel ?? parameter.Name ?? "Parameter"):</span>
-                                @(parameter.Value ?? "—")
-                            </li>
-                        }
-                    </ul>
-                }
-            </td>
-        </tr>
-    </RowTemplate>
-</EnvironmentDetailsCollectionSection>
+@if (Builds.Count > 0)
+{
+    <div class="card mt-3">
+        <div class="card-body">
+            <CollapsibleSection Title="@($"{Title} ({Builds.Count})")">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Build number</th>
+                                <th>Name</th>
+                                <th>Deployment type</th>
+                                <th>Result</th>
+                                <th>Colour</th>
+                                <th>Parameters</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var build in Builds)
+                            {
+                                <tr>
+                                    <td>
+                                        @{
+                                            var buildNumberText = build.BuildNumber.ToString();
+                                            var workItemUrl = TfsWorkItemLinkBuilder.BuildWorkItemUrl(WorkItemUrlTemplate, buildNumberText);
+                                        }
+                                        @if (workItemUrl is not null)
+                                        {
+                                            <a href="@workItemUrl" target="_blank" rel="noopener noreferrer">@buildNumberText</a>
+                                        }
+                                        else
+                                        {
+                                            <code>@buildNumberText</code>
+                                        }
+                                    </td>
+                                    <td>@(build.Name ?? "—")</td>
+                                    <td>@(build.DeploymentType ?? "—")</td>
+                                    <td>@(build.Result ?? "—")</td>
+                                    <td>@(build.Color ?? "—")</td>
+                                    <td>
+                                        @if (build.Parameters.Length == 0)
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                        else
+                                        {
+                                            <ul class="list-unstyled mb-0 small">
+                                                @foreach (var parameter in build.Parameters)
+                                                {
+                                                    <li>
+                                                        <span class="text-muted">@(parameter.NameAsLabel ?? parameter.Name ?? "Parameter"):</span>
+                                                        @(parameter.Value ?? "—")
+                                                    </li>
+                                                }
+                                            </ul>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-primary"
+                                                @onclick="() => ToggleVersionDetails(build.BuildNumber)">
+                                            @(_expandedBuildNumber == build.BuildNumber ? "Hide version details" : "Version details")
+                                        </button>
+                                    </td>
+                                </tr>
+                                @if (_expandedBuildNumber == build.BuildNumber)
+                                {
+                                    <tr>
+                                        <td colspan="7" class="p-0">
+                                            <div class="p-3">
+                                                <EnvironmentBuildVersionDetailsPanel BuildNumber="build.BuildNumber" />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </CollapsibleSection>
+        </div>
+    </div>
+}
 
 @code {
     [Parameter, EditorRequired]
@@ -63,4 +95,11 @@
 
     [Parameter]
     public string? WorkItemUrlTemplate { get; set; }
+
+    private int? _expandedBuildNumber;
+
+    private void ToggleVersionDetails(int buildNumber)
+    {
+        _expandedBuildNumber = _expandedBuildNumber == buildNumber ? null : buildNumber;
+    }
 }

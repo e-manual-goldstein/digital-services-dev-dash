@@ -1,0 +1,69 @@
+@namespace DigitalDevServices.DevDash.Pages.Environments
+@inject IBuildVersionDetailsService BuildVersionDetailsService
+
+@if (_isLoading)
+{
+    <p class="text-muted small mb-0">Loading build version details…</p>
+}
+else if (_errorMessage is not null)
+{
+    <div class="alert alert-warning py-2 mb-0" role="alert">@_errorMessage</div>
+}
+else if (_details is not null)
+{
+    <div class="border rounded p-3 bg-light">
+        <h3 class="h6 mb-3">Build version details</h3>
+        <dl class="row mb-0 small">
+            <dt class="col-sm-3">From SHA</dt>
+            <dd class="col-sm-9"><code>@(_details.FromShaId ?? "—")</code></dd>
+
+            <dt class="col-sm-3">Project</dt>
+            <dd class="col-sm-9">@(_details.Project ?? "—")</dd>
+
+            <dt class="col-sm-3">Source branch</dt>
+            <dd class="col-sm-9"><code>@(_details.SourceBranch ?? "—")</code></dd>
+        </dl>
+
+        @if (_details.HasAdditionalProperties)
+        {
+            <div class="mt-3">
+                <CollapsibleSection Title="Version control log (JSON)">
+                    <pre class="additional-properties-json small mb-0"><code>@_details.FormatAdditionalPropertiesJson()</code></pre>
+                </CollapsibleSection>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public int BuildNumber { get; set; }
+
+    private RemoteBuildVersionDetails? _details;
+    private bool _isLoading;
+    private string? _errorMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+        _details = null;
+
+        try
+        {
+            _details = await BuildVersionDetailsService.GetBuildVersionDetailsAsync(BuildNumber);
+            if (_details is null)
+            {
+                _errorMessage = $"Build version details were not found for build {BuildNumber}.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

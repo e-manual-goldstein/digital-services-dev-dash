@@ -29,6 +29,15 @@ app.MapPost("/api/environments/deployment-details", (GetEnvironmentRequest reque
         : Results.Ok(new RemoteApiResponse<RemoteEnvironmentDeploymentDetails> { Result = deploymentDetails });
 });
 
+app.MapPost("/api/builds/version-details", (GetBuildVersionDetailsRequest request) =>
+{
+    var versionDetails = SampleBuildVersionDetails.ForBuildNumber(request.BuildNumber);
+
+    return versionDetails is null
+        ? Results.NotFound()
+        : Results.Ok(new RemoteApiResponse<RemoteBuildVersionDetails> { Result = versionDetails });
+});
+
 app.MapGet("/", () => Results.Ok(new
 {
     service = "DigitalDevServices.MockRemoteApi",
@@ -36,7 +45,8 @@ app.MapGet("/", () => Results.Ok(new
     {
         "GET /api/environments",
         "POST /api/environments",
-        "POST /api/environments/deployment-details"
+        "POST /api/environments/deployment-details",
+        "POST /api/builds/version-details"
     }
 }));
 

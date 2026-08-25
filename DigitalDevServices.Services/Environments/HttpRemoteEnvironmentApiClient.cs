@@ -68,6 +68,33 @@ public sealed class HttpRemoteEnvironmentApiClient : IRemoteEnvironmentApiClient
         return wrapped?.Result;
     }
 
+    public async Task<RemoteBuildVersionDetails?> GetBuildVersionDetailsAsync(
+        int buildNumber,
+        CancellationToken cancellationToken = default)
+    {
+        var request = new GetBuildVersionDetailsRequest
+        {
+            BuildNumber = buildNumber.ToString(),
+            IncludeVersionControlLog = true
+        };
+
+        var response = await _httpClient
+            .PostAsJsonAsync(_options.GetBuildVersionDetailsPath, request, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        var wrapped = await response.Content
+            .ReadFromJsonAsync<RemoteApiResponse<RemoteBuildVersionDetails>>(cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        return wrapped?.Result;
+    }
+
     public async Task<IReadOnlyList<RemoteEnvironmentDetails>> ListEnvironmentsAsync(
         CancellationToken cancellationToken = default)
     {

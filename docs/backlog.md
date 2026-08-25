@@ -10,13 +10,12 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~ENV-016~~ | [ENV](tickets/ENV-environments.md) | `GetDeploymentDetailsForEnvironment` — build arrays on refresh |
+| ~~ENV-017~~ | [ENV](tickets/ENV-environments.md) | `GetBuildVersionDetails` — SHA, project, branch per build (on demand) |
 
 ## Active (recommended order)
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ENV-017 | [ENV](tickets/ENV-environments.md) | `GetBuildVersionDetails` — SHA, project, branch per build (on demand) |
 | ENV-015 | [ENV](tickets/ENV-environments.md) | Register from remote → pre-filled application/deployment forms |
 | CFG-004 | [CFG](tickets/CFG-configuration.md) | Compare setting by name across apps in one environment |
 | CFG-005 | [CFG](tickets/CFG-configuration.md) | Compare setting by name for one app across environments |
@@ -29,7 +28,7 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 
 | Epic | Description | Tickets Completed | Tickets Shelved | Total Tickets | Progress |
 |------|-------------|-------------------|-----------------|---------------|----------|
-| [Environments (ENV)](tickets/ENV-environments.md) | Remote API + local tracking + environment details hub | 15 | 0 | 17 | 🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟨🟨⬜ 88% |
+| [Environments (ENV)](tickets/ENV-environments.md) | Remote API + local tracking + environment details hub | 16 | 0 | 17 | 🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟨⬜ 94% |
 | [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Named pipeline feeds (no branch matching v1) | 2 | 1 | 3 | 🟩🟩🟩🟩🟩🟩🟨🟨🟨⬜ 67% |
 | [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 3 | 0 | 5 | 🟩🟩🟩🟩🟩🟨🟨🟨⬜⬜ 60% |
 | [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | 2 | 0 | 4 | 🟩🟩🟩🟩🟨🟨🟨⬜⬜⬜ 50% |

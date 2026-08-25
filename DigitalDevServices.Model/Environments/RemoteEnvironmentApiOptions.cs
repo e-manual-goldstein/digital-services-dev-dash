@@ -36,4 +36,9 @@ public class RemoteEnvironmentApiOptions
     /// Relative path for deployment/build details (POST with <see cref="GetEnvironmentRequest"/> body).
     /// </summary>
     public string GetDeploymentDetailsForEnvironmentPath { get; set; } = "api/environments/deployment-details";
+
+    /// <summary>
+    /// Relative path for build version details (POST with <see cref="GetBuildVersionDetailsRequest"/> body).
+    /// </summary>
+    public string GetBuildVersionDetailsPath { get; set; } = "api/builds/version-details";
 }
