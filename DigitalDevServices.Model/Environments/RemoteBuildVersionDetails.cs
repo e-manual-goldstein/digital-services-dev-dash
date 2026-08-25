@@ -5,7 +5,7 @@ namespace DigitalDevServices.Model.Environments;
 
 public class RemoteBuildVersionDetails
 {
-    public int BuildNumber { get; set; }
+    public int? BuildNumber { get; set; }
 
     public string? FromShaId { get; set; }
 
