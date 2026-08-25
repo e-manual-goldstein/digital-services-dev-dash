@@ -5,7 +5,7 @@ namespace DigitalDevServices.Model.Environments;
 
 public class EnvironmentBuild
 {
-    public int BuildNumber { get; set; }
+    public int? BuildNumber { get; set; }
 
     public string? Color { get; set; }
 
