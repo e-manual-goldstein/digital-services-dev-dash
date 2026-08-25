@@ -8,6 +8,10 @@ public interface IRemoteEnvironmentApiClient
         string environmentCode,
         CancellationToken cancellationToken = default);
 
+    Task<RemoteEnvironmentDeploymentDetails?> GetDeploymentDetailsForEnvironmentAsync(
+        string environmentCode,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<RemoteEnvironmentDetails>> ListEnvironmentsAsync(
         CancellationToken cancellationToken = default);
 }

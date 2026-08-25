@@ -20,13 +20,23 @@ app.MapPost("/api/environments", (GetEnvironmentRequest request) =>
         : Results.Ok(new RemoteApiResponse<RemoteEnvironmentDetails> { Result = environment });
 });
 
+app.MapPost("/api/environments/deployment-details", (GetEnvironmentRequest request) =>
+{
+    var deploymentDetails = SampleDeploymentDetails.ForEnvironmentCode(request.EnvironmentCode);
+
+    return deploymentDetails is null
+        ? Results.NotFound()
+        : Results.Ok(new RemoteApiResponse<RemoteEnvironmentDeploymentDetails> { Result = deploymentDetails });
+});
+
 app.MapGet("/", () => Results.Ok(new
 {
     service = "DigitalDevServices.MockRemoteApi",
     endpoints = new[]
     {
         "GET /api/environments",
-        "POST /api/environments"
+        "POST /api/environments",
+        "POST /api/environments/deployment-details"
     }
 }));
 

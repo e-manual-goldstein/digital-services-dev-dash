@@ -28,8 +28,7 @@ public sealed class MockRemoteApiTests
         var uat01 = environments.Single(environment => environment.Id == 1);
         Assert.IsTrue(uat01.TryGetAdditionalString("SqlServerInstance", out var sqlServerInstance));
         Assert.AreEqual(@"UAT-01\SQL2019", sqlServerInstance);
-        Assert.IsTrue(uat01.TryGetAdditionalString("BuildNumber", out var buildNumber));
-        Assert.AreEqual("123456", buildNumber);
+        Assert.IsFalse(uat01.TryGetAdditionalString("BuildNumber", out _));
         Assert.HasCount(2, uat01.Servers);
         Assert.AreEqual("UAT-01-SQL", uat01.Servers[0].Name);
         Assert.HasCount(2, uat01.WindowsServices);
@@ -73,6 +72,33 @@ public sealed class MockRemoteApiTests
         Assert.AreEqual(@"C:\inetpub\wwwroot\AdminApi", details.WebSites[0].WebApplications[1].PhysicalPath);
 
         var missing = await client.PostAsJsonAsync("/api/environments", new GetEnvironmentRequest
+        {
+            EnvironmentCode = "MISSING"
+        });
+        Assert.AreEqual(System.Net.HttpStatusCode.NotFound, missing.StatusCode);
+    }
+
+    [TestMethod]
+    public async Task GetDeploymentDetailsForEnvironment_ReturnsMatchOrNotFound()
+    {
+        await using var factory = new WebApplicationFactory<global::Program>();
+        using var client = factory.CreateClient();
+
+        var uat01 = await client.PostAsJsonAsync("/api/environments/deployment-details", new GetEnvironmentRequest
+        {
+            EnvironmentCode = "UAT-01"
+        });
+        Assert.IsTrue(uat01.IsSuccessStatusCode);
+        var wrapped = await uat01.Content.ReadFromJsonAsync<RemoteApiResponse<RemoteEnvironmentDeploymentDetails>>();
+        Assert.IsNotNull(wrapped);
+        var details = wrapped!.Result;
+        Assert.IsNotNull(details);
+        Assert.HasCount(1, details!.BuildsSuccessful);
+        Assert.AreEqual(123456, details.BuildsSuccessful[0].BuildNumber);
+        Assert.AreEqual("Customer Portal", details.BuildsSuccessful[0].Name);
+        Assert.AreEqual("feature/123456-customer-portal", details.GetPrimaryWipBranch());
+
+        var missing = await client.PostAsJsonAsync("/api/environments/deployment-details", new GetEnvironmentRequest
         {
             EnvironmentCode = "MISSING"
         });

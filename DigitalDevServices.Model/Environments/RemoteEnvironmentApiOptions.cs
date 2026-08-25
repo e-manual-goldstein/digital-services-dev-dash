@@ -31,4 +31,9 @@ public class RemoteEnvironmentApiOptions
     /// Relative path for listing all environments.
     /// </summary>
     public string ListEnvironmentsPath { get; set; } = "api/environments";
+
+    /// <summary>
+    /// Relative path for deployment/build details (POST with <see cref="GetEnvironmentRequest"/> body).
+    /// </summary>
+    public string GetDeploymentDetailsForEnvironmentPath { get; set; } = "api/environments/deployment-details";
 }

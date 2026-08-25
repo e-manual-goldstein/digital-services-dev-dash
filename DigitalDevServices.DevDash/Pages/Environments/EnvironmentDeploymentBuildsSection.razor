@@ -1,0 +1,18 @@
+@namespace DigitalDevServices.DevDash.Pages.Environments
+@using DigitalDevServices.Model.Tfs
+
+@if (DeploymentDetails is not null)
+{
+    <EnvironmentBuildCollectionSection Title="Builds" Builds="DeploymentDetails.Builds" WorkItemUrlTemplate="WorkItemUrlTemplate" />
+    <EnvironmentBuildCollectionSection Title="Builds full" Builds="DeploymentDetails.BuildsFull" WorkItemUrlTemplate="WorkItemUrlTemplate" />
+    <EnvironmentBuildCollectionSection Title="Builds last" Builds="DeploymentDetails.BuildsLast" WorkItemUrlTemplate="WorkItemUrlTemplate" />
+    <EnvironmentBuildCollectionSection Title="Builds successful" Builds="DeploymentDetails.BuildsSuccessful" WorkItemUrlTemplate="WorkItemUrlTemplate" />
+}
+
+@code {
+    [Parameter]
+    public RemoteEnvironmentDeploymentDetails? DeploymentDetails { get; set; }
+
+    [Parameter]
+    public string? WorkItemUrlTemplate { get; set; }
+}

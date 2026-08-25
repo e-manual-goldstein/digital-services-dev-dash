@@ -36,7 +36,7 @@
 | [ENV-013](#env-013) | Done | `WebSites` / `WebApplications` — model + register instances from IIS paths | ENV-012, APP-002 |
 | [ENV-014](#env-014) | Done | `WindowsServices` on `RemoteEnvironmentDetails` (model + details UI) | ENV-007 |
 | [ENV-015](#env-015) | Todo | Register from remote data → pre-filled application/deployment forms | ENV-012, ENV-013, APP-003, APP-004, APP-005 |
-| [ENV-016](#env-016) | Todo | Fetch deployment/build details on environment refresh | ENV-004, ENV-007 |
+| [ENV-016](#env-016) | Done | Fetch deployment/build details on environment refresh | ENV-004, ENV-007 |
 | [ENV-017](#env-017) | Todo | `GetBuildVersionDetails` — version control metadata for a build | ENV-016 |
 
 ---
@@ -571,7 +571,7 @@ Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-
 |-------|--------|
 | **ID** | ENV-016 |
 | **Title** | Fetch deployment/build details on environment refresh |
-| **Status** | Todo |
+| **Status** | Done |
 | **Description** | Add a second remote call when an environment is refreshed (or on cache-miss full fetch): **`GetDeploymentDetailsForEnvironment`** — POST with the same body as **`GetEnvironment`** (`GetEnvironmentRequest` / `EnvironmentCode`). Response: `RemoteApiResponse<RemoteEnvironmentDeploymentDetails>`. **Models:** `RemoteEnvironmentDeploymentDetails` with four arrays — `Builds`, `BuildsFull`, `BuildsLast`, `BuildsSuccessful` — each `EnvironmentBuild[]`. **`EnvironmentBuild`:** `BuildNumber` (`int`), `Color`, `DeploymentType`, `Name`, `Parameters` (`EnvironmentBuildParameter[]`: `Name`, `NameAsLabel`, `Value`), `Result`, plus `[JsonExtensionData]` / `AdditionalProperties`. Root DTO also supports `[JsonExtensionData]`. Extend `IRemoteEnvironmentApiClient`, `HttpRemoteEnvironmentApiClient`, `RemoteEnvironmentApiOptions.GetDeploymentDetailsForEnvironmentPath`, and `appsettings.json`. `EnvironmentService.RefreshEnvironmentAsync` stores result on `CachedEnvironment.DeploymentDetails`. **Mock API:** new POST route with sample builds for **UAT-01** (include a `WipBranch` parameter on at least one build). **UI:** header primary build + optional WIP branch per design notes; four collapsible build tables when arrays are non-empty. Remove `BuildNumber` / `WipBranch` from mock UAT-01 `AdditionalProperties` on `RemoteEnvironmentDetails`. Catalog list (`GetEnvironmentsAsync`) unchanged until per-environment refresh. |
 | **Test / demo** | Mock API + DevDash → **UAT-01** → **Refresh** → header shows build `123456` TFS link and WIP branch from parameters → expand **Builds successful (1)** (or relevant section) → table shows name, type, result. `dotnet test --filter "MockRemoteApiTests|EnvironmentServiceTests|RemoteEnvironmentDeploymentDetailsTests"` → pass. |
 | **Depends on** | ENV-004, ENV-007 |

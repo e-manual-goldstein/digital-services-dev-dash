@@ -87,9 +87,7 @@ internal static class SampleEnvironments
                     }
                 ]
             },
-            ("SqlServerInstance", @"UAT-01\SQL2019"),
-            ("BuildNumber", "123456"),
-            ("WipBranch", "feature/123456-customer-portal")),
+            ("SqlServerInstance", @"UAT-01\SQL2019")),
         new RemoteEnvironmentDetails
         {
             Id = 2,

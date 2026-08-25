@@ -1,0 +1,66 @@
+@namespace DigitalDevServices.DevDash.Pages.Environments
+@using DigitalDevServices.Model.Tfs
+
+<EnvironmentDetailsCollectionSection Title="@Title" Items="Builds">
+    <HeaderContent>
+        <tr>
+            <th>Build number</th>
+            <th>Name</th>
+            <th>Deployment type</th>
+            <th>Result</th>
+            <th>Colour</th>
+            <th>Parameters</th>
+        </tr>
+    </HeaderContent>
+    <RowTemplate Context="build">
+        <tr>
+            <td>
+                @{
+                    var buildNumberText = build.BuildNumber.ToString();
+                    var workItemUrl = TfsWorkItemLinkBuilder.BuildWorkItemUrl(WorkItemUrlTemplate, buildNumberText);
+                }
+                @if (workItemUrl is not null)
+                {
+                    <a href="@workItemUrl" target="_blank" rel="noopener noreferrer">@buildNumberText</a>
+                }
+                else
+                {
+                    <code>@buildNumberText</code>
+                }
+            </td>
+            <td>@(build.Name ?? "—")</td>
+            <td>@(build.DeploymentType ?? "—")</td>
+            <td>@(build.Result ?? "—")</td>
+            <td>@(build.Color ?? "—")</td>
+            <td>
+                @if (build.Parameters.Length == 0)
+                {
+                    <span class="text-muted">—</span>
+                }
+                else
+                {
+                    <ul class="list-unstyled mb-0 small">
+                        @foreach (var parameter in build.Parameters)
+                        {
+                            <li>
+                                <span class="text-muted">@(parameter.NameAsLabel ?? parameter.Name ?? "Parameter"):</span>
+                                @(parameter.Value ?? "—")
+                            </li>
+                        }
+                    </ul>
+                }
+            </td>
+        </tr>
+    </RowTemplate>
+</EnvironmentDetailsCollectionSection>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<EnvironmentBuild> Builds { get; set; } = [];
+
+    [Parameter]
+    public string? WorkItemUrlTemplate { get; set; }
+}

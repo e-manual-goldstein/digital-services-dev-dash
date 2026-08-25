@@ -42,6 +42,32 @@ public sealed class HttpRemoteEnvironmentApiClient : IRemoteEnvironmentApiClient
         return wrapped?.Result;
     }
 
+    public async Task<RemoteEnvironmentDeploymentDetails?> GetDeploymentDetailsForEnvironmentAsync(
+        string environmentCode,
+        CancellationToken cancellationToken = default)
+    {
+        var request = new GetEnvironmentRequest
+        {
+            EnvironmentCode = environmentCode
+        };
+
+        var response = await _httpClient
+            .PostAsJsonAsync(_options.GetDeploymentDetailsForEnvironmentPath, request, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        var wrapped = await response.Content
+            .ReadFromJsonAsync<RemoteApiResponse<RemoteEnvironmentDeploymentDetails>>(cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        return wrapped?.Result;
+    }
+
     public async Task<IReadOnlyList<RemoteEnvironmentDetails>> ListEnvironmentsAsync(
         CancellationToken cancellationToken = default)
     {

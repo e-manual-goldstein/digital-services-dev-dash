@@ -4,6 +4,8 @@
 @inject IDeployableApplicationService DeployableApplicationService
 @inject IPipelineFeedService PipelineFeedService
 @inject NotificationService NotificationService
+@inject IOptions<TfsOptions> TfsOptions
+@inject IJSRuntime JsRuntime
 
 <PageTitle>@(_environment?.Details.Name ?? "Environment")</PageTitle>
 
@@ -60,9 +62,50 @@ else
 
                 <dt class="col-sm-3">Remote id</dt>
                 <dd class="col-sm-9">@_environment.Details.Id</dd>
+
+                @if (_environment.Details.TryGetAdditionalString("SqlServerInstance", out var sqlServerInstance)
+                     && !string.IsNullOrWhiteSpace(sqlServerInstance))
+                {
+                    <dt class="col-sm-3">SQL Server instance</dt>
+                    <dd class="col-sm-9">
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <code>@sqlServerInstance</code>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary"
+                                    disabled="@_isBusy"
+                                    @onclick="() => CopySqlServerInstanceAsync(sqlServerInstance)">
+                                Copy
+                            </button>
+                        </div>
+                    </dd>
+                }
+
+                @if (GetPrimaryBuildNumberText() is { } primaryBuildNumber)
+                {
+                    <dt class="col-sm-3">Build number</dt>
+                    <dd class="col-sm-9">
+                        @if (GetPrimaryBuildWorkItemUrl(primaryBuildNumber) is { } workItemUrl)
+                        {
+                            <a href="@workItemUrl" target="_blank" rel="noopener noreferrer">@primaryBuildNumber</a>
+                        }
+                        else
+                        {
+                            <code>@primaryBuildNumber</code>
+                        }
+                    </dd>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(GetPrimaryWipBranch()))
+                {
+                    <dt class="col-sm-3">WIP branch</dt>
+                    <dd class="col-sm-9"><code>@GetPrimaryWipBranch()</code></dd>
+                }
             </dl>
         </div>
     </div>
+
+    <EnvironmentDeploymentBuildsSection DeploymentDetails="_environment.DeploymentDetails"
+                                        WorkItemUrlTemplate="@TfsOptions.Value.WorkItemUrlTemplate" />
 
     @if (_environment.Details.HasAdditionalProperties)
     {
@@ -664,6 +707,40 @@ else
 
         [StringLength(2000, ErrorMessage = "Notes must be 2000 characters or fewer.")]
         public string Notes { get; set; } = string.Empty;
+    }
+
+    private string? GetPrimaryBuildNumberText() =>
+        _environment?.DeploymentDetails?.GetPrimaryBuild()?.BuildNumber.ToString();
+
+    private string? GetPrimaryWipBranch() =>
+        _environment?.DeploymentDetails?.GetPrimaryWipBranch();
+
+    private string? GetPrimaryBuildWorkItemUrl(string buildNumber) =>
+        TfsWorkItemLinkBuilder.BuildWorkItemUrl(TfsOptions.Value.WorkItemUrlTemplate, buildNumber);
+
+    private async Task CopySqlServerInstanceAsync(string sqlServerInstance)
+    {
+        try
+        {
+            await JsRuntime.InvokeVoidAsync("devDashClipboard.copyText", sqlServerInstance);
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Copied",
+                Detail = "SQL Server instance copied to clipboard.",
+                Duration = 3000
+            });
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Copy failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
     }
 
     private async Task RefreshAsync()

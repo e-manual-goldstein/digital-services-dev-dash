@@ -13,6 +13,8 @@ public record CachedEnvironment
 
     public required RemoteEnvironmentDetails Details { get; init; }
 
+    public RemoteEnvironmentDeploymentDetails? DeploymentDetails { get; init; }
+
     public required DateTimeOffset DateLastUpdated { get; init; }
 
     public required bool IsFromCache { get; init; }

@@ -49,7 +49,7 @@ public sealed class EnvironmentService : IEnvironmentService
         foreach (var details in remoteEnvironments.OrderBy(environment => environment.Name, StringComparer.OrdinalIgnoreCase))
         {
             var tracked = await EnsureTrackedAsync(details.Id, updatedAt, cancellationToken).ConfigureAwait(false);
-            var cachedEnvironment = ToCachedEnvironment(tracked, details, updatedAt, isFromCache: false);
+            var cachedEnvironment = ToCachedEnvironment(tracked, details, deploymentDetails: null, updatedAt, isFromCache: false);
             _memoryCache.Set(GetCacheKey(tracked.Id), cachedEnvironment, _cacheOptions.CacheLifetime);
             results.Add(cachedEnvironment);
         }
@@ -80,10 +80,13 @@ public sealed class EnvironmentService : IEnvironmentService
         var environmentCode = await ResolveEnvironmentCodeAsync(remoteId, cancellationToken).ConfigureAwait(false);
         var details = await _apiClient.GetEnvironmentAsync(environmentCode, cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException($"Remote environment '{remoteId}' was not found via the Web API.");
+        var deploymentDetails = await _apiClient
+            .GetDeploymentDetailsForEnvironmentAsync(environmentCode, cancellationToken)
+            .ConfigureAwait(false);
 
         var updatedAt = DateTimeOffset.UtcNow;
         var tracked = await EnsureTrackedAsync(details.Id, updatedAt, cancellationToken).ConfigureAwait(false);
-        var result = ToCachedEnvironment(tracked, details, updatedAt, isFromCache: false);
+        var result = ToCachedEnvironment(tracked, details, deploymentDetails, updatedAt, isFromCache: false);
         _memoryCache.Set(GetCacheKey(tracked.Id), result, _cacheOptions.CacheLifetime);
         return result;
     }
@@ -206,6 +209,7 @@ public sealed class EnvironmentService : IEnvironmentService
     private static CachedEnvironment ToCachedEnvironment(
         TrackedEnvironment tracked,
         RemoteEnvironmentDetails details,
+        RemoteEnvironmentDeploymentDetails? deploymentDetails,
         DateTimeOffset updatedAt,
         bool isFromCache)
     {
@@ -215,6 +219,7 @@ public sealed class EnvironmentService : IEnvironmentService
             RemoteId = tracked.RemoteId,
             IsFavourite = tracked.IsFavourite,
             Details = details,
+            DeploymentDetails = deploymentDetails,
             DateLastUpdated = updatedAt,
             IsFromCache = isFromCache
         };

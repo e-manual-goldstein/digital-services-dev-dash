@@ -75,6 +75,62 @@ public sealed class EnvironmentServiceTests
     }
 
     [TestMethod]
+    public async Task RefreshEnvironmentAsync_FetchesEnvironmentAndDeploymentDetails()
+    {
+        var fakeApi = new FakeRemoteEnvironmentApiClient
+        {
+            Environments =
+            {
+                [99] = new RemoteEnvironmentDetails
+                {
+                    Id = 99,
+                    Code = "QA",
+                    Name = "QA",
+                    EnvironmentType = "QA"
+                }
+            },
+            DeploymentDetailsByCode =
+            {
+                ["QA"] = new RemoteEnvironmentDeploymentDetails
+                {
+                    BuildsSuccessful =
+                    [
+                        new EnvironmentBuild
+                        {
+                            BuildNumber = 42,
+                            Name = "QA build",
+                            Parameters =
+                            [
+                                new EnvironmentBuildParameter
+                                {
+                                    Name = "WipBranch",
+                                    Value = "feature/qa"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        };
+
+        await using var fixture = await EnvironmentServiceFixture.CreateAsync(fakeApi);
+        await fixture.Service.GetEnvironmentsAsync();
+        fakeApi.GetCallCount = 0;
+        fakeApi.DeploymentDetailsCallCount = 0;
+
+        var refreshed = await fixture.Service.RefreshEnvironmentAsync(99);
+
+        Assert.AreEqual("QA", refreshed.Details.Name);
+        Assert.IsFalse(refreshed.IsFromCache);
+        Assert.AreEqual(1, fakeApi.GetCallCount);
+        Assert.AreEqual(1, fakeApi.DeploymentDetailsCallCount);
+        Assert.AreEqual("QA", fakeApi.LastRequestedEnvironmentCode);
+        Assert.IsNotNull(refreshed.DeploymentDetails);
+        Assert.AreEqual(42, refreshed.DeploymentDetails!.GetPrimaryBuild()!.BuildNumber);
+        Assert.AreEqual("feature/qa", refreshed.DeploymentDetails.GetPrimaryWipBranch());
+    }
+
+    [TestMethod]
     public async Task RefreshEnvironmentAsync_RefreshesSingleEnvironmentFromRemoteApi()
     {
         var fakeApi = new FakeRemoteEnvironmentApiClient
@@ -209,9 +265,24 @@ public sealed class EnvironmentServiceTests
 
         public int GetCallCount { get; set; }
 
+        public int DeploymentDetailsCallCount { get; set; }
+
         public int ListCallCount { get; private set; }
 
         public string? LastRequestedEnvironmentCode { get; private set; }
+
+        public Dictionary<string, RemoteEnvironmentDeploymentDetails> DeploymentDetailsByCode { get; } =
+            new(StringComparer.OrdinalIgnoreCase);
+
+        public Task<RemoteEnvironmentDeploymentDetails?> GetDeploymentDetailsForEnvironmentAsync(
+            string environmentCode,
+            CancellationToken cancellationToken = default)
+        {
+            DeploymentDetailsCallCount++;
+            LastRequestedEnvironmentCode = environmentCode;
+            DeploymentDetailsByCode.TryGetValue(environmentCode, out var details);
+            return Task.FromResult(details);
+        }
 
         public Task<RemoteEnvironmentDetails?> GetEnvironmentAsync(
             string environmentCode,
