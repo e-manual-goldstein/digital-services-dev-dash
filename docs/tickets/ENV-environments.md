@@ -36,6 +36,8 @@
 | [ENV-013](#env-013) | Done | `WebSites` / `WebApplications` — model + register instances from IIS paths | ENV-012, APP-002 |
 | [ENV-014](#env-014) | Done | `WindowsServices` on `RemoteEnvironmentDetails` (model + details UI) | ENV-007 |
 | [ENV-015](#env-015) | Todo | Register from remote data → pre-filled application/deployment forms | ENV-012, ENV-013, APP-003, APP-004, APP-005 |
+| [ENV-016](#env-016) | Todo | Fetch deployment/build details on environment refresh | ENV-004, ENV-007 |
+| [ENV-017](#env-017) | Todo | `GetBuildVersionDetails` — version control metadata for a build | ENV-016 |
 
 ---
 
@@ -69,6 +71,107 @@ Returned by the external Web API (shape may evolve). Known fields are first-clas
 | `AdditionalProperties` | `Dictionary<string, JsonElement>` | Overflow from API via `[JsonExtensionData]` — not serialized back to the API |
 
 Promote fields from `AdditionalProperties` to typed properties when the UI or services need them reliably. Once promoted, they no longer appear in the overflow dictionary.
+
+### Remote deployment details (`RemoteEnvironmentDeploymentDetails`, ENV-016)
+
+Returned by **`GetDeploymentDetailsForEnvironment`** (POST, same body as `GetEnvironment`). Wrapped in `RemoteApiResponse<RemoteEnvironmentDeploymentDetails>` like other endpoints. Cached on `CachedEnvironment.DeploymentDetails` when an environment is refreshed.
+
+| Field | Type | Notes |
+|-------|------|--------|
+| `Builds` | `EnvironmentBuild[]` | All builds for the environment |
+| `BuildsFull` | `EnvironmentBuild[]` | Full builds subset |
+| `BuildsLast` | `EnvironmentBuild[]` | Most recent builds |
+| `BuildsSuccessful` | `EnvironmentBuild[]` | Successful builds only |
+| `AdditionalProperties` | `Dictionary<string, JsonElement>?` | Overflow via `[JsonExtensionData]` on the root DTO |
+
+**`EnvironmentBuild`** (element type for all four arrays)
+
+| Field | Type | Notes |
+|-------|------|--------|
+| `BuildNumber` | `int` | TFS work item id — stringify for `Tfs:WorkItemUrlTemplate` |
+| `Color` | `string?` | Display hint (e.g. status colour from API) |
+| `DeploymentType` | `string?` | |
+| `Name` | `string?` | Build / deployment label |
+| `Parameters` | `EnvironmentBuildParameter[]` | Key/value metadata (may include branch, etc.) |
+| `Result` | `string?` | Outcome / status text |
+| `AdditionalProperties` | `Dictionary<string, JsonElement>?` | Overflow via `[JsonExtensionData]` |
+
+**`EnvironmentBuildParameter`** (nested under `EnvironmentBuild`)
+
+| Field | Type | Notes |
+|-------|------|--------|
+| `Name` | `string?` | Parameter key |
+| `NameAsLabel` | `string?` | Human-readable label for UI |
+| `Value` | `string?` | Parameter value |
+
+Example response shape (inner `Result` only):
+
+```json
+{
+  "Result": {
+    "Builds": [
+      {
+        "BuildNumber": 123456,
+        "Color": "green",
+        "DeploymentType": "Full",
+        "Name": "Customer Portal",
+        "Parameters": [
+          { "Name": "WipBranch", "NameAsLabel": "WIP branch", "Value": "feature/123456-customer-portal" }
+        ],
+        "Result": "Succeeded"
+      }
+    ],
+    "BuildsFull": [],
+    "BuildsLast": [],
+    "BuildsSuccessful": []
+  }
+}
+```
+
+**Header build link (ENV-004 + ENV-016):** derive the primary build for the TFS hyperlink from the first entry in `BuildsSuccessful`, else `BuildsLast`, else `BuildsFull`, else `Builds`. Use `BuildNumber` (as string) with `TfsWorkItemLinkBuilder`. Optional WIP branch in header: first `Parameters` entry where `Name` is `WipBranch` (case-insensitive) on that primary build, if present.
+
+**UI (ENV-016):** below the main details card (and before **Additional properties**), show up to four **`CollapsibleSection`** + table blocks when non-empty — **Builds (n)**, **Builds full (n)**, **Builds last (n)**, **Builds successful (n)**. Table columns: build number (TFS link when configured), name, deployment type, result, colour; expand row or secondary column for parameters (`NameAsLabel` / `Value`). Omit sections when the array is null or empty. Build number link or **Version details** action triggers **ENV-017** fetch for that row.
+
+### Remote build version details (`RemoteBuildVersionDetails`, ENV-017)
+
+Returned by **`GetBuildVersionDetails`** (POST). On-demand per build number — not part of environment refresh. Wrapped in `RemoteApiResponse<RemoteBuildVersionDetails>`.
+
+**Request (`GetBuildVersionDetailsRequest`)**
+
+```json
+{
+  "BuildNumber": "123456",
+  "IncludeVersionControlLog": true
+}
+```
+
+| Field | Type | Notes |
+|-------|------|--------|
+| `BuildNumber` | `string` | String form of `EnvironmentBuild.BuildNumber` |
+| `IncludeVersionControlLog` | `bool` | Always `true` in v1 |
+
+**Response (`RemoteBuildVersionDetails`)**
+
+| Field | Type | Notes |
+|-------|------|--------|
+| `BuildNumber` | `int` | Echo of requested build |
+| `FromShaId` | `string?` | Source commit SHA |
+| `Project` | `string?` | Project / repo identifier |
+| `SourceBranch` | `string?` | Branch the build came from |
+| `AdditionalProperties` | `Dictionary<string, JsonElement>?` | Overflow via `[JsonExtensionData]` — may include version-control log payload when `IncludeVersionControlLog` is true |
+
+Example inner `Result`:
+
+```json
+{
+  "BuildNumber": 123456,
+  "FromShaId": "a1b2c3d4e5f6",
+  "Project": "DigitalServices/CustomerPortal",
+  "SourceBranch": "feature/123456-customer-portal"
+}
+```
+
+**UI (ENV-017):** when the user requests version details for a build (from an ENV-016 build table row), call the API and show **Build version details** — `FromShaId`, `Project`, `SourceBranch` in the main card or an expandable row / nested collapsible; if version-control log fields appear in `AdditionalProperties`, show them in a collapsible JSON block (same pattern as ENV-010). Optional short-lived in-memory cache keyed by `BuildNumber`. Do not prefetch for every build on environment refresh.
 
 ### Remote child DTOs (ENV-011 – ENV-014)
 
@@ -155,7 +258,8 @@ What consumers (UI, other services) use:
 | `LocalId` | `Guid` | From `TrackedEnvironment.Id` |
 | `RemoteId` | `int` | From `Details.Id` |
 | `IsFavourite` | `bool` | From `TrackedEnvironment` (local only) |
-| `Details` | `RemoteEnvironmentDetails` | From API |
+| `Details` | `RemoteEnvironmentDetails` | From API (`GetEnvironment`) |
+| `DeploymentDetails` | `RemoteEnvironmentDeploymentDetails?` | From API (`GetDeploymentDetailsForEnvironment`) on refresh; null when not yet fetched |
 | `DateLastUpdated` | `DateTimeOffset` | From local record |
 | `IsFromCache` | `bool` | `true` when served from memory without an API call |
 
@@ -166,12 +270,12 @@ What consumers (UI, other services) use:
 | Cache lifetime | `EnvironmentCache:CacheLifetime` | `24:00:00` (24 hours) |
 
 - Remote details cached in **`IMemoryCache`** per local environment id.
-- **`RefreshEnvironmentAsync(localId)`** bypasses cache, calls the API, updates `DateLastUpdated`, and refreshes the memory entry.
-- Normal reads use cache when still valid; otherwise fetch from API.
+- **`RefreshEnvironmentAsync(remoteId)`** bypasses cache, calls **`GetEnvironment`** and **`GetDeploymentDetailsForEnvironment`** (same POST body: `{ EnvironmentCode }`), updates `DateLastUpdated`, and refreshes the memory entry.
+- Normal reads use cache when still valid; otherwise fetch from API (both endpoints when a full fetch is required).
 
 ### TFS work item links
 
-`BuildNumber` doubles as a hyperlink to the TFS work item that represents that build. URL is a configurable template; `{BuildNumber}` is replaced with the remote value. If the template is empty or `BuildNumber` is missing, show the build number as plain text.
+`BuildNumber` for the environment header TFS link comes from the **primary build** in `CachedEnvironment.DeploymentDetails` (see [Remote deployment details](#remote-deployment-details-remoteenvironmentdeploymentdetails-env-016)). URL is a configurable template; `{BuildNumber}` is replaced with the string form of `EnvironmentBuild.BuildNumber`. If the template is empty or no primary build exists, show plain text or omit the link.
 
 ```json
 "Tfs": {
@@ -184,10 +288,21 @@ What consumers (UI, other services) use:
 ```json
 "RemoteEnvironmentApi": {
   "BaseUrl": "https://their-api.example/",
-  "GetEnvironmentPath": "api/environments/{id}",
+  "GetEnvironmentPath": "api/environments",
+  "GetDeploymentDetailsForEnvironmentPath": "api/environments/deployment-details",
+  "GetBuildVersionDetailsPath": "api/builds/version-details",
   "ListEnvironmentsPath": "api/environments"
 }
 ```
+
+| Endpoint | Method | Request body | Response (`Result`) |
+|----------|--------|--------------|------------------------|
+| List environments | GET `ListEnvironmentsPath` | — | `RemoteEnvironmentDetails[]` |
+| Get environment | POST `GetEnvironmentPath` | `GetEnvironmentRequest` (`EnvironmentCode`) | `RemoteEnvironmentDetails` |
+| Get deployment details | POST `GetDeploymentDetailsForEnvironmentPath` | `GetEnvironmentRequest` (`EnvironmentCode`) | `RemoteEnvironmentDeploymentDetails` |
+| Get build version details | POST `GetBuildVersionDetailsPath` | `GetBuildVersionDetailsRequest` (`BuildNumber`, `IncludeVersionControlLog`) | `RemoteBuildVersionDetails` |
+
+`GetEnvironment` and `GetDeploymentDetailsForEnvironment` share the `{ "EnvironmentCode": "UAT-01" }` body. `GetBuildVersionDetails` uses `{ "BuildNumber": "123456", "IncludeVersionControlLog": true }`. All responses use the shared `RemoteApiResponse<T>` wrapper.
 
 When `BaseUrl` is empty, API calls fail with a clear configuration error (until configured). Use **ENV-003** mock API for local development.
 
@@ -236,11 +351,13 @@ Route: `/environments/{localId}` (`CachedEnvironment.LocalId`).
 | Surface | Behaviour |
 |---------|-----------|
 | SQL Server instance | Display as `<code>`; **Copy** button writes the string to the clipboard and shows a success toast |
-| BuildNumber | Text + hyperlink to TFS work item (new tab) when `Tfs:WorkItemUrlTemplate` is set |
-| WIP branch | Plain text from `WipBranch` |
-| Refresh | Per-environment refresh (same as list row refresh) |
+| BuildNumber | Primary build from `DeploymentDetails` — text + TFS hyperlink when `Tfs:WorkItemUrlTemplate` is set (see ENV-016 primary-build rule) |
+| WIP branch | Optional — from primary build `Parameters` where `Name` is `WipBranch`, if present |
+| Refresh | Per-environment refresh (same as list row refresh); fetches both `GetEnvironment` and `GetDeploymentDetailsForEnvironment` |
 
-**Additional properties** (ENV-010) — below the main details card.
+**Build collections** (ENV-016) — collapsible tables for `Builds`, `BuildsFull`, `BuildsLast`, `BuildsSuccessful` when non-empty. See [Remote deployment details](#remote-deployment-details-remoteenvironmentdeploymentdetails-env-016).
+
+**Additional properties** (ENV-010) — below build sections.
 
 | Surface | Behaviour |
 |---------|-----------|
@@ -447,3 +564,25 @@ Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-
 | **Description** | Replace immediate register-on-click (ENV-012 / ENV-013) with a guided flow. **Register** on `EnvironmentUrlsSection` / `WebSitesSection`: if no matching `DeployableApplication` by name, navigate to `/applications` with the add form open and fields pre-filled from the remote row (name, `IsWebApp`, optional `PathToLogFiles` suggestion); after **Save**, return to `/environments/{localId}` with **Add deployment** open and instance fields pre-filled (`HomepageUrl`, `PhysicalPath`, resolved `LogPath` via APP-005, environment pre-selected). If the deployable app already exists but no instance in this environment → skip straight to pre-filled **Add deployment**. If instance already exists → **Update** opens **Edit deployment** with remote values pre-filled (user confirms **Save**). Remove auto-save notifications from register buttons. Shared mapping helper from `EnvironmentUrl` / `EnvironmentWebApplication` + parent `EnvironmentWebSite` + `RemoteEnvironmentDetails`. |
 | **Test / demo** | **UAT-01** → **Environment URLs** → **Register** on Customer Portal (new app) → `/applications` form shows name + web app checked → **Save** → returns to UAT-01 deployment form with homepage URL filled → **Save** → row in **Deployed applications**. **Web sites** → **Register** on `/portal` with `PathToLogFiles` template on app → log path field shows resolved path. Existing instance → **Update** opens edit form, does not duplicate rows. |
 | **Depends on** | ENV-012, ENV-013, APP-003, APP-004, APP-005 |
+
+### ENV-016
+
+| Field | Detail |
+|-------|--------|
+| **ID** | ENV-016 |
+| **Title** | Fetch deployment/build details on environment refresh |
+| **Status** | Todo |
+| **Description** | Add a second remote call when an environment is refreshed (or on cache-miss full fetch): **`GetDeploymentDetailsForEnvironment`** — POST with the same body as **`GetEnvironment`** (`GetEnvironmentRequest` / `EnvironmentCode`). Response: `RemoteApiResponse<RemoteEnvironmentDeploymentDetails>`. **Models:** `RemoteEnvironmentDeploymentDetails` with four arrays — `Builds`, `BuildsFull`, `BuildsLast`, `BuildsSuccessful` — each `EnvironmentBuild[]`. **`EnvironmentBuild`:** `BuildNumber` (`int`), `Color`, `DeploymentType`, `Name`, `Parameters` (`EnvironmentBuildParameter[]`: `Name`, `NameAsLabel`, `Value`), `Result`, plus `[JsonExtensionData]` / `AdditionalProperties`. Root DTO also supports `[JsonExtensionData]`. Extend `IRemoteEnvironmentApiClient`, `HttpRemoteEnvironmentApiClient`, `RemoteEnvironmentApiOptions.GetDeploymentDetailsForEnvironmentPath`, and `appsettings.json`. `EnvironmentService.RefreshEnvironmentAsync` stores result on `CachedEnvironment.DeploymentDetails`. **Mock API:** new POST route with sample builds for **UAT-01** (include a `WipBranch` parameter on at least one build). **UI:** header primary build + optional WIP branch per design notes; four collapsible build tables when arrays are non-empty. Remove `BuildNumber` / `WipBranch` from mock UAT-01 `AdditionalProperties` on `RemoteEnvironmentDetails`. Catalog list (`GetEnvironmentsAsync`) unchanged until per-environment refresh. |
+| **Test / demo** | Mock API + DevDash → **UAT-01** → **Refresh** → header shows build `123456` TFS link and WIP branch from parameters → expand **Builds successful (1)** (or relevant section) → table shows name, type, result. `dotnet test --filter "MockRemoteApiTests|EnvironmentServiceTests|RemoteEnvironmentDeploymentDetailsTests"` → pass. |
+| **Depends on** | ENV-004, ENV-007 |
+
+### ENV-017
+
+| Field | Detail |
+|-------|--------|
+| **ID** | ENV-017 |
+| **Title** | `GetBuildVersionDetails` — version control metadata for a build |
+| **Status** | Todo |
+| **Description** | Add **`GetBuildVersionDetails`** — POST with `GetBuildVersionDetailsRequest`: `BuildNumber` (string), `IncludeVersionControlLog: true`. Response: `RemoteApiResponse<RemoteBuildVersionDetails>` with `BuildNumber` (`int`), `FromShaId`, `Project`, `SourceBranch`, and `[JsonExtensionData]` overflow (version-control log fields may land here). Extend `IRemoteEnvironmentApiClient`, `HttpRemoteEnvironmentApiClient`, `RemoteEnvironmentApiOptions.GetBuildVersionDetailsPath`, and `appsettings.json`. Service method (e.g. on API client or thin `IBuildVersionDetailsService`) — on-demand only, not on environment refresh. **Mock API:** POST route returning sample data for build `123456`. **UI:** from ENV-016 build tables, user action (e.g. **Version details** or build-number drill-down) fetches and displays `FromShaId`, `Project`, `SourceBranch`; optional collapsible JSON for overflow when log is returned. Short-lived cache per build number optional. |
+| **Test / demo** | **UAT-01** → refresh (ENV-016) → open version details for build `123456` → shows SHA, project, branch. `dotnet test --filter "MockRemoteApiTests|RemoteBuildVersionDetailsTests"` → pass. |
+| **Depends on** | ENV-016 |
