@@ -15,7 +15,7 @@ public sealed class BuildVersionDetailsServiceTests
         {
             DetailsByBuildNumber =
             {
-                [123456] = new RemoteBuildVersionDetails
+                ["123456"] = new RemoteBuildVersionDetails
                 {
                     BuildNumber = 123456,
                     FromShaId = "abc123",
@@ -27,8 +27,8 @@ public sealed class BuildVersionDetailsServiceTests
 
         await using var fixture = BuildVersionDetailsServiceFixture.Create(fakeApi);
 
-        var first = await fixture.Service.GetBuildVersionDetailsAsync(123456);
-        var second = await fixture.Service.GetBuildVersionDetailsAsync(123456);
+        var first = await fixture.Service.GetBuildVersionDetailsAsync("123456");
+        var second = await fixture.Service.GetBuildVersionDetailsAsync("123456");
 
         Assert.IsNotNull(first);
         Assert.AreEqual("abc123", first!.FromShaId);
@@ -64,16 +64,16 @@ public sealed class BuildVersionDetailsServiceTests
 
     private sealed class FakeBuildVersionApiClient : IRemoteEnvironmentApiClient
     {
-        public Dictionary<int, RemoteBuildVersionDetails> DetailsByBuildNumber { get; } = new();
+        public Dictionary<string, RemoteBuildVersionDetails> DetailsByBuildNumber { get; } = new();
 
         public int CallCount { get; private set; }
 
         public Task<RemoteBuildVersionDetails?> GetBuildVersionDetailsAsync(
-            int buildNumber,
+            string environmentPipelineBuildNumber,
             CancellationToken cancellationToken = default)
         {
             CallCount++;
-            DetailsByBuildNumber.TryGetValue(buildNumber, out var details);
+            DetailsByBuildNumber.TryGetValue(environmentPipelineBuildNumber, out var details);
             return Task.FromResult(details);
         }
 

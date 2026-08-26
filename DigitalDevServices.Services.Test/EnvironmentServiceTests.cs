@@ -285,7 +285,7 @@ public sealed class EnvironmentServiceTests
         }
 
         public Task<RemoteBuildVersionDetails?> GetBuildVersionDetailsAsync(
-            int buildNumber,
+            string environmentPipelineBuildNumber,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<RemoteBuildVersionDetails?>(null);
 

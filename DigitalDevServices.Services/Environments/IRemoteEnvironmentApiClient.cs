@@ -13,7 +13,7 @@ public interface IRemoteEnvironmentApiClient
         CancellationToken cancellationToken = default);
 
     Task<RemoteBuildVersionDetails?> GetBuildVersionDetailsAsync(
-        int buildNumber,
+        string environmentPipelineBuildNumber,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<RemoteEnvironmentDetails>> ListEnvironmentsAsync(

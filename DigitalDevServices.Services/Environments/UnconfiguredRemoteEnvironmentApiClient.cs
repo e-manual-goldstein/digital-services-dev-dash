@@ -22,7 +22,7 @@ public sealed class UnconfiguredRemoteEnvironmentApiClient : IRemoteEnvironmentA
     }
 
     public Task<RemoteBuildVersionDetails?> GetBuildVersionDetailsAsync(
-        int buildNumber,
+        string environmentPipelineBuildNumber,
         CancellationToken cancellationToken = default)
     {
         throw new InvalidOperationException(

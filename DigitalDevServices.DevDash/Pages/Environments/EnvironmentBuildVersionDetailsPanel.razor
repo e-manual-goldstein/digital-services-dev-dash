@@ -51,7 +51,7 @@ else if (_details is not null)
 
         try
         {
-            _details = await BuildVersionDetailsService.GetBuildVersionDetailsAsync(BuildNumber);
+            //_details = await BuildVersionDetailsService.GetBuildVersionDetailsAsync(BuildNumber);
             if (_details is null)
             {
                 _errorMessage = $"Build version details were not found for build {BuildNumber}.";

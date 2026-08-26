@@ -5,6 +5,6 @@ namespace DigitalDevServices.Services.Environments;
 public interface IBuildVersionDetailsService
 {
     Task<RemoteBuildVersionDetails?> GetBuildVersionDetailsAsync(
-        int buildNumber,
+        string environmentPipelineBuildNumber,
         CancellationToken cancellationToken = default);
 }

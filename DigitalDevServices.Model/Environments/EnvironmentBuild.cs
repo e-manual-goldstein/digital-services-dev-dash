@@ -7,6 +7,7 @@ public class EnvironmentBuild
 {
     // (2) WorkItemBuildNumber — TFS work item id for this environment build; used for TFS hyperlinks and GetBuildVersionDetails.
     // Proposed rename: WorkItemBuildNumber
+    // Correct Name: EnvironmentPipelineBuildNumber
     public int BuildNumber { get; set; }
 
     public string? Color { get; set; }
