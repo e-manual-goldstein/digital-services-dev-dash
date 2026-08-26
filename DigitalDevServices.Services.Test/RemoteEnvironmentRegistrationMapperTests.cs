@@ -106,7 +106,7 @@ public sealed class RemoteEnvironmentRegistrationMapperTests
 
         Assert.AreEqual(@"C:\inetpub\wwwroot\portal", prefill.PhysicalPath);
         Assert.AreEqual(@"UAT-01-APP\portal\Logs", prefill.LogPath);
-        Assert.AreEqual("123456", prefill.BuildNumber);
+        Assert.AreEqual("123456", prefill.BuildVersionNumber);
         Assert.AreEqual("feature/123456-portal", prefill.SourceBranch);
     }
 
@@ -180,7 +180,7 @@ public sealed class RemoteEnvironmentRegistrationMapperTests
 
         Assert.AreEqual(@"UAT-01-APP\Customer Portal\Logs", prefill.Instance.LogPath);
         Assert.AreEqual("https://uat-01.example.com/portal", prefill.Instance.HomepageUrl);
-        Assert.AreEqual("123456", prefill.Instance.BuildNumber);
+        Assert.AreEqual("123456", prefill.Instance.BuildVersionNumber);
         Assert.AreEqual("feature/123456-customer-portal", prefill.Instance.SourceBranch);
     }
 
@@ -295,7 +295,7 @@ public sealed class RemoteEnvironmentRegistrationMapperTests
         {
             DeployableApplicationId = application.Id,
             EnvironmentId = environment.Id,
-            BuildNumber = "2.4.1",
+            BuildVersionNumber = "2.4.1",
             HomepageUrl = "https://old.example.com"
         });
 
@@ -315,7 +315,7 @@ public sealed class RemoteEnvironmentRegistrationMapperTests
             });
 
         Assert.IsTrue(prefill.IsUpdate);
-        Assert.AreEqual("2.4.1", prefill.Instance.BuildNumber);
+        Assert.AreEqual("2.4.1", prefill.Instance.BuildVersionNumber);
         Assert.AreEqual("https://uat-01.example.com/api", prefill.Instance.HomepageUrl);
     }
 

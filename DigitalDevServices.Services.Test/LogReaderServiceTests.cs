@@ -248,7 +248,7 @@ public sealed class LogReaderServiceTests
             {
                 DeployableApplicationId = deployableApplicationId,
                 EnvironmentId = environment.Id,
-                BuildNumber = "1.0.0",
+                BuildVersionNumber = "1.0.0",
                 LogPath = logPath
             });
         }

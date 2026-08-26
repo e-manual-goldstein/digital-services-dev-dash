@@ -7,7 +7,7 @@ public class RemoteBuildVersionDetails
 {
     // (2) WorkItemBuildNumber — TFS work item id echoed from GetBuildVersionDetails.
     // Proposed rename: WorkItemBuildNumber
-    public int? BuildNumber { get; set; }
+    public string? BuildNumber { get; set; }
 
     public string? FromShaId { get; set; }
 

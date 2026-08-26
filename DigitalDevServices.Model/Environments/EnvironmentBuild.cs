@@ -19,7 +19,7 @@ public class EnvironmentBuild
 
     public EnvironmentBuildParameter[] Parameters { get; set; } = [];
 
-    public string? BuildVersionNumber => TryGetParameterValue("BuildVersion");
+    public string? BuildVersionNumber => TryGetParameterValue("codeBuildNumber") ?? TryGetParameterValue("Build Version");
 
     public string? Result { get; set; }
 

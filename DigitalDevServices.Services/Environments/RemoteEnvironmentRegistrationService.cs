@@ -69,7 +69,7 @@ public sealed class RemoteEnvironmentRegistrationService : IRemoteEnvironmentReg
             {
                 DeployableApplicationId = deployableApplication.Id,
                 EnvironmentId = environmentId,
-                BuildNumber = existing?.BuildNumber ?? RemoteEnvironmentRegistrationDefaults.BuildNumber,
+                BuildVersionNumber = existing?.BuildVersionNumber ?? RemoteEnvironmentRegistrationDefaults.BuildNumber,
                 PipelineFeedId = existing?.PipelineFeedId,
                 SourceBranch = existing?.SourceBranch,
                 DeployedAt = existing?.DeployedAt,
@@ -133,7 +133,7 @@ public sealed class RemoteEnvironmentRegistrationService : IRemoteEnvironmentReg
             {
                 DeployableApplicationId = deployableApplication.Id,
                 EnvironmentId = environmentId,
-                BuildNumber = existing?.BuildNumber ?? RemoteEnvironmentRegistrationDefaults.BuildNumber,
+                BuildVersionNumber = existing?.BuildVersionNumber ?? RemoteEnvironmentRegistrationDefaults.BuildNumber,
                 PipelineFeedId = existing?.PipelineFeedId,
                 SourceBranch = existing?.SourceBranch,
                 DeployedAt = existing?.DeployedAt,

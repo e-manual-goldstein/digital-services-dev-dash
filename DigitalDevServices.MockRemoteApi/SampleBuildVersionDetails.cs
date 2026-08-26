@@ -14,7 +14,7 @@ internal static class SampleBuildVersionDetails
 
         return new RemoteBuildVersionDetails
         {
-            BuildNumber = 123456,
+            BuildNumber = "123456",
             FromShaId = "a1b2c3d4e5f6",
             Project = "DigitalServices/CustomerPortal",
             SourceBranch = "feature/123456-customer-portal",

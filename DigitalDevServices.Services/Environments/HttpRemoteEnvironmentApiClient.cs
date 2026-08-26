@@ -74,7 +74,7 @@ public sealed class HttpRemoteEnvironmentApiClient : IRemoteEnvironmentApiClient
     {
         var request = new GetBuildVersionDetailsRequest
         {
-            BuildNumber = environmentPipelineBuildNumber,
+            EnvironmentPipelineBuildNumber = environmentPipelineBuildNumber,
             IncludeVersionControlLog = true
         };
 

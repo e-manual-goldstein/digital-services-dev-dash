@@ -28,7 +28,7 @@ public sealed class RemoteEnvironmentRegistrationServiceTests
         Assert.AreEqual("Customer Portal", instance.DeployableApplication.Name);
         Assert.IsTrue(instance.DeployableApplication.IsWebApp);
         Assert.AreEqual("https://uat-01.example.com/portal", instance.HomepageUrl);
-        Assert.AreEqual("0", instance.BuildNumber);
+        Assert.AreEqual("0", instance.BuildVersionNumber);
         Assert.AreEqual(1, await fixture.Db.DeployableApplications.CountAsync());
         Assert.AreEqual(1, await fixture.Db.ApplicationInstances.CountAsync());
     }
@@ -44,7 +44,7 @@ public sealed class RemoteEnvironmentRegistrationServiceTests
         {
             DeployableApplicationId = application.Id,
             EnvironmentId = environment.Id,
-            BuildNumber = "2.4.1",
+            BuildVersionNumber = "2.4.1",
             HomepageUrl = "https://old.example.com"
         });
 
@@ -56,7 +56,7 @@ public sealed class RemoteEnvironmentRegistrationServiceTests
                 Url = "https://uat-01.example.com/api"
             });
 
-        Assert.AreEqual("2.4.1", updated.BuildNumber);
+        Assert.AreEqual("2.4.1", updated.BuildVersionNumber);
         Assert.AreEqual("https://uat-01.example.com/api", updated.HomepageUrl);
         Assert.AreEqual(1, await fixture.Db.ApplicationInstances.CountAsync());
     }
@@ -100,7 +100,7 @@ public sealed class RemoteEnvironmentRegistrationServiceTests
         Assert.AreEqual("portal", instance.DeployableApplication.Name);
         Assert.IsTrue(instance.DeployableApplication.IsWebApp);
         Assert.AreEqual(@"C:\inetpub\wwwroot\CustomerPortal", instance.PhysicalPath);
-        Assert.AreEqual("0", instance.BuildNumber);
+        Assert.AreEqual("0", instance.BuildVersionNumber);
     }
 
     [TestMethod]
@@ -132,7 +132,7 @@ public sealed class RemoteEnvironmentRegistrationServiceTests
         {
             DeployableApplicationId = application.Id,
             EnvironmentId = environment.Id,
-            BuildNumber = "3.1.0",
+            BuildVersionNumber = "3.1.0",
             HomepageUrl = "https://uat-01.example.com/api",
             PhysicalPath = @"C:\old\path"
         });
@@ -146,7 +146,7 @@ public sealed class RemoteEnvironmentRegistrationServiceTests
                 PhysicalPath = @"C:\inetpub\wwwroot\AdminApi"
             });
 
-        Assert.AreEqual("3.1.0", updated.BuildNumber);
+        Assert.AreEqual("3.1.0", updated.BuildVersionNumber);
         Assert.AreEqual("https://uat-01.example.com/api", updated.HomepageUrl);
         Assert.AreEqual(@"C:\inetpub\wwwroot\AdminApi", updated.PhysicalPath);
         Assert.AreEqual(1, await fixture.Db.ApplicationInstances.CountAsync());

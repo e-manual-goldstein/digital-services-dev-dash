@@ -27,7 +27,7 @@ public sealed class RemoteBuildVersionDetailsTests
         var details = JsonSerializer.Deserialize<RemoteBuildVersionDetails>(json);
 
         Assert.IsNotNull(details);
-        Assert.AreEqual(123456, details!.BuildNumber);
+        Assert.AreEqual("123456", details!.BuildNumber);
         Assert.AreEqual("a1b2c3d4e5f6", details.FromShaId);
         Assert.AreEqual("DigitalServices/CustomerPortal", details.Project);
         Assert.AreEqual("feature/123456-customer-portal", details.SourceBranch);

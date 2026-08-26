@@ -62,7 +62,7 @@ public class DevDashDbContext : DbContext
         {
             entity.ToTable("ApplicationInstances");
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.BuildNumber).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.BuildVersionNumber).IsRequired().HasMaxLength(100);
             entity.Property(e => e.SourceBranch).HasMaxLength(500);
             entity.Property(e => e.PhysicalPath).HasMaxLength(2000);
             entity.Property(e => e.LogPath).HasMaxLength(2000);

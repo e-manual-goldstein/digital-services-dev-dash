@@ -8,7 +8,7 @@ public sealed class ApplicationInstanceRegistrationPrefill
 
     // (3) BuildVersionNumber — composite deployment version from pipeline output (e.g. YYMMDD.{workItemId}.0).
     // Proposed rename: BuildVersionNumber
-    public string? BuildNumber { get; init; }
+    public string? BuildVersionNumber { get; init; }
 
     public Guid? PipelineFeedId { get; init; }
 
@@ -31,7 +31,7 @@ public sealed class ApplicationInstanceRegistrationPrefill
         {
             ExistingInstanceId = ExistingInstanceId,
             DeployableApplicationId = deployableApplicationId,
-            BuildNumber = BuildNumber,
+            BuildVersionNumber = BuildVersionNumber,
             PipelineFeedId = PipelineFeedId,
             SourceBranch = SourceBranch,
             DeployedAt = DeployedAt,

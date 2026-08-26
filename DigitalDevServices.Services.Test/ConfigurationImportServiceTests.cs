@@ -220,7 +220,7 @@ public sealed class ConfigurationImportServiceTests
             {
                 DeployableApplicationId = application.Id,
                 EnvironmentId = environment.Id,
-                BuildNumber = "1.0.0",
+                BuildVersionNumber = "1.0.0",
                 PhysicalPath = physicalPath
             });
         }

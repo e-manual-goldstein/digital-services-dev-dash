@@ -213,7 +213,7 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
         {
             ExistingInstanceId = existingInstance?.Id,
             DeployableApplicationId = deployableApplication?.Id,
-            BuildNumber = existingInstance?.BuildNumber
+            BuildVersionNumber = existingInstance?.BuildVersionNumber
                 ?? GetSuggestedBuildNumber(deploymentDetails, applicationName),
             PipelineFeedId = existingInstance?.PipelineFeedId,
             SourceBranch = existingInstance?.SourceBranch

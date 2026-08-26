@@ -14,7 +14,7 @@ public class ApplicationInstance
     // (3) BuildVersionNumber — composite deployment version from pipeline output (e.g. YYMMDD.{workItemId}.0).
     // Note: registration prefill currently copies (2) from deployment details; confirm against running code.
     // Proposed rename: BuildVersionNumber
-    public string BuildNumber { get; set; } = string.Empty;
+    public string BuildVersionNumber { get; set; } = string.Empty;
 
     public Guid? PipelineFeedId { get; set; }
 

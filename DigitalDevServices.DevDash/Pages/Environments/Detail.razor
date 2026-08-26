@@ -219,7 +219,7 @@ else
                                 <label class="form-label" for="deployment-build">Build number</label>
                                 <InputText id="deployment-build"
                                            class="form-control"
-                                           @bind-Value="_deploymentForm.BuildNumber"
+                                           @bind-Value="_deploymentForm.BuildVersionNumber"
                                            disabled="@_isBusy" />
                                 @if (_environment.DeploymentDetails is null && _editingInstanceId is null)
                                 {
@@ -376,7 +376,7 @@ else
                             var isDeleting = _deletingInstanceId == instance.Id;
                             <tr>
                                 <td>@instance.DeployableApplication.Name</td>
-                                <td><code>@instance.BuildNumber</code></td>
+                                <td><code>@instance.BuildVersionNumber</code></td>
                                 <td>
                                     @if (instance.DeployableApplication.IsWebApp
                                          && !string.IsNullOrWhiteSpace(instance.HomepageUrl))
@@ -566,7 +566,7 @@ else
         _editingInstanceId = null;
         _deploymentForm = new DeploymentFormModel
         {
-            BuildNumber = _environment?.DeploymentDetails?.GetPrimaryBuild()?.BuildVersionNumber ?? "0"
+            BuildVersionNumber = _environment?.DeploymentDetails?.GetPrimaryBuild()?.BuildVersionNumber ?? "0"
         };
         _isDeploymentFormVisible = true;
     }
@@ -612,9 +612,9 @@ else
                 _deploymentForm.PhysicalPath = prefill.PhysicalPath;
             }
 
-            if (!string.IsNullOrWhiteSpace(prefill.BuildNumber))
+            if (!string.IsNullOrWhiteSpace(prefill.BuildVersionNumber))
             {
-                _deploymentForm.BuildNumber = prefill.BuildNumber;
+                _deploymentForm.BuildVersionNumber = prefill.BuildVersionNumber;
             }
 
             if (!string.IsNullOrWhiteSpace(prefill.SourceBranch))
@@ -636,7 +636,7 @@ else
         _deploymentForm = new DeploymentFormModel
         {
             DeployableApplicationId = prefill.DeployableApplicationId ?? Guid.Empty,
-            BuildNumber = prefill.BuildNumber ?? string.Empty,
+            BuildVersionNumber = prefill.BuildVersionNumber ?? string.Empty,
             PipelineFeedId = prefill.PipelineFeedId,
             SourceBranch = prefill.SourceBranch ?? string.Empty,
             DeployedAt = prefill.DeployedAt?.LocalDateTime.Date,
@@ -656,7 +656,7 @@ else
         _deploymentForm = new DeploymentFormModel
         {
             DeployableApplicationId = instance.DeployableApplicationId,
-            BuildNumber = instance.BuildNumber,
+            BuildVersionNumber = instance.BuildVersionNumber,
             PipelineFeedId = instance.PipelineFeedId ?? prefill.PipelineFeedId,
             SourceBranch = prefill.SourceBranch ?? instance.SourceBranch ?? string.Empty,
             DeployedAt = (prefill.DeployedAt ?? instance.DeployedAt)?.LocalDateTime.Date,
@@ -726,7 +726,7 @@ else
         _deploymentForm = new DeploymentFormModel
         {
             DeployableApplicationId = instance.DeployableApplicationId,
-            BuildNumber = instance.BuildNumber,
+            BuildVersionNumber = instance.BuildVersionNumber,
             PipelineFeedId = instance.PipelineFeedId,
             SourceBranch = instance.SourceBranch ?? string.Empty,
             DeployedAt = instance.DeployedAt?.LocalDateTime.Date,
@@ -819,7 +819,7 @@ else
             {
                 DeployableApplicationId = _deploymentForm.DeployableApplicationId,
                 EnvironmentId = LocalId,
-                BuildNumber = _deploymentForm.BuildNumber.Trim(),
+                BuildVersionNumber = _deploymentForm.BuildVersionNumber.Trim(),
                 PipelineFeedId = _deploymentForm.PipelineFeedId,
                 SourceBranch = NormalizeOptional(_deploymentForm.SourceBranch),
                 DeployedAt = _deploymentForm.DeployedAt.HasValue
@@ -870,7 +870,7 @@ else
 
         [Required(ErrorMessage = "Build number is required.")]
         [StringLength(100, ErrorMessage = "Build number must be 100 characters or fewer.")]
-        public string BuildNumber { get; set; } = string.Empty;
+        public string BuildVersionNumber { get; set; } = string.Empty;
 
         public Guid? PipelineFeedId { get; set; }
 

@@ -26,8 +26,8 @@
                                     <td>
                                         @{
                                             //TODO This needs to be fixed. The middle section integer of the build version number needs to be parsed.
-                                            var buildNumberText = build.BuildVersionNumber;
-                                            var workItemUrl = TfsWorkItemLinkBuilder.BuildWorkItemUrl(WorkItemUrlTemplate, buildNumberText);
+                                            string buildNumberText = build.BuildVersionNumber;
+                                            string workItemUrl = null;//TfsWorkItemLinkBuilder.BuildWorkItemUrl(WorkItemUrlTemplate, buildNumberText);
                                         }
                                         @if (workItemUrl is not null)
                                         {

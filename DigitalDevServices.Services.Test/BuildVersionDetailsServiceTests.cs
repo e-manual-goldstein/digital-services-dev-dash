@@ -17,7 +17,7 @@ public sealed class BuildVersionDetailsServiceTests
             {
                 ["123456"] = new RemoteBuildVersionDetails
                 {
-                    BuildNumber = 123456,
+                    BuildNumber = "123456",
                     FromShaId = "abc123",
                     Project = "DigitalServices/CustomerPortal",
                     SourceBranch = "feature/test"

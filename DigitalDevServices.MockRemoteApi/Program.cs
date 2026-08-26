@@ -31,7 +31,7 @@ app.MapPost("/api/environments/deployment-details", (GetEnvironmentRequest reque
 
 app.MapPost("/api/builds/version-details", (GetBuildVersionDetailsRequest request) =>
 {
-    var versionDetails = SampleBuildVersionDetails.ForBuildNumber(request.BuildNumber);
+    var versionDetails = SampleBuildVersionDetails.ForBuildNumber(request.EnvironmentPipelineBuildNumber);
 
     return versionDetails is null
         ? Results.NotFound()

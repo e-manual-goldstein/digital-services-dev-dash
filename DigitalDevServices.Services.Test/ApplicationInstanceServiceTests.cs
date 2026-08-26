@@ -23,7 +23,7 @@ public sealed class ApplicationInstanceServiceTests
         {
             DeployableApplicationId = application.Id,
             EnvironmentId = environment.Id,
-            BuildNumber = "1.2.3",
+            BuildVersionNumber = "1.2.3",
             PipelineFeedId = feed.Id,
             SourceBranch = "feature/123456-foo",
             DeployedAt = new DateTimeOffset(2026, 8, 21, 12, 0, 0, TimeSpan.Zero),
@@ -37,7 +37,7 @@ public sealed class ApplicationInstanceServiceTests
 
         Assert.HasCount(1, byEnvironment);
         Assert.AreEqual(created.Id, byEnvironment[0].Id);
-        Assert.AreEqual("1.2.3", byEnvironment[0].BuildNumber);
+        Assert.AreEqual("1.2.3", byEnvironment[0].BuildVersionNumber);
         Assert.AreEqual("feature/123456-foo", byEnvironment[0].SourceBranch);
         Assert.AreEqual(@"D:\apps\customer-portal", byEnvironment[0].PhysicalPath);
         Assert.AreEqual(feed.Id, byEnvironment[0].PipelineFeedId);
@@ -55,7 +55,7 @@ public sealed class ApplicationInstanceServiceTests
         {
             DeployableApplicationId = application.Id,
             EnvironmentId = environment.Id,
-            BuildNumber = "1.2.3",
+            BuildVersionNumber = "1.2.3",
             HomepageUrl = "https://uat-01.example/customer-portal"
         });
 
@@ -73,18 +73,18 @@ public sealed class ApplicationInstanceServiceTests
         {
             DeployableApplicationId = application.Id,
             EnvironmentId = environment.Id,
-            BuildNumber = "1.0.0"
+            BuildVersionNumber = "1.0.0"
         });
 
         var updated = await fixture.Service.UpsertAsync(new ApplicationInstanceUpsert
         {
             DeployableApplicationId = application.Id,
             EnvironmentId = environment.Id,
-            BuildNumber = "1.0.1",
+            BuildVersionNumber = "1.0.1",
             SourceBranch = "main"
         });
 
-        Assert.AreEqual("1.0.1", updated.BuildNumber);
+        Assert.AreEqual("1.0.1", updated.BuildVersionNumber);
         Assert.AreEqual("main", updated.SourceBranch);
         Assert.AreEqual(1, await fixture.Db.ApplicationInstances.CountAsync());
     }
@@ -100,7 +100,7 @@ public sealed class ApplicationInstanceServiceTests
         {
             DeployableApplicationId = application.Id,
             EnvironmentId = environment.Id,
-            BuildNumber = "2.0.0"
+            BuildVersionNumber = "2.0.0"
         });
 
         await fixture.Service.DeleteAsync(created.Id);
@@ -120,7 +120,7 @@ public sealed class ApplicationInstanceServiceTests
         {
             DeployableApplicationId = application.Id,
             EnvironmentId = environment.Id,
-            BuildNumber = "2.0.0"
+            BuildVersionNumber = "2.0.0"
         });
 
         var ex = await Assert.ThrowsExactlyAsync<InvalidOperationException>(

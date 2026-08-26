@@ -58,7 +58,7 @@ public sealed class ApplicationInstanceService : IApplicationInstanceService
     {
         ArgumentNullException.ThrowIfNull(upsert);
 
-        var buildNumber = NormalizeRequiredText(upsert.BuildNumber, nameof(upsert.BuildNumber));
+        var buildNumber = NormalizeRequiredText(upsert.BuildVersionNumber, nameof(upsert.BuildVersionNumber));
 
         await EnsureDeployableApplicationExistsAsync(upsert.DeployableApplicationId, cancellationToken)
             .ConfigureAwait(false);
@@ -86,7 +86,7 @@ public sealed class ApplicationInstanceService : IApplicationInstanceService
             _db.ApplicationInstances.Add(existing);
         }
 
-        existing.BuildNumber = buildNumber;
+        existing.BuildVersionNumber = buildNumber;
         existing.PipelineFeedId = upsert.PipelineFeedId;
         existing.SourceBranch = NormalizeOptionalText(upsert.SourceBranch);
         existing.DeployedAt = upsert.DeployedAt;

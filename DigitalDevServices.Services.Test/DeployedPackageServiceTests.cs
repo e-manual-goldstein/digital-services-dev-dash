@@ -22,7 +22,7 @@ public sealed class DeployedPackageServiceTests
         {
             DeployableApplicationId = application.Id,
             EnvironmentId = environment.Id,
-            BuildNumber = "1.0.0",
+            BuildVersionNumber = "1.0.0",
             PhysicalPath = packageDirectory
         });
 
@@ -45,7 +45,7 @@ public sealed class DeployedPackageServiceTests
         {
             DeployableApplicationId = application.Id,
             EnvironmentId = environment.Id,
-            BuildNumber = "1.0.0"
+            BuildVersionNumber = "1.0.0"
         });
 
         var result = await fixture.Service.ScanAsync(instance.Id);
@@ -65,7 +65,7 @@ public sealed class DeployedPackageServiceTests
         {
             DeployableApplicationId = application.Id,
             EnvironmentId = environment.Id,
-            BuildNumber = "1.0.0",
+            BuildVersionNumber = "1.0.0",
             PhysicalPath = @"D:\does-not-exist\packages-test"
         });
 
