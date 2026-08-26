@@ -54,6 +54,7 @@ public sealed class RemoteEnvironmentRegistrationService : IRemoteEnvironmentReg
                 deployableApplication.Notes,
                 isWebApp: true,
                 pathToLogFiles: deployableApplication.PathToLogFiles,
+                pathToPhysicalPath: deployableApplication.PathToPhysicalPath,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
         }
 
@@ -117,6 +118,7 @@ public sealed class RemoteEnvironmentRegistrationService : IRemoteEnvironmentReg
                 deployableApplication.Notes,
                 isWebApp: true,
                 pathToLogFiles: deployableApplication.PathToLogFiles,
+                pathToPhysicalPath: deployableApplication.PathToPhysicalPath,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
         }
 

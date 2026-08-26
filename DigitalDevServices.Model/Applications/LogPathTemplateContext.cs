@@ -1,7 +1,8 @@
 namespace DigitalDevServices.Model.Applications;
 
 /// <summary>
-/// Values available when resolving a <see cref="DeployableApplication.PathToLogFiles"/> template.
+/// Values available when resolving <see cref="DeployableApplication.PathToLogFiles"/> or
+/// <see cref="DeployableApplication.PathToPhysicalPath"/> templates.
 /// </summary>
 public sealed class LogPathTemplateContext
 {

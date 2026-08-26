@@ -15,6 +15,8 @@ public class DeployableApplication
 
     public string? PathToLogFiles { get; set; }
 
+    public string? PathToPhysicalPath { get; set; }
+
     public string? Notes { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }

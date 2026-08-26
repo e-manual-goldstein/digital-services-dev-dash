@@ -1,0 +1,73 @@
+using DigitalDevServices.Model.Environments;
+
+namespace DigitalDevServices.Services.Environments;
+
+internal static class RemoteApplicationEnvironmentMatch
+{
+    public static RemoteApplicationEnvironmentMatchResult Find(
+        RemoteEnvironmentDetails environmentDetails,
+        string applicationName)
+    {
+        ArgumentNullException.ThrowIfNull(environmentDetails);
+
+        var normalizedName = applicationName.Trim();
+        EnvironmentUrl? environmentUrl = null;
+
+        foreach (var candidate in environmentDetails.EnvironmentUrls)
+        {
+            if (candidate.ApplicationName.Equals(normalizedName, StringComparison.OrdinalIgnoreCase))
+            {
+                environmentUrl = candidate;
+                break;
+            }
+        }
+
+        foreach (var webSite in environmentDetails.WebSites)
+        {
+            foreach (var webApplication in webSite.WebApplications)
+            {
+                if (string.Equals(
+                        webApplication.ResolveDeployableApplicationName(),
+                        normalizedName,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return new RemoteApplicationEnvironmentMatchResult
+                    {
+                        EnvironmentUrl = environmentUrl,
+                        WebSite = webSite,
+                        WebApplication = webApplication
+                    };
+                }
+            }
+        }
+
+        return new RemoteApplicationEnvironmentMatchResult
+        {
+            EnvironmentUrl = environmentUrl
+        };
+    }
+}
+
+internal sealed class RemoteApplicationEnvironmentMatchResult
+{
+    public EnvironmentUrl? EnvironmentUrl { get; init; }
+
+    public EnvironmentWebSite? WebSite { get; init; }
+
+    public EnvironmentWebApplication? WebApplication { get; init; }
+
+    public EnvironmentWebSite? GetTemplateContextWebSite(RemoteEnvironmentDetails environmentDetails)
+    {
+        if (WebSite is not null)
+        {
+            return WebSite;
+        }
+
+        if (EnvironmentUrl is null)
+        {
+            return null;
+        }
+
+        return environmentDetails.WebSites.FirstOrDefault(site => !string.IsNullOrWhiteSpace(site.MachineName));
+    }
+}

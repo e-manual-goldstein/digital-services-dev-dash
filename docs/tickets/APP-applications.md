@@ -77,7 +77,17 @@ Uniqueness (v1 suggestion): one **ApplicationInstance** per (`DeployableApplicat
 
 ### Log path templates (APP-005)
 
-`DeployableApplication.PathToLogFiles` stores a template (e.g. `{MachineName}\{EnvironmentCode}\{AppName}\Logs`). `ILogPathTemplateService.Resolve` substitutes tokens from `LogPathTemplateContext` when pre-filling or saving deployments (ENV-015). Unknown `{tokens}` are left unchanged. Resolved value is stored on `ApplicationInstance.LogPath`.
+`DeployableApplication.PathToLogFiles` stores a template (e.g. `{MachineName}\{EnvironmentCode}\{AppName}\Logs`). `ILogPathTemplateService.Resolve` substitutes tokens from `LogPathTemplateContext`.
+
+**When resolution runs:**
+
+| Trigger | Behaviour |
+|---------|-----------|
+| **ENV-015** registration / add-deployment pre-fill | Resolve when remote + cached environment data is available; user confirms **Save** → store on `ApplicationInstance.LogPath` |
+| **LOG-003** **View Logs** | If `LogPath` is already set → use it. If missing and template exists but tokens are unavailable → **`RefreshEnvironmentAsync`**, then resolve and **persist** `LogPath` (see [LOG-log-interpreter.md](LOG-log-interpreter.md)) |
+| **Manual edit** (APP-004) | User may type or override `LogPath` directly on the deployment form |
+
+Unknown `{tokens}` are left unchanged. Resolved value is stored on `ApplicationInstance.LogPath`; the log reader (LOG-002) reads that stored path, not the template.
 
 ### Relationships
 

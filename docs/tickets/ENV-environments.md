@@ -35,7 +35,7 @@
 | [ENV-012](#env-012) | Done | `EnvironmentUrls` — model + register `ApplicationInstance` from URL | ENV-007, APP-002 |
 | [ENV-013](#env-013) | Done | `WebSites` / `WebApplications` — model + register instances from IIS paths | ENV-012, APP-002 |
 | [ENV-014](#env-014) | Done | `WindowsServices` on `RemoteEnvironmentDetails` (model + details UI) | ENV-007 |
-| [ENV-015](#env-015) | Todo | Register from remote data → pre-filled application/deployment forms | ENV-012, ENV-013, APP-003, APP-004, APP-005 |
+| [ENV-015](#env-015) | Done | Register from remote data → pre-filled application/deployment forms | ENV-012, ENV-013, APP-003, APP-004, APP-005 |
 | [ENV-016](#env-016) | Done | Fetch deployment/build details on environment refresh | ENV-004, ENV-007 |
 | [ENV-017](#env-017) | Done | `GetBuildVersionDetails` — version control metadata for a build | ENV-016 |
 
@@ -221,9 +221,7 @@ Example inner `Result`:
 
 Remote environment payloads can seed local **`ApplicationInstance`** rows (and **`DeployableApplication`** records when no name match exists).
 
-**Current behaviour (ENV-012 / ENV-013):** **Register** on environment details immediately finds or creates `DeployableApplication` and upserts `ApplicationInstance` via `IRemoteEnvironmentRegistrationService`.
-
-**Planned behaviour (ENV-015):** **Register** navigates to guided creation instead of saving immediately — pre-filled **Add application** (`/applications`) when no matching deployable app exists, then pre-filled **Add deployment** on the originating environment details page. **Update** (when already registered) opens the existing deployment edit form with refreshed remote values. `IRemoteEnvironmentRegistrationService` may remain for tests/programmatic use or be narrowed to shared field-mapping helpers.
+**Current behaviour (ENV-015):** **Register** / **Update** on environment details navigates to guided creation instead of saving immediately — pre-filled **Add application** (`/applications`) when no matching deployable app exists, then pre-filled **Add deployment** / **Edit deployment** on the originating environment details page. `IRemoteEnvironmentRegistrationService` remains for programmatic use and tests; UI uses `IRemoteEnvironmentRegistrationMapper` + scoped `IRegistrationPrefillState`.
 
 | Source | Deployable app prefill | Instance prefill |
 |--------|------------------------|------------------|
@@ -372,7 +370,7 @@ Route: `/environments/{localId}` (`CachedEnvironment.LocalId`).
 
 | Row action | Behaviour |
 |------------|-----------|
-| Logs | Navigate to `/logs/{instanceId}` — log viewer uses that instance's `LogPath` and the deployable app's LogFormatProfile (LOG-003) |
+| Logs | Navigate to `/logs/{instanceId}` — **LOG-003** resolves `LogPath` if needed (lazy `RefreshEnvironmentAsync` when template tokens missing from cache), then reads logs using stored path + deployable app `LogFormatProfile` |
 | Homepage | If the deployable app `IsWebApp` and the instance has `HomepageUrl`, show an external hyperlink (new tab). Otherwise omit |
 | Configuration | Navigate to `/configuration/{instanceId}` — settings browser for that instance (CFG-003) |
 | Packages | Navigate to `/environments/{localId}/instances/{instanceId}/packages` (ENV-006) |
@@ -560,9 +558,9 @@ Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-
 |-------|--------|
 | **ID** | ENV-015 |
 | **Title** | Register from remote data → pre-filled application/deployment forms |
-| **Status** | Todo |
-| **Description** | Replace immediate register-on-click (ENV-012 / ENV-013) with a guided flow. **Register** on `EnvironmentUrlsSection` / `WebSitesSection`: if no matching `DeployableApplication` by name, navigate to `/applications` with the add form open and fields pre-filled from the remote row (name, `IsWebApp`, optional `PathToLogFiles` suggestion); after **Save**, return to `/environments/{localId}` with **Add deployment** open and instance fields pre-filled (`HomepageUrl`, `PhysicalPath`, resolved `LogPath` via APP-005, environment pre-selected). If the deployable app already exists but no instance in this environment → skip straight to pre-filled **Add deployment**. If instance already exists → **Update** opens **Edit deployment** with remote values pre-filled (user confirms **Save**). Remove auto-save notifications from register buttons. Shared mapping helper from `EnvironmentUrl` / `EnvironmentWebApplication` + parent `EnvironmentWebSite` + `RemoteEnvironmentDetails`. |
-| **Test / demo** | **UAT-01** → **Environment URLs** → **Register** on Customer Portal (new app) → `/applications` form shows name + web app checked → **Save** → returns to UAT-01 deployment form with homepage URL filled → **Save** → row in **Deployed applications**. **Web sites** → **Register** on `/portal` with `PathToLogFiles` template on app → log path field shows resolved path. Existing instance → **Update** opens edit form, does not duplicate rows. |
+| **Status** | Done |
+| **Description** | Replace immediate register-on-click (ENV-012 / ENV-013) with a guided flow. **Register** on `EnvironmentUrlsSection` / `WebSitesSection`: if no matching `DeployableApplication` by name, navigate to `/applications` with the add form open and fields pre-filled from the remote row (name, `IsWebApp`, optional `PathToLogFiles` suggestion); after **Save**, return to `/environments/{localId}` with **Add deployment** open and instance fields pre-filled (`HomepageUrl`, `PhysicalPath`, resolved `LogPath` via APP-005 when cached environment data has the required tokens, environment pre-selected). If the deployable app already exists but no instance in this environment → open pre-filled **Add deployment** in place. If instance already exists → **Update** opens **Edit deployment** with remote values pre-filled (user confirms **Save**). Removed auto-save notifications from register buttons. Shared mapping via `IRemoteEnvironmentRegistrationMapper`; prefill carried in scoped `IRegistrationPrefillState`. If tokens are still missing at save time, leave `LogPath` empty — **LOG-003** will refresh the environment on **View Logs** and resolve then. |
+| **Test / demo** | **UAT-01** → **Environment URLs** → **Register** on Customer Portal (new app) → `/applications` form shows name + web app checked → **Save** → returns to UAT-01 deployment form with homepage URL filled → **Save** → row in **Deployed applications**. **Web sites** → **Register** on `/portal` with `PathToLogFiles` template on app → log path field shows resolved path when environment data is cached. Existing instance → **Update** opens edit form, does not duplicate rows. `dotnet test --filter "RemoteEnvironmentRegistrationMapperTests|RemoteEnvironmentRegistrationServiceTests"` → pass. |
 | **Depends on** | ENV-012, ENV-013, APP-003, APP-004, APP-005 |
 
 ### ENV-016

@@ -73,6 +73,20 @@ public sealed class DeployableApplicationServiceTests
     }
 
     [TestMethod]
+    public async Task CreateAsync_PersistsPathToPhysicalPathTemplate()
+    {
+        await using var fixture = await DeployableApplicationServiceFixture.CreateAsync();
+        var created = await fixture.Service.CreateAsync(
+            "Customer Portal",
+            pathToPhysicalPath: @"C:\inetpub\wwwroot\{AppName}");
+
+        var loaded = await fixture.Service.GetByIdAsync(created.Id);
+
+        Assert.IsNotNull(loaded);
+        Assert.AreEqual(@"C:\inetpub\wwwroot\{AppName}", loaded!.PathToPhysicalPath);
+    }
+
+    [TestMethod]
     public async Task CreateAsync_PersistsPathToLogFilesTemplate()
     {
         await using var fixture = await DeployableApplicationServiceFixture.CreateAsync();

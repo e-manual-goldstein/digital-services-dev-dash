@@ -33,6 +33,7 @@ public static class DevDashDataServiceCollectionExtensions
         EnsureConfigurationSettingsTableExists(db);
         EnsureTrackedEnvironmentsIsFavouriteColumnExists(db);
         EnsureDeployableApplicationsPathToLogFilesColumnExists(db);
+        EnsureDeployableApplicationsPathToPhysicalPathColumnExists(db);
     }
 
     private static void EnsurePipelineFeedsTableExists(DevDashDbContext db)
@@ -164,6 +165,15 @@ public static class DevDashDataServiceCollectionExtensions
             "DeployableApplications",
             "PathToLogFiles",
             "ALTER TABLE \"DeployableApplications\" ADD COLUMN \"PathToLogFiles\" TEXT NULL");
+    }
+
+    private static void EnsureDeployableApplicationsPathToPhysicalPathColumnExists(DevDashDbContext db)
+    {
+        EnsureColumnExists(
+            db,
+            "DeployableApplications",
+            "PathToPhysicalPath",
+            "ALTER TABLE \"DeployableApplications\" ADD COLUMN \"PathToPhysicalPath\" TEXT NULL");
     }
 
     private static void EnsureTrackedEnvironmentsIsFavouriteColumnExists(DevDashDbContext db)

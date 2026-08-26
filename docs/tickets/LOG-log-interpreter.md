@@ -53,15 +53,31 @@ One profile per **DeployableApplication** — same format across all environment
 
 ### Log source
 
-- Path from **ApplicationInstance.LogPath** (file or directory — if directory, read newest file or tail all `.log` files; define v1 rule in LOG-002).
-- Support tail/read-last-N-lines for large files.
+- **Resolved path** on **ApplicationInstance.LogPath** (file or directory — if directory, read newest `*.log`; see LOG-002).
+- **Template** on **DeployableApplication.PathToLogFiles** (APP-005) — used to *produce* `LogPath` when it is missing or incomplete; not re-evaluated on every log read when a usable stored path already exists.
+- **Lazy environment refresh (LOG-003):** when the user opens logs and `LogPath` cannot be determined from the instance plus cached environment data, call **`RefreshEnvironmentAsync`** for that environment (full remote fetch: `GetEnvironment` + `GetDeploymentDetailsForEnvironment`), build a `LogPathTemplateContext` from refreshed `RemoteEnvironmentDetails` + instance fields, resolve via `ILogPathTemplateService`, **persist** the result on `ApplicationInstance.LogPath`, then read logs. Do **not** refresh on every visit when `LogPath` is already set and valid.
+- Support tail/read-last-N-lines for large files (LOG-002).
+
+### Log path resolution (deployable app → instance)
+
+| Step | When | Behaviour |
+|------|------|-----------|
+| 1 | User clicks **View Logs** (or navigates to `/logs/{instanceId}`) | If `ApplicationInstance.LogPath` is set and usable → read logs immediately |
+| 2 | `LogPath` empty but deployable app has `PathToLogFiles` | Build `LogPathTemplateContext` from instance + cached `RemoteEnvironmentDetails` (and matching web app row when relevant) |
+| 3 | Required template tokens still missing | **`RefreshEnvironmentAsync`** → retry context build → resolve template → save `LogPath` on instance → read logs |
+| 4 | No template and no `LogPath` | Show clear error — user must configure path on deployable app or instance |
+
+**Not in scope:** re-resolving the template on every log view when a stored `LogPath` already exists (even if remote data later changes). User can re-save the deployment or trigger environment **Refresh** manually if paths drift.
+
+Token sources (see APP-005): `{AppName}`, `{EnvironmentCode}`, `{EnvironmentName}`, `{MachineName}`, `{ApplicationPoolName}`, `{VirtualPath}`, `{PhysicalPath}`.
 
 ### Viewer UX
 
-1. Select **Environment** (or arrive via `/logs/{instanceId}` from environment details)
-2. Select **ApplicationInstance** (filtered to that environment)
-3. Stream or paginate parsed entries
-4. Filters: minimum level (hide INFO and below), text contains, time range (future)
+1. Select **Environment** (or arrive via `/logs/{instanceId}` from environment details **View Logs**)
+2. **LOG-003 pre-read:** run log path resolution flow above (may show brief “Refreshing environment…” when a remote fetch is needed)
+3. Select **ApplicationInstance** when using cascade entry (filtered to that environment)
+4. Stream or paginate parsed entries
+5. Filters: minimum level (hide INFO and below), text contains, time range (future — LOG-004)
 
 ### Sample logs and preview UI
 
@@ -110,8 +126,8 @@ Prototype sample files live in [`samples/logs/`](../../samples/logs/README.md) (
 | **ID** | LOG-003 |
 | **Title** | Log viewer UI (environment → instance picker) |
 | **Status** | Todo |
-| **Description** | Blazor **Log Viewer** page at `/logs/{instanceId}` (deep link from environment details Logs button) and with cascade dropdowns Environment → ApplicationInstance as an alternate entry. Display parsed log entries in readable table (time, level badge, message). Load more / tail refresh button. Uses the instance's `LogPath` and the deployable app's LogFormatProfile. |
-| **Test / demo** | From UAT-01 details, click **Logs** on an instance → formatted log lines from disk. Also: open **Log Viewer** → pick UAT-01 → pick app instance → same result. |
+| **Description** | Blazor **Log Viewer** page at `/logs/{instanceId}` (deep link from environment details **View Logs**) and cascade dropdowns Environment → ApplicationInstance as an alternate entry. **Before reading logs:** if `ApplicationInstance.LogPath` is missing or template tokens cannot be satisfied from cached environment data, call `RefreshEnvironmentAsync`, resolve `DeployableApplication.PathToLogFiles` via `ILogPathTemplateService` + `LogPathTemplateContext`, persist resolved `LogPath` on the instance, then proceed. If `LogPath` is already set, use it directly (no refresh). Display parsed entries in a table (time, level badge, message). Load more / tail refresh button. Uses `ILogReaderService` (stored `LogPath`) and the deployable app's `LogFormatProfile`. Show loading state during environment refresh; surface clear errors when path cannot be resolved. |
+| **Test / demo** | Instance with `LogPath` set → **View Logs** → logs appear with no environment refresh. Instance with empty `LogPath` but app template `{MachineName}\{EnvironmentCode}\{AppName}\Logs` and stale/missing cache → **View Logs** → brief refresh → path resolved and saved → logs appear. From UAT-01 details and from **Log Viewer** picker → same behaviour. `dotnet test --filter "LogReaderServiceTests|LogPathResolution*"` → pass (add tests for resolution helper when implemented). |
 | **Depends on** | LOG-002, ENV-005, APP-004 |
 
 ### LOG-004

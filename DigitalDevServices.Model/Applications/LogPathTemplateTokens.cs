@@ -1,7 +1,8 @@
 namespace DigitalDevServices.Model.Applications;
 
 /// <summary>
-/// Token names supported in <see cref="Entities.DeployableApplication.PathToLogFiles"/> templates.
+/// Token names supported in <see cref="Entities.DeployableApplication.PathToLogFiles"/> and
+/// <see cref="Entities.DeployableApplication.PathToPhysicalPath"/> templates.
 /// </summary>
 public static class LogPathTemplateTokens
 {

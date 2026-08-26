@@ -6,6 +6,8 @@
 @inject NotificationService NotificationService
 @inject IOptions<TfsOptions> TfsOptions
 @inject IJSRuntime JsRuntime
+@inject IRegistrationPrefillState RegistrationPrefillState
+@inject IRemoteEnvironmentRegistrationMapper RegistrationMapper
 
 <PageTitle>@(_environment?.Details.Name ?? "Environment")</PageTitle>
 
@@ -142,16 +144,20 @@ else
     </EnvironmentDetailsCollectionSection>
 
     <EnvironmentUrlsSection EnvironmentUrls="_environment.Details.EnvironmentUrls"
+                            EnvironmentDetails="_environment.Details"
+                            DeploymentDetails="_environment.DeploymentDetails"
                             EnvironmentId="LocalId"
                             Instances="_instances"
                             IsBusy="@(_isBusy || _isSavingDeployment)"
-                            OnRegistrationComplete="LoadDeploymentDataAsync" />
+                            OnRegistrationRequested="HandleRegistrationRequestedAsync" />
 
     <WebSitesSection WebSites="_environment.Details.WebSites"
+                     EnvironmentDetails="_environment.Details"
+                     DeploymentDetails="_environment.DeploymentDetails"
                      EnvironmentId="LocalId"
                      Instances="_instances"
                      IsBusy="@(_isBusy || _isSavingDeployment)"
-                     OnRegistrationComplete="LoadDeploymentDataAsync" />
+                     OnRegistrationRequested="HandleRegistrationRequestedAsync" />
 
     <EnvironmentDetailsCollectionSection Title="Windows services" Items="_environment.Details.WindowsServices">
         <HeaderContent>
@@ -200,6 +206,7 @@ else
                                 <InputSelect id="deployment-app"
                                              class="form-select"
                                              @bind-Value="_deploymentForm.DeployableApplicationId"
+                                             @bind-Value:after="OnDeployableApplicationSelected"
                                              disabled="@(_isBusy || _editingInstanceId is not null)">
                                     <option value="">Select an application…</option>
                                     @foreach (var application in GetAvailableApplicationsForForm())
@@ -214,6 +221,12 @@ else
                                            class="form-control"
                                            @bind-Value="_deploymentForm.BuildNumber"
                                            disabled="@_isBusy" />
+                                @if (_environment.DeploymentDetails is null && _editingInstanceId is null)
+                                {
+                                    <div class="form-text text-muted">
+                                        Refresh this environment to load the build number from deployment details.
+                                    </div>
+                                }
                             </div>
                             <div class="col-12 col-md-6">
                                 <label class="form-label" for="deployment-feed">Pipeline feed</label>
@@ -255,7 +268,18 @@ else
                                 <InputText id="deployment-path"
                                            class="form-control"
                                            @bind-Value="_deploymentForm.PhysicalPath"
+                                           @bind-Value:after="OnDeploymentPhysicalPathChanged"
                                            disabled="@_isBusy" />
+                                @if (GetSelectedDeployableApplication()?.PathToPhysicalPath is { Length: > 0 } physicalPathTemplate)
+                                {
+                                    <div class="form-text">
+                                        Template: <code>@physicalPathTemplate</code>
+                                        @if (string.IsNullOrWhiteSpace(_deploymentForm.PhysicalPath))
+                                        {
+                                            <span class="text-muted"> — not all tokens could be resolved from this environment's remote data yet.</span>
+                                        }
+                                    </div>
+                                }
                             </div>
                             <div class="col-12">
                                 <label class="form-label" for="deployment-log-path">Log path</label>
@@ -263,6 +287,16 @@ else
                                            class="form-control"
                                            @bind-Value="_deploymentForm.LogPath"
                                            disabled="@_isBusy" />
+                                @if (GetSelectedDeployableApplication()?.PathToLogFiles is { Length: > 0 } logPathTemplate)
+                                {
+                                    <div class="form-text">
+                                        Template: <code>@logPathTemplate</code>
+                                        @if (string.IsNullOrWhiteSpace(_deploymentForm.LogPath))
+                                        {
+                                            <span class="text-muted"> — not all tokens could be resolved from this environment's remote data yet.</span>
+                                        }
+                                    </div>
+                                }
                             </div>
                             @if (IsSelectedAppWebApp)
                             {
@@ -454,6 +488,7 @@ else
             if (_environment is not null)
             {
                 await LoadDeploymentDataAsync();
+                ApplyRegistrationPrefillIfPresent();
             }
             else
             {
@@ -529,8 +564,159 @@ else
     {
         _errorMessage = null;
         _editingInstanceId = null;
-        _deploymentForm = new DeploymentFormModel();
+        _deploymentForm = new DeploymentFormModel
+        {
+            BuildNumber = _environment?.DeploymentDetails?.GetPrimaryBuild()?.BuildNumber.ToString() ?? "0"
+        };
         _isDeploymentFormVisible = true;
+    }
+
+    private DeployableApplication? GetSelectedDeployableApplication() =>
+        _deployableApplications.FirstOrDefault(app => app.Id == _deploymentForm.DeployableApplicationId);
+
+    private void OnDeployableApplicationSelected() => ApplyManualDeploymentPrefill();
+
+    private void OnDeploymentPhysicalPathChanged() => ApplyManualDeploymentPrefill(physicalPathOnly: true);
+
+    private void ApplyManualDeploymentPrefill(bool physicalPathOnly = false)
+    {
+        if (_environment is null
+            || _editingInstanceId is not null
+            || _deploymentForm.DeployableApplicationId == Guid.Empty)
+        {
+            return;
+        }
+
+        var application = GetSelectedDeployableApplication();
+        if (application is null)
+        {
+            return;
+        }
+
+        var prefill = RegistrationMapper.BuildManualDeploymentPrefill(
+            _environment.Details,
+            application,
+            _environment.DeploymentDetails,
+            NormalizeOptional(_deploymentForm.PhysicalPath));
+
+        if (!physicalPathOnly)
+        {
+            if (!string.IsNullOrWhiteSpace(prefill.HomepageUrl))
+            {
+                _deploymentForm.HomepageUrl = prefill.HomepageUrl;
+            }
+
+            if (!string.IsNullOrWhiteSpace(prefill.PhysicalPath)
+                && string.IsNullOrWhiteSpace(_deploymentForm.PhysicalPath))
+            {
+                _deploymentForm.PhysicalPath = prefill.PhysicalPath;
+            }
+
+            if (!string.IsNullOrWhiteSpace(prefill.BuildNumber))
+            {
+                _deploymentForm.BuildNumber = prefill.BuildNumber;
+            }
+
+            if (!string.IsNullOrWhiteSpace(prefill.SourceBranch))
+            {
+                _deploymentForm.SourceBranch = prefill.SourceBranch;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(prefill.LogPath))
+        {
+            _deploymentForm.LogPath = prefill.LogPath;
+        }
+    }
+
+    private void ShowCreateDeploymentForm(ApplicationInstanceRegistrationPrefill prefill)
+    {
+        _errorMessage = null;
+        _editingInstanceId = null;
+        _deploymentForm = new DeploymentFormModel
+        {
+            DeployableApplicationId = prefill.DeployableApplicationId ?? Guid.Empty,
+            BuildNumber = prefill.BuildNumber ?? string.Empty,
+            PipelineFeedId = prefill.PipelineFeedId,
+            SourceBranch = prefill.SourceBranch ?? string.Empty,
+            DeployedAt = prefill.DeployedAt?.LocalDateTime.Date,
+            PhysicalPath = prefill.PhysicalPath ?? string.Empty,
+            LogPath = prefill.LogPath ?? string.Empty,
+            HomepageUrl = prefill.HomepageUrl ?? string.Empty,
+            SqlServerInstance = prefill.SqlServerInstance ?? string.Empty,
+            Notes = prefill.Notes ?? string.Empty
+        };
+        _isDeploymentFormVisible = true;
+    }
+
+    private void ShowEditDeploymentForm(ApplicationInstance instance, ApplicationInstanceRegistrationPrefill prefill)
+    {
+        _errorMessage = null;
+        _editingInstanceId = instance.Id;
+        _deploymentForm = new DeploymentFormModel
+        {
+            DeployableApplicationId = instance.DeployableApplicationId,
+            BuildNumber = instance.BuildNumber,
+            PipelineFeedId = instance.PipelineFeedId ?? prefill.PipelineFeedId,
+            SourceBranch = prefill.SourceBranch ?? instance.SourceBranch ?? string.Empty,
+            DeployedAt = (prefill.DeployedAt ?? instance.DeployedAt)?.LocalDateTime.Date,
+            PhysicalPath = prefill.PhysicalPath ?? instance.PhysicalPath ?? string.Empty,
+            LogPath = prefill.LogPath ?? instance.LogPath ?? string.Empty,
+            HomepageUrl = prefill.HomepageUrl ?? instance.HomepageUrl ?? string.Empty,
+            SqlServerInstance = prefill.SqlServerInstance ?? instance.SqlServerInstance ?? string.Empty,
+            Notes = prefill.Notes ?? instance.Notes ?? string.Empty
+        };
+        _isDeploymentFormVisible = true;
+    }
+
+    private void ApplyRegistrationPrefillIfPresent()
+    {
+        var prefill = RegistrationPrefillState.Take();
+        if (prefill is null || prefill.EnvironmentLocalId != LocalId)
+        {
+            if (prefill is not null)
+            {
+                RegistrationPrefillState.Set(prefill);
+            }
+
+            return;
+        }
+
+        if (prefill.RequiresApplicationCreate)
+        {
+            RegistrationPrefillState.Set(prefill);
+            return;
+        }
+
+        OpenRegistrationPrefill(prefill);
+    }
+
+    private Task HandleRegistrationRequestedAsync(RemoteRegistrationPrefill prefill)
+    {
+        OpenRegistrationPrefill(prefill);
+        return Task.CompletedTask;
+    }
+
+    private void OpenRegistrationPrefill(RemoteRegistrationPrefill prefill)
+    {
+        _deletingInstanceId = null;
+
+        if (prefill.IsUpdate && prefill.Instance.ExistingInstanceId is Guid instanceId)
+        {
+            var instance = _instances.FirstOrDefault(item => item.Id == instanceId);
+            if (instance is not null)
+            {
+                ShowEditDeploymentForm(instance, prefill.Instance);
+            }
+
+            return;
+        }
+
+        ShowCreateDeploymentForm(prefill.Instance);
+        if (prefill.Instance.DeployableApplicationId is not null)
+        {
+            ApplyManualDeploymentPrefill();
+        }
     }
 
     private void ShowEditDeploymentForm(ApplicationInstance instance)

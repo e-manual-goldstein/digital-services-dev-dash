@@ -45,6 +45,36 @@ public sealed class RemoteEnvironmentDeploymentDetailsTests
     }
 
     [TestMethod]
+    public void GetBuildForApplication_PrefersNameMatchThenFallsBackToPrimaryBuild()
+    {
+        var primary = new EnvironmentBuild { BuildNumber = 99, Name = "Other" };
+        var matched = new EnvironmentBuild
+        {
+            BuildNumber = 123456,
+            Name = "Customer Portal",
+            Parameters =
+            [
+                new EnvironmentBuildParameter
+                {
+                    Name = "WipBranch",
+                    Value = "feature/123456-customer-portal"
+                }
+            ]
+        };
+
+        var details = new RemoteEnvironmentDeploymentDetails
+        {
+            BuildsSuccessful = [primary],
+            BuildsLast = [matched]
+        };
+
+        Assert.AreEqual(123456, details.GetBuildForApplication("Customer Portal")!.BuildNumber);
+        Assert.AreEqual(99, details.GetBuildForApplication("Missing")!.BuildNumber);
+        Assert.AreEqual("123456", details.GetBuildNumberForApplication("Customer Portal"));
+        Assert.AreEqual("feature/123456-customer-portal", details.GetWipBranchForApplication("Customer Portal"));
+    }
+
+    [TestMethod]
     public void GetPrimaryBuild_ReturnsNullWhenAllCollectionsEmpty()
     {
         var details = new RemoteEnvironmentDeploymentDetails();

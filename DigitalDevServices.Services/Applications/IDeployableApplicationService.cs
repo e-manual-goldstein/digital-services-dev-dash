@@ -16,6 +16,7 @@ public interface IDeployableApplicationService
         string? notes = null,
         bool isWebApp = false,
         string? pathToLogFiles = null,
+        string? pathToPhysicalPath = null,
         CancellationToken cancellationToken = default);
 
     Task<DeployableApplication> UpdateAsync(
@@ -25,6 +26,7 @@ public interface IDeployableApplicationService
         string? notes = null,
         bool isWebApp = false,
         string? pathToLogFiles = null,
+        string? pathToPhysicalPath = null,
         CancellationToken cancellationToken = default);
 
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);

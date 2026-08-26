@@ -5,6 +5,8 @@
 @inject ILogFormatProfileService LogFormatProfileService
 @inject ILogParsingService LogParsingService
 @inject ILogPathTemplateService LogPathTemplateService
+@inject IRegistrationPrefillState RegistrationPrefillState
+@inject NavigationManager Navigation
 @inject NotificationService NotificationService
 
 <PageTitle>Applications</PageTitle>
@@ -86,6 +88,24 @@
                                        rows="2"
                                        @bind-Value="_formModel.LogFormatNotes"
                                        disabled="@_isBusy" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="app-path-to-physical-path">Path to physical path</label>
+                        <InputText id="app-path-to-physical-path"
+                                   class="form-control font-monospace"
+                                   @bind-Value="_formModel.PathToPhysicalPath"
+                                   disabled="@_isBusy" />
+                        <div class="form-text">
+                            Optional template resolved per deployment. Tokens:
+                            @string.Join(", ", LogPathTemplateTokens.All.Select(token => $"{{{token}}}")).
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(_formModel.PathToPhysicalPath))
+                        {
+                            <div class="form-text">
+                                Example:
+                                <code>@GetSamplePhysicalPathPreview()</code>
+                            </div>
+                        }
                     </div>
                     <div class="col-12">
                         <label class="form-label" for="app-path-to-log-files">Path to log files</label>
@@ -270,6 +290,7 @@ else
     {
         _supportedLogFormats = LogParsingService.GetSupportedFormatNames();
         await LoadAsync();
+        ApplyApplicationPrefillIfPresent();
     }
 
     private async Task LoadAsync()
@@ -302,6 +323,27 @@ else
         }
     }
 
+    private void ApplyApplicationPrefillIfPresent()
+    {
+        var prefill = RegistrationPrefillState.Current;
+        if (prefill?.RequiresApplicationCreate != true || prefill.Application is null)
+        {
+            return;
+        }
+
+        _errorMessage = null;
+        _editingId = null;
+        _deletingId = null;
+        _formModel = new ApplicationFormModel
+        {
+            Name = prefill.Application.Name,
+            IsWebApp = prefill.Application.IsWebApp,
+            PathToLogFiles = prefill.Application.PathToLogFiles ?? string.Empty,
+            PathToPhysicalPath = prefill.Application.PathToPhysicalPath ?? string.Empty
+        };
+        _isFormVisible = true;
+    }
+
     private void ShowCreateForm()
     {
         _errorMessage = null;
@@ -323,6 +365,7 @@ else
             IsWebApp = application.IsWebApp,
             Notes = application.Notes ?? string.Empty,
             PathToLogFiles = application.PathToLogFiles ?? string.Empty,
+            PathToPhysicalPath = application.PathToPhysicalPath ?? string.Empty,
             LogFormatName = profile?.FormatName ?? string.Empty,
             LogFormatNotes = profile?.Notes ?? string.Empty
         };
@@ -332,6 +375,11 @@ else
 
     private void CancelForm()
     {
+        if (RegistrationPrefillState.Current?.RequiresApplicationCreate == true)
+        {
+            RegistrationPrefillState.Clear();
+        }
+
         _isFormVisible = false;
         _editingId = null;
         _formModel = new ApplicationFormModel();
@@ -349,6 +397,7 @@ else
             var projectKey = NormalizeOptional(_formModel.ProjectKey);
             var notes = NormalizeOptional(_formModel.Notes);
             var pathToLogFiles = NormalizeOptional(_formModel.PathToLogFiles);
+            var pathToPhysicalPath = NormalizeOptional(_formModel.PathToPhysicalPath);
 
             if (_editingId is null)
             {
@@ -357,8 +406,22 @@ else
                     projectKey,
                     notes,
                     _formModel.IsWebApp,
-                    pathToLogFiles);
+                    pathToLogFiles,
+                    pathToPhysicalPath);
                 await SaveLogFormatProfileAsync(created.Id);
+
+                var pendingRegistration = RegistrationPrefillState.Current;
+                if (pendingRegistration?.RequiresApplicationCreate == true)
+                {
+                    RegistrationPrefillState.Set(
+                        pendingRegistration.ContinueAfterApplicationCreated(created.Id));
+                    _isFormVisible = false;
+                    _editingId = null;
+                    _formModel = new ApplicationFormModel();
+                    Navigation.NavigateTo($"/environments/{pendingRegistration.EnvironmentLocalId}");
+                    return;
+                }
+
                 NotificationService.Notify(new NotificationMessage
                 {
                     Severity = NotificationSeverity.Success,
@@ -375,7 +438,8 @@ else
                     projectKey,
                     notes,
                     _formModel.IsWebApp,
-                    pathToLogFiles);
+                    pathToLogFiles,
+                    pathToPhysicalPath);
                 await SaveLogFormatProfileAsync(_editingId.Value);
                 NotificationService.Notify(new NotificationMessage
                 {
@@ -456,20 +520,26 @@ else
         });
     }
 
-    private string GetSampleLogPathPreview()
+    private string GetSampleLogPathPreview() => GetSampleTemplatePreview(_formModel.PathToLogFiles);
+
+    private string GetSamplePhysicalPathPreview() => GetSampleTemplatePreview(_formModel.PathToPhysicalPath);
+
+    private string GetSampleTemplatePreview(string template)
     {
         var appName = string.IsNullOrWhiteSpace(_formModel.Name)
             ? "portal"
             : _formModel.Name.Trim();
 
         return LogPathTemplateService.Resolve(
-            _formModel.PathToLogFiles,
+            template,
             new LogPathTemplateContext
             {
                 MachineName = "UAT-01-APP",
                 EnvironmentCode = "UAT-01",
                 EnvironmentName = "UAT-01",
-                AppName = appName
+                AppName = appName,
+                VirtualPath = "/portal",
+                PhysicalPath = @"C:\inetpub\wwwroot\portal"
             }).ResolvedPath;
     }
 
@@ -497,6 +567,9 @@ else
 
         [StringLength(2000, ErrorMessage = "Path to log files must be 2000 characters or fewer.")]
         public string PathToLogFiles { get; set; } = string.Empty;
+
+        [StringLength(2000, ErrorMessage = "Path to physical path must be 2000 characters or fewer.")]
+        public string PathToPhysicalPath { get; set; } = string.Empty;
 
         [StringLength(2000, ErrorMessage = "Notes must be 2000 characters or fewer.")]
         public string Notes { get; set; } = string.Empty;

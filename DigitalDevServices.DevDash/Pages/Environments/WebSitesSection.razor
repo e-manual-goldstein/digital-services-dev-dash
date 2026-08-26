@@ -1,6 +1,7 @@
 @namespace DigitalDevServices.DevDash.Pages.Environments
-@inject IRemoteEnvironmentRegistrationService RegistrationService
-@inject NotificationService NotificationService
+@inject IRemoteEnvironmentRegistrationMapper RegistrationMapper
+@inject IRegistrationPrefillState RegistrationPrefillState
+@inject NavigationManager Navigation
 
 @if (WebSites.Count > 0)
 {
@@ -42,11 +43,9 @@
                                                         }
                                                         <button type="button"
                                                                 class="btn btn-sm btn-outline-primary"
-                                                                disabled="@(IsBusy || !CanRegister(webApplication) || _registeringKey == GetRegistrationKey(webApplication))"
-                                                                @onclick="() => RegisterAsync(webApplication)">
-                                                            @(_registeringKey == GetRegistrationKey(webApplication)
-                                                                ? "Registering…"
-                                                                : IsRegistered(webApplication) ? "Update" : "Register")
+                                                                disabled="@(IsBusy || !CanRegister(webApplication))"
+                                                                @onclick="() => BeginRegistrationAsync(site, webApplication)">
+                                                            @(IsRegistered(webApplication) ? "Update" : "Register")
                                                         </button>
                                                     </div>
                                                 </td>
@@ -69,25 +68,25 @@
     public IReadOnlyList<EnvironmentWebSite> WebSites { get; set; } = [];
 
     [Parameter, EditorRequired]
+    public RemoteEnvironmentDetails EnvironmentDetails { get; set; } = null!;
+
+    [Parameter, EditorRequired]
     public Guid EnvironmentId { get; set; }
 
     [Parameter, EditorRequired]
     public IReadOnlyList<ApplicationInstance> Instances { get; set; } = [];
 
     [Parameter]
-    public bool IsBusy { get; set; }
+    public RemoteEnvironmentDeploymentDetails? DeploymentDetails { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback<RemoteRegistrationPrefill> OnRegistrationRequested { get; set; }
 
     [Parameter]
-    public EventCallback OnRegistrationComplete { get; set; }
-
-    private string? _registeringKey;
+    public bool IsBusy { get; set; }
 
     private static bool CanRegister(EnvironmentWebApplication webApplication) =>
-        webApplication.ResolveDeployableApplicationName() is not null
-        && !string.IsNullOrWhiteSpace(webApplication.PhysicalPath);
-
-    private static string GetRegistrationKey(EnvironmentWebApplication webApplication) =>
-        $"{webApplication.Path}|{webApplication.ApplicationPoolName}|{webApplication.PhysicalPath}";
+        webApplication.ResolveDeployableApplicationName() is not null;
 
     private bool IsRegistered(EnvironmentWebApplication webApplication)
     {
@@ -103,38 +102,22 @@
                 StringComparison.OrdinalIgnoreCase));
     }
 
-    private async Task RegisterAsync(EnvironmentWebApplication webApplication)
+    private async Task BeginRegistrationAsync(EnvironmentWebSite webSite, EnvironmentWebApplication webApplication)
     {
-        _registeringKey = GetRegistrationKey(webApplication);
+        var prefill = await RegistrationMapper.BuildFromWebApplicationAsync(
+            EnvironmentId,
+            EnvironmentDetails,
+            webSite,
+            webApplication,
+            DeploymentDetails);
 
-        try
+        if (prefill.RequiresApplicationCreate)
         {
-            var instance = await RegistrationService.RegisterFromWebApplicationAsync(
-                EnvironmentId,
-                webApplication);
-            await OnRegistrationComplete.InvokeAsync();
+            RegistrationPrefillState.Set(prefill);
+            Navigation.NavigateTo("/applications");
+            return;
+        }
 
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Success,
-                Summary = "Application registered",
-                Detail = $"{instance.DeployableApplication.Name} linked with physical path.",
-                Duration = 4000
-            });
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Registration failed",
-                Detail = ex.Message,
-                Duration = 6000
-            });
-        }
-        finally
-        {
-            _registeringKey = null;
-        }
+        await OnRegistrationRequested.InvokeAsync(prefill);
     }
 }

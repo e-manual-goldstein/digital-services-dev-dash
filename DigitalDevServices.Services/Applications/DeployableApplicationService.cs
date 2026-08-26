@@ -52,6 +52,7 @@ public sealed class DeployableApplicationService : IDeployableApplicationService
         string? notes = null,
         bool isWebApp = false,
         string? pathToLogFiles = null,
+        string? pathToPhysicalPath = null,
         CancellationToken cancellationToken = default)
     {
         var normalizedName = NormalizeName(name)
@@ -66,6 +67,7 @@ public sealed class DeployableApplicationService : IDeployableApplicationService
             ProjectKey = NormalizeOptionalText(projectKey),
             IsWebApp = isWebApp,
             PathToLogFiles = NormalizeOptionalText(pathToLogFiles),
+            PathToPhysicalPath = NormalizeOptionalText(pathToPhysicalPath),
             Notes = NormalizeOptionalText(notes),
             CreatedAt = DateTimeOffset.UtcNow
         };
@@ -82,6 +84,7 @@ public sealed class DeployableApplicationService : IDeployableApplicationService
         string? notes = null,
         bool isWebApp = false,
         string? pathToLogFiles = null,
+        string? pathToPhysicalPath = null,
         CancellationToken cancellationToken = default)
     {
         var normalizedName = NormalizeName(name)
@@ -98,6 +101,7 @@ public sealed class DeployableApplicationService : IDeployableApplicationService
         application.ProjectKey = NormalizeOptionalText(projectKey);
         application.IsWebApp = isWebApp;
         application.PathToLogFiles = NormalizeOptionalText(pathToLogFiles);
+        application.PathToPhysicalPath = NormalizeOptionalText(pathToPhysicalPath);
         application.Notes = NormalizeOptionalText(notes);
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return application;
