@@ -566,7 +566,7 @@ else
         _editingInstanceId = null;
         _deploymentForm = new DeploymentFormModel
         {
-            BuildNumber = _environment?.DeploymentDetails?.GetPrimaryBuild()?.BuildNumber.ToString() ?? "0"
+            BuildNumber = _environment?.DeploymentDetails?.GetPrimaryBuild()?.BuildVersionNumber ?? "0"
         };
         _isDeploymentFormVisible = true;
     }
@@ -894,9 +894,9 @@ else
         [StringLength(2000, ErrorMessage = "Notes must be 2000 characters or fewer.")]
         public string Notes { get; set; } = string.Empty;
     }
-
+    //TODO This needs to be checked, it's probably wrong.
     private string? GetPrimaryBuildNumberText() =>
-        _environment?.DeploymentDetails?.GetPrimaryBuild()?.BuildNumber.ToString();
+        _environment?.DeploymentDetails?.GetPrimaryBuild()?.BuildVersionNumber.ToString();
 
     private string? GetPrimaryWipBranch() =>
         _environment?.DeploymentDetails?.GetPrimaryWipBranch();

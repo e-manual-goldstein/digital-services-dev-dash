@@ -97,7 +97,7 @@ public sealed class EnvironmentServiceTests
                     [
                         new EnvironmentBuild
                         {
-                            BuildNumber = 42,
+                            EnvironmentPipelineBuildNumber = 42,
                             Name = "QA build",
                             Parameters =
                             [
@@ -126,7 +126,7 @@ public sealed class EnvironmentServiceTests
         Assert.AreEqual(1, fakeApi.DeploymentDetailsCallCount);
         Assert.AreEqual("QA", fakeApi.LastRequestedEnvironmentCode);
         Assert.IsNotNull(refreshed.DeploymentDetails);
-        Assert.AreEqual(42, refreshed.DeploymentDetails!.GetPrimaryBuild()!.BuildNumber);
+        Assert.AreEqual(42, refreshed.DeploymentDetails!.GetPrimaryBuild()!.EnvironmentPipelineBuildNumber);
         Assert.AreEqual("feature/qa", refreshed.DeploymentDetails.GetPrimaryWipBranch());
     }
 

@@ -94,7 +94,7 @@ public sealed class MockRemoteApiTests
         var details = wrapped!.Result;
         Assert.IsNotNull(details);
         Assert.HasCount(1, details!.BuildsSuccessful);
-        Assert.AreEqual(123456, details.BuildsSuccessful[0].BuildNumber);
+        Assert.AreEqual(123456, details.BuildsSuccessful[0].EnvironmentPipelineBuildNumber);
         Assert.AreEqual("Customer Portal", details.BuildsSuccessful[0].Name);
         Assert.AreEqual("feature/123456-customer-portal", details.GetPrimaryWipBranch());
 

@@ -37,7 +37,7 @@ else if (_details is not null)
 
 @code {
     [Parameter, EditorRequired]
-    public int BuildNumber { get; set; }
+    public string BuildVersionNumber { get; set; }
 
     private RemoteBuildVersionDetails? _details;
     private bool _isLoading;
@@ -51,10 +51,10 @@ else if (_details is not null)
 
         try
         {
-            //_details = await BuildVersionDetailsService.GetBuildVersionDetailsAsync(BuildNumber);
+            _details = await BuildVersionDetailsService.GetBuildVersionDetailsAsync(BuildVersionNumber);
             if (_details is null)
             {
-                _errorMessage = $"Build version details were not found for build {BuildNumber}.";
+                _errorMessage = $"Build version details were not found for build {BuildVersionNumber}.";
             }
         }
         catch (Exception ex)

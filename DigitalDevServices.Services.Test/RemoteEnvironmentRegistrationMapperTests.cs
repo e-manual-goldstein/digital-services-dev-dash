@@ -90,7 +90,7 @@ public sealed class RemoteEnvironmentRegistrationMapperTests
                 [
                     new EnvironmentBuild
                     {
-                        BuildNumber = 123456,
+                        EnvironmentPipelineBuildNumber = 123456,
                         Name = "portal",
                         Parameters =
                         [
@@ -164,7 +164,7 @@ public sealed class RemoteEnvironmentRegistrationMapperTests
                 [
                     new EnvironmentBuild
                     {
-                        BuildNumber = 123456,
+                        EnvironmentPipelineBuildNumber = 123456,
                         Name = "Customer Portal",
                         Parameters =
                         [

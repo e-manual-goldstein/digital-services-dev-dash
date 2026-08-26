@@ -6,7 +6,7 @@ internal static class SampleDeploymentDetails
 {
     private static readonly EnvironmentBuild CustomerPortalBuild = new()
     {
-        BuildNumber = 123456,
+        EnvironmentPipelineBuildNumber = 123456,
         Color = "green",
         DeploymentType = "Full",
         Name = "Customer Portal",

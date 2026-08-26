@@ -8,10 +8,10 @@ public sealed class RemoteEnvironmentDeploymentDetailsTests
     [TestMethod]
     public void GetPrimaryBuild_PrefersBuildsSuccessfulThenBuildsLastThenBuildsFullThenBuilds()
     {
-        var successful = new EnvironmentBuild { BuildNumber = 1, Name = "successful" };
-        var last = new EnvironmentBuild { BuildNumber = 2, Name = "last" };
-        var full = new EnvironmentBuild { BuildNumber = 3, Name = "full" };
-        var builds = new EnvironmentBuild { BuildNumber = 4, Name = "builds" };
+        var successful = new EnvironmentBuild { EnvironmentPipelineBuildNumber = 1, Name = "successful" };
+        var last = new EnvironmentBuild { EnvironmentPipelineBuildNumber = 2, Name = "last" };
+        var full = new EnvironmentBuild { EnvironmentPipelineBuildNumber = 3, Name = "full" };
+        var builds = new EnvironmentBuild { EnvironmentPipelineBuildNumber = 4, Name = "builds" };
 
         var withSuccessful = new RemoteEnvironmentDeploymentDetails
         {
@@ -20,7 +20,7 @@ public sealed class RemoteEnvironmentDeploymentDetailsTests
             BuildsLast = [last],
             BuildsSuccessful = [successful]
         };
-        Assert.AreEqual(1, withSuccessful.GetPrimaryBuild()!.BuildNumber);
+        Assert.AreEqual(1, withSuccessful.GetPrimaryBuild()!.EnvironmentPipelineBuildNumber);
 
         var withLast = new RemoteEnvironmentDeploymentDetails
         {
@@ -28,29 +28,29 @@ public sealed class RemoteEnvironmentDeploymentDetailsTests
             BuildsFull = [full],
             BuildsLast = [last]
         };
-        Assert.AreEqual(2, withLast.GetPrimaryBuild()!.BuildNumber);
+        Assert.AreEqual(2, withLast.GetPrimaryBuild()!.EnvironmentPipelineBuildNumber);
 
         var withFull = new RemoteEnvironmentDeploymentDetails
         {
             Builds = [builds],
             BuildsFull = [full]
         };
-        Assert.AreEqual(3, withFull.GetPrimaryBuild()!.BuildNumber);
+        Assert.AreEqual(3, withFull.GetPrimaryBuild()!.EnvironmentPipelineBuildNumber);
 
         var withBuildsOnly = new RemoteEnvironmentDeploymentDetails
         {
             Builds = [builds]
         };
-        Assert.AreEqual(4, withBuildsOnly.GetPrimaryBuild()!.BuildNumber);
+        Assert.AreEqual(4, withBuildsOnly.GetPrimaryBuild()!.EnvironmentPipelineBuildNumber);
     }
 
     [TestMethod]
     public void GetBuildForApplication_PrefersNameMatchThenFallsBackToPrimaryBuild()
     {
-        var primary = new EnvironmentBuild { BuildNumber = 99, Name = "Other" };
+        var primary = new EnvironmentBuild { EnvironmentPipelineBuildNumber = 99, Name = "Other" };
         var matched = new EnvironmentBuild
         {
-            BuildNumber = 123456,
+            EnvironmentPipelineBuildNumber = 123456,
             Name = "Customer Portal",
             Parameters =
             [
@@ -68,8 +68,8 @@ public sealed class RemoteEnvironmentDeploymentDetailsTests
             BuildsLast = [matched]
         };
 
-        Assert.AreEqual(123456, details.GetBuildForApplication("Customer Portal")!.BuildNumber);
-        Assert.AreEqual(99, details.GetBuildForApplication("Missing")!.BuildNumber);
+        Assert.AreEqual(123456, details.GetBuildForApplication("Customer Portal")!.EnvironmentPipelineBuildNumber);
+        Assert.AreEqual(99, details.GetBuildForApplication("Missing")!.EnvironmentPipelineBuildNumber);
         Assert.AreEqual("123456", details.GetBuildNumberForApplication("Customer Portal"));
         Assert.AreEqual("feature/123456-customer-portal", details.GetWipBranchForApplication("Customer Portal"));
     }
@@ -91,7 +91,7 @@ public sealed class RemoteEnvironmentDeploymentDetailsTests
             [
                 new EnvironmentBuild
                 {
-                    BuildNumber = 99,
+                    EnvironmentPipelineBuildNumber = 99,
                     Parameters =
                     [
                         new EnvironmentBuildParameter

@@ -25,7 +25,8 @@
                                 <tr>
                                     <td>
                                         @{
-                                            var buildNumberText = build.BuildNumber.ToString();
+                                            //TODO This needs to be fixed. The middle section integer of the build version number needs to be parsed.
+                                            var buildNumberText = build.BuildVersionNumber;
                                             var workItemUrl = TfsWorkItemLinkBuilder.BuildWorkItemUrl(WorkItemUrlTemplate, buildNumberText);
                                         }
                                         @if (workItemUrl is not null)
@@ -62,17 +63,17 @@
                                     <td class="text-end">
                                         <button type="button"
                                                 class="btn btn-sm btn-outline-primary"
-                                                @onclick="() => ToggleVersionDetails(build.BuildNumber)">
-                                            @(_expandedBuildNumber == build.BuildNumber ? "Hide version details" : "Version details")
+                                                @onclick="() => ToggleVersionDetails(build.BuildVersionNumber)">
+                                            @(_expandedBuildNumber == build.BuildVersionNumber ? "Hide version details" : "Version details")
                                         </button>
                                     </td>
                                 </tr>
-                                @if (_expandedBuildNumber == build.BuildNumber)
+                                @if (_expandedBuildNumber == build.BuildVersionNumber)
                                 {
                                     <tr>
                                         <td colspan="7" class="p-0">
                                             <div class="p-3">
-                                                <EnvironmentBuildVersionDetailsPanel BuildNumber="build.BuildNumber" />
+                                                <EnvironmentBuildVersionDetailsPanel BuildVersionNumber="@build.BuildVersionNumber" />
                                             </div>
                                         </td>
                                     </tr>
@@ -96,9 +97,9 @@
     [Parameter]
     public string? WorkItemUrlTemplate { get; set; }
 
-    private int? _expandedBuildNumber;
+    private string? _expandedBuildNumber;
 
-    private void ToggleVersionDetails(int buildNumber)
+    private void ToggleVersionDetails(string buildNumber)
     {
         _expandedBuildNumber = _expandedBuildNumber == buildNumber ? null : buildNumber;
     }
