@@ -5,6 +5,8 @@ namespace DigitalDevServices.Model.Environments;
 
 public class EnvironmentBuild
 {
+    // (2) WorkItemBuildNumber — TFS work item id for this environment build; used for TFS hyperlinks and GetBuildVersionDetails.
+    // Proposed rename: WorkItemBuildNumber
     public int BuildNumber { get; set; }
 
     public string? Color { get; set; }

@@ -6,6 +6,8 @@ public class ApplicationInstanceUpsert
 
     public required Guid EnvironmentId { get; init; }
 
+    // (3) BuildVersionNumber — composite deployment version from pipeline output (e.g. YYMMDD.{workItemId}.0).
+    // Proposed rename: BuildVersionNumber
     public required string BuildNumber { get; init; }
 
     public Guid? PipelineFeedId { get; init; }
