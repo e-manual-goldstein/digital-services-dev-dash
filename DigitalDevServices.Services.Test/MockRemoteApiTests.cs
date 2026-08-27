@@ -113,7 +113,7 @@ public sealed class MockRemoteApiTests
 
         var found = await client.PostAsJsonAsync("/api/builds/version-details", new GetBuildVersionDetailsRequest
         {
-            EnvironmentPipelineBuildNumber = "123456",
+            BuildVersionNumber = "123456",
             IncludeVersionControlLog = true
         });
         Assert.IsTrue(found.IsSuccessStatusCode);
@@ -129,7 +129,7 @@ public sealed class MockRemoteApiTests
 
         var missing = await client.PostAsJsonAsync("/api/builds/version-details", new GetBuildVersionDetailsRequest
         {
-            EnvironmentPipelineBuildNumber = "999999",
+            BuildVersionNumber = "999999",
             IncludeVersionControlLog = true
         });
         Assert.AreEqual(System.Net.HttpStatusCode.NotFound, missing.StatusCode);

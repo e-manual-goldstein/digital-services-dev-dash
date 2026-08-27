@@ -69,12 +69,12 @@ public sealed class HttpRemoteEnvironmentApiClient : IRemoteEnvironmentApiClient
     }
 
     public async Task<RemoteBuildVersionDetails?> GetBuildVersionDetailsAsync(
-        string environmentPipelineBuildNumber,
+        string buildVersionNumber,
         CancellationToken cancellationToken = default)
     {
         var request = new GetBuildVersionDetailsRequest
         {
-            EnvironmentPipelineBuildNumber = environmentPipelineBuildNumber,
+            BuildVersionNumber = buildVersionNumber,
             IncludeVersionControlLog = true
         };
 

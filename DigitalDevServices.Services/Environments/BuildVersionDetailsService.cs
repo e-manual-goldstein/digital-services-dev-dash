@@ -17,17 +17,17 @@ public sealed class BuildVersionDetailsService : IBuildVersionDetailsService
     }
 
     public async Task<RemoteBuildVersionDetails?> GetBuildVersionDetailsAsync(
-        string environmentPipelineBuildNumber,
+        string buildVersionNumber,
         CancellationToken cancellationToken = default)
     {
-        var cacheKey = GetCacheKey(environmentPipelineBuildNumber);
+        var cacheKey = GetCacheKey(buildVersionNumber);
         if (_memoryCache.TryGetValue(cacheKey, out RemoteBuildVersionDetails? cached))
         {
             return cached;
         }
 
         var details = await _apiClient
-            .GetBuildVersionDetailsAsync(environmentPipelineBuildNumber, cancellationToken)
+            .GetBuildVersionDetailsAsync(buildVersionNumber, cancellationToken)
             .ConfigureAwait(false);
 
         if (details is not null)
