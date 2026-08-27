@@ -65,6 +65,27 @@ else
         </div>
     </div>
 
+    @if (_showLogFilePicker)
+    {
+        <div class="card mb-3">
+            <div class="card-body py-3">
+                <label class="form-label mb-1" for="log-file">Log file</label>
+                <InputSelect id="log-file"
+                             class="form-select"
+                             TValue="string"
+                             Value="_selectedLogFilePath"
+                             ValueChanged="OnLogFileChangedAsync"
+                             ValueExpression="() => _selectedLogFilePath"
+                             disabled="@_isBusy">
+                    @foreach (var file in _availableLogFiles)
+                    {
+                        <option value="@file.FilePath">@LogFileDisplay.FormatOptionLabel(file)</option>
+                    }
+                </InputSelect>
+            </div>
+        </div>
+    }
+
     @if (!string.IsNullOrWhiteSpace(_errorMessage))
     {
         <div class="alert alert-danger" role="alert">@_errorMessage</div>
@@ -130,6 +151,8 @@ else
     private ApplicationInstance? _instance;
     private CachedEnvironment? _environment;
     private IReadOnlyList<ParsedLogEntry> _entries = [];
+    private IReadOnlyList<AvailableLogFile> _availableLogFiles = [];
+    private string? _selectedLogFilePath;
     private string? _logFilePath;
     private string _pageTitle = "Logs";
     private string _loadingMessage = "Loading logs…";
@@ -140,6 +163,8 @@ else
     private int _maxLines = DefaultMaxLines;
 
     private bool CanLoadMore => _maxLines < MaxAllowedLines;
+
+    private bool _showLogFilePicker => _availableLogFiles.Count > 1;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -153,6 +178,8 @@ else
         _loadingMessage = "Loading logs…";
         _entries = [];
         _logFilePath = null;
+        _availableLogFiles = [];
+        _selectedLogFilePath = null;
 
         try
         {
@@ -184,6 +211,7 @@ else
                 _instance = await InstanceService.GetByIdAsync(InstanceId);
             }
 
+            await LoadAvailableLogFilesAsync();
             await ReadLogsAsync();
         }
         catch (Exception ex)
@@ -198,9 +226,36 @@ else
         }
     }
 
+    private async Task LoadAvailableLogFilesAsync()
+    {
+        var listResult = await LogReaderService.ListLogFilesAsync(InstanceId);
+        if (!listResult.IsSuccess)
+        {
+            _errorMessage = listResult.ErrorMessage;
+            _availableLogFiles = [];
+            _selectedLogFilePath = null;
+            return;
+        }
+
+        _availableLogFiles = listResult.Files;
+        _selectedLogFilePath ??= _availableLogFiles.FirstOrDefault()?.FilePath;
+    }
+
+    private async Task OnLogFileChangedAsync(string? logFilePath)
+    {
+        if (string.IsNullOrWhiteSpace(logFilePath) || logFilePath == _selectedLogFilePath)
+        {
+            return;
+        }
+
+        _selectedLogFilePath = logFilePath;
+        _maxLines = DefaultMaxLines;
+        await RefreshTailAsync();
+    }
+
     private async Task ReadLogsAsync()
     {
-        var result = await LogReaderService.ReadAsync(InstanceId, _maxLines);
+        var result = await LogReaderService.ReadAsync(InstanceId, _maxLines, _selectedLogFilePath);
         if (!result.IsSuccess)
         {
             _errorMessage = result.ErrorMessage;
@@ -211,6 +266,7 @@ else
 
         _entries = result.Entries;
         _logFilePath = result.LogFilePath;
+        _selectedLogFilePath ??= result.LogFilePath;
     }
 
     private async Task RefreshTailAsync()

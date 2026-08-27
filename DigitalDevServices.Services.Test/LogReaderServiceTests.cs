@@ -159,6 +159,104 @@ public sealed class LogReaderServiceTests
         StringAssert.Contains(result.ErrorMessage!, "log format profile");
     }
 
+    [TestMethod]
+    public async Task ListLogFilesAsync_ReturnsNewestFirstForDirectory()
+    {
+        await using var fixture = await LogReaderServiceFixture.CreateAsync();
+        var logDirectory = await fixture.CreateLogDirectoryAsync();
+        var olderLogPath = Path.Combine(logDirectory, "older.log");
+        var newerLogPath = Path.Combine(logDirectory, "newer.log");
+
+        await File.WriteAllTextAsync(olderLogPath, "old");
+        await File.WriteAllTextAsync(newerLogPath, "new");
+        File.SetLastWriteTimeUtc(olderLogPath, DateTime.UtcNow.AddHours(-2));
+        File.SetLastWriteTimeUtc(newerLogPath, DateTime.UtcNow);
+
+        var application = await fixture.DeployableApplicationService.CreateAsync("Worker Host");
+        var instance = await fixture.CreateApplicationInstanceAsync(application.Id, logDirectory);
+        var result = await fixture.ReaderService.ListLogFilesAsync(instance.Id);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.IsTrue(result.IsDirectory);
+        Assert.HasCount(2, result.Files);
+        Assert.AreEqual("newer.log", result.Files[0].FileName);
+        Assert.AreEqual("older.log", result.Files[1].FileName);
+        Assert.IsGreaterThan(0, result.Files[0].SizeBytes);
+    }
+
+    [TestMethod]
+    public async Task ListLogFilesAsync_ReturnsSingleFileWhenPathIsFile()
+    {
+        await using var fixture = await LogReaderServiceFixture.CreateAsync();
+        var logDirectory = await fixture.CreateLogDirectoryAsync();
+        var logFilePath = Path.Combine(logDirectory, "app.log");
+        await File.WriteAllTextAsync(logFilePath, "entry");
+
+        var application = await fixture.DeployableApplicationService.CreateAsync("Worker Host");
+        var instance = await fixture.CreateApplicationInstanceAsync(application.Id, logFilePath);
+        var result = await fixture.ReaderService.ListLogFilesAsync(instance.Id);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.IsFalse(result.IsDirectory);
+        Assert.HasCount(1, result.Files);
+        Assert.AreEqual(logFilePath, result.Files[0].FilePath);
+    }
+
+    [TestMethod]
+    public async Task ReadAsync_ReadsExplicitLogFileInDirectory()
+    {
+        await using var fixture = await LogReaderServiceFixture.CreateAsync();
+        var logDirectory = await fixture.CreateLogDirectoryAsync();
+        var olderLogPath = Path.Combine(logDirectory, "older.log");
+        var newerLogPath = Path.Combine(logDirectory, "newer.log");
+
+        await File.WriteAllTextAsync(olderLogPath, "2026-08-23 09:00:00.000 INFO  [WorkerHost] Old entry");
+        await File.WriteAllTextAsync(newerLogPath, "2026-08-23 09:10:00.000 WARN  [WorkerHost] New entry");
+        File.SetLastWriteTimeUtc(olderLogPath, DateTime.UtcNow.AddHours(-2));
+        File.SetLastWriteTimeUtc(newerLogPath, DateTime.UtcNow);
+
+        var application = await fixture.DeployableApplicationService.CreateAsync("Worker Host");
+        await fixture.ProfileService.UpsertAsync(new LogFormatProfileUpsert
+        {
+            DeployableApplicationId = application.Id,
+            FormatName = LogFormatNames.PlainText
+        });
+
+        var instance = await fixture.CreateApplicationInstanceAsync(application.Id, logDirectory);
+        var result = await fixture.ReaderService.ReadAsync(instance.Id, logFilePath: olderLogPath);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(olderLogPath, result.LogFilePath);
+        Assert.HasCount(1, result.Entries);
+        Assert.AreEqual("Old entry", result.Entries[0].Message);
+    }
+
+    [TestMethod]
+    public async Task ReadAsync_RejectsLogFileOutsideConfiguredDirectory()
+    {
+        await using var fixture = await LogReaderServiceFixture.CreateAsync();
+        var logDirectory = await fixture.CreateLogDirectoryAsync();
+        var otherDirectory = await fixture.CreateLogDirectoryAsync();
+        var logFilePath = Path.Combine(logDirectory, "app.log");
+        var outsideLogPath = Path.Combine(otherDirectory, "outside.log");
+
+        await File.WriteAllTextAsync(logFilePath, "2026-08-23 09:00:00.000 INFO  [WorkerHost] Inside");
+        await File.WriteAllTextAsync(outsideLogPath, "2026-08-23 09:00:00.000 INFO  [WorkerHost] Outside");
+
+        var application = await fixture.DeployableApplicationService.CreateAsync("Worker Host");
+        await fixture.ProfileService.UpsertAsync(new LogFormatProfileUpsert
+        {
+            DeployableApplicationId = application.Id,
+            FormatName = LogFormatNames.PlainText
+        });
+
+        var instance = await fixture.CreateApplicationInstanceAsync(application.Id, logDirectory);
+        var result = await fixture.ReaderService.ReadAsync(instance.Id, logFilePath: outsideLogPath);
+
+        Assert.IsFalse(result.IsSuccess);
+        StringAssert.Contains(result.ErrorMessage!, "not in the configured log directory");
+    }
+
     private sealed class LogReaderServiceFixture : IAsyncDisposable
     {
         private readonly ServiceProvider _serviceProvider;

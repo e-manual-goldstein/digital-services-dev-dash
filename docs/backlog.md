@@ -10,13 +10,12 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~LOG-003~~ | [LOG](tickets/LOG-log-interpreter.md) | Log viewer UI (environment → instance picker) |
+| ~~LOG-005~~ | [LOG](tickets/LOG-log-interpreter.md) | Log file selection when path is a directory |
 
 ## Active (recommended order)
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| LOG-005 | [LOG](tickets/LOG-log-interpreter.md) | Log file selection when path is a directory |
 | LOG-006 | [LOG](tickets/LOG-log-interpreter.md) | Raw log content debug panel |
 | LOG-007 | [LOG](tickets/LOG-log-interpreter.md) | Override log format profile on viewer |
 | LOG-004 | [LOG](tickets/LOG-log-interpreter.md) | Log filtering (level, text search) |
@@ -29,7 +28,7 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 |------|-------------|-------------------|-----------------|---------------|----------|
 | [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Named pipeline feeds (no branch matching v1) | 2 | 1 | 3 | 🟩🟩🟩🟩🟩🟩🟨🟨🟨⬜ 67% |
 | [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 3 | 2 | 5 | 🟩🟩🟩🟩🟩🟩🟨🟨🟨🟨 60% |
-| [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | 3 | 0 | 7 | 🟩🟩🟩⬜⬜⬜⬜⬜⬜⬜ 43% |
+| [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | 4 | 0 | 7 | 🟩🟩🟩🟩🟩🟨🟨⬜⬜⬜ 57% |
 
 *Progress bar: 10 squares — 🟩 completed, 🟨 shelved, ⬜ open; percentage = completed only.*
 

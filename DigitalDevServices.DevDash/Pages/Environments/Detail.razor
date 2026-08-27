@@ -896,7 +896,7 @@ else
     }
     //TODO This needs to be checked, it's probably wrong.
     private string? GetPrimaryBuildNumberText() =>
-        _environment?.DeploymentDetails?.GetPrimaryBuild()?.BuildVersionNumber.ToString();
+        _environment?.DeploymentDetails?.GetPrimaryBuild()?.BuildVersionNumber;
 
     private string? GetPrimaryWipBranch() =>
         _environment?.DeploymentDetails?.GetPrimaryWipBranch();

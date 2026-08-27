@@ -16,9 +16,30 @@ public sealed class LogReaderService : ILogReaderService
         _logParsingService = logParsingService;
     }
 
+    public async Task<LogFileListResult> ListLogFilesAsync(
+        Guid applicationInstanceId,
+        CancellationToken cancellationToken = default)
+    {
+        var instance = await _applicationInstanceService
+            .GetByIdAsync(applicationInstanceId, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (instance is null)
+        {
+            return new LogFileListResult
+            {
+                ErrorMessage = "Application instance was not found."
+            };
+        }
+
+        LogPathResolver.TryListLogFiles(instance.LogPath, out var result);
+        return result;
+    }
+
     public async Task<LogReadResult> ReadAsync(
         Guid applicationInstanceId,
         int maxLines = LogFileTailReader.DefaultMaxLines,
+        string? logFilePath = null,
         CancellationToken cancellationToken = default)
     {
         var instance = await _applicationInstanceService
@@ -33,7 +54,7 @@ public sealed class LogReaderService : ILogReaderService
             };
         }
 
-        if (!LogPathResolver.TryResolveLogFile(instance.LogPath, out var logFilePath, out var resolveError))
+        if (!LogPathResolver.TryResolveLogFile(instance.LogPath, logFilePath, out var resolvedLogFilePath, out var resolveError))
         {
             return new LogReadResult
             {
@@ -47,15 +68,15 @@ public sealed class LogReaderService : ILogReaderService
         try
         {
             (content, rawLinesRead) = await LogFileTailReader
-                .ReadLastLinesAsync(logFilePath!, maxLines, cancellationToken)
+                .ReadLastLinesAsync(resolvedLogFilePath!, maxLines, cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return new LogReadResult
             {
-                LogFilePath = logFilePath,
-                ErrorMessage = $"Could not read log file '{logFilePath}': {ex.Message}"
+                LogFilePath = resolvedLogFilePath,
+                ErrorMessage = $"Could not read log file '{resolvedLogFilePath}': {ex.Message}"
             };
         }
 
@@ -71,7 +92,7 @@ public sealed class LogReaderService : ILogReaderService
         {
             return new LogReadResult
             {
-                LogFilePath = logFilePath,
+                LogFilePath = resolvedLogFilePath,
                 RawLinesRead = rawLinesRead,
                 ErrorMessage = ex.Message
             };
@@ -80,7 +101,7 @@ public sealed class LogReaderService : ILogReaderService
         return new LogReadResult
         {
             Entries = entries,
-            LogFilePath = logFilePath,
+            LogFilePath = resolvedLogFilePath,
             RawLinesRead = rawLinesRead
         };
     }

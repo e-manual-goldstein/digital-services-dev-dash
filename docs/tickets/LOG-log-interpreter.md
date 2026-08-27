@@ -23,7 +23,7 @@
 | [LOG-002](#log-002) | Done | Log file reader using ApplicationInstance paths | APP-002, LOG-001 |
 | [LOG-003](#log-003) | Done | Log viewer UI (environment → instance picker) | LOG-002, ENV-005, APP-004 |
 | [LOG-004](#log-004) | Todo | Log filtering (level, text search) | LOG-003 |
-| [LOG-005](#log-005) | Todo | Log file selection when path is a directory | LOG-003 |
+| [LOG-005](#log-005) | Done | Log file selection when path is a directory | LOG-003 |
 | [LOG-006](#log-006) | Todo | Raw log content debug panel | LOG-003 |
 | [LOG-007](#log-007) | Todo | Override log format profile on viewer | LOG-003 |
 
@@ -152,9 +152,9 @@ Prototype sample files live in [`samples/logs/`](../../samples/logs/README.md) (
 |-------|--------|
 | **ID** | LOG-005 |
 | **Title** | Log file selection when path is a directory |
-| **Status** | Todo |
-| **Description** | Today `LogPathResolver` picks the newest `*.log` in a directory with no user choice. When `ApplicationInstance.LogPath` resolves to a directory (or contains multiple log files), expose a **Log file** dropdown on `/log-viewer/{instanceId}` listing available files (at minimum `*.log` in that directory; show file name, size, and last modified). Default selection remains the newest file by write time (current behaviour). Extend `ILogReaderService` (or add a companion service) with `ListLogFilesAsync` and allow `ReadAsync` to accept an optional explicit file path. Selection is per-view session (component state or query string) — do not persist to `ApplicationInstance.LogPath`. When `LogPath` is already a single file, hide the dropdown or show it disabled with one item. |
-| **Test / demo** | Instance with `LogPath` = directory containing `app-2026-08-25.log` and `app-2026-08-26.log` → viewer opens on newest → switch dropdown to older file → table and source path update. `dotnet test` covers file listing and read with explicit path. |
+| **Status** | Done |
+| **Description** | When `ApplicationInstance.LogPath` is a directory, `ILogReaderService.ListLogFilesAsync` lists `*.log` files (newest first) with file name, size, and last modified. `ReadAsync` accepts an optional explicit `logFilePath` (validated to stay within the configured file or directory). Log viewer page shows a **Log file** dropdown when multiple files exist; default remains the newest file. Selection is session-only. `AvailableLogFile`, `LogFileListResult` model types; path validation in `LogPathResolver`. Unit tests cover listing, explicit read, and rejection of paths outside the configured directory. |
+| **Test / demo** | Instance with `LogPath` = directory containing two `.log` files → viewer opens on newest → switch dropdown to older file → table updates. `dotnet test --filter LogReaderServiceTests` → pass. |
 | **Depends on** | LOG-003 |
 
 ### LOG-006
