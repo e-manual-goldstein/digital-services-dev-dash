@@ -1,0 +1,242 @@
+@page "/log-viewer/{InstanceId:guid}"
+@using DigitalDevServices.DevDash.LogViewer
+@inject IEnvironmentService EnvironmentService
+@inject IApplicationInstanceService InstanceService
+@inject ILogPathResolutionService LogPathResolutionService
+@inject ILogReaderService LogReaderService
+
+<PageTitle>@_pageTitle</PageTitle>
+
+<div class="mb-3">
+    @if (_environment is not null)
+    {
+        <a href="@($"/environments/{_environment.LocalId}")" class="text-decoration-none">&larr; Back to @_environment.Details.Name</a>
+    }
+    else
+    {
+        <a href="/log-viewer" class="text-decoration-none">&larr; Back to log viewer</a>
+    }
+</div>
+
+@if (_isLoading)
+{
+    <p class="text-muted">@_loadingMessage</p>
+}
+else if (_instance is null)
+{
+    <div class="alert alert-warning" role="alert">
+        Application instance not found.
+    </div>
+}
+else
+{
+    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+        <div>
+            <h1 class="mb-1">Logs</h1>
+            <p class="text-muted mb-0">
+                @(_environment?.Details.Name ?? "Environment") &middot; @_instance.DeployableApplication.Name
+            </p>
+            @if (!string.IsNullOrWhiteSpace(_logFilePath))
+            {
+                <p class="text-muted small mb-0 mt-1">
+                    Source: <code>@_logFilePath</code>
+                </p>
+            }
+            @if (!string.IsNullOrWhiteSpace(_instance.LogPath) && _instance.LogPath != _logFilePath)
+            {
+                <p class="text-muted small mb-0 mt-1">
+                    Log path: <code>@_instance.LogPath</code>
+                </p>
+            }
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button"
+                    class="btn btn-outline-secondary"
+                    disabled="@_isBusy"
+                    @onclick="RefreshTailAsync">
+                @(_isRefreshing ? "Refreshing…" : "Refresh tail")
+            </button>
+            <button type="button"
+                    class="btn btn-outline-primary"
+                    disabled="@(_isBusy || !CanLoadMore)"
+                    @onclick="LoadMoreAsync">
+                Load more
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+    {
+        <div class="alert alert-danger" role="alert">@_errorMessage</div>
+    }
+
+    @if (_entries.Count == 0 && string.IsNullOrWhiteSpace(_errorMessage))
+    {
+        <div class="alert alert-light border text-center py-4" role="status">
+            <p class="mb-0 text-muted">No log entries were parsed from the current tail.</p>
+        </div>
+    }
+    else if (_entries.Count > 0)
+    {
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+            <p class="text-muted small mb-0">
+                Showing @_entries.Count parsed entries from the last @_maxLines raw lines
+            </p>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 12rem;">Time</th>
+                        <th style="width: 7rem;">Level</th>
+                        <th>Message</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in _entries)
+                    {
+                        <tr>
+                            <td class="text-muted small font-monospace">
+                                @(entry.Timestamp?.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss.fff") ?? "—")
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(entry.Level))
+                                {
+                                    <span class="badge @LogLevelBadge.GetClass(entry.Level)">@entry.Level</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+                            <td class="font-monospace small text-break">@entry.Message</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+@code {
+    private const int DefaultMaxLines = 100;
+    private const int MaxLinesStep = 100;
+    private const int MaxAllowedLines = 10_000;
+
+    [Parameter]
+    public Guid InstanceId { get; set; }
+
+    private ApplicationInstance? _instance;
+    private CachedEnvironment? _environment;
+    private IReadOnlyList<ParsedLogEntry> _entries = [];
+    private string? _logFilePath;
+    private string _pageTitle = "Logs";
+    private string _loadingMessage = "Loading logs…";
+    private string? _errorMessage;
+    private bool _isLoading = true;
+    private bool _isRefreshing;
+    private bool _isBusy;
+    private int _maxLines = DefaultMaxLines;
+
+    private bool CanLoadMore => _maxLines < MaxAllowedLines;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadLogsAsync();
+    }
+
+    private async Task LoadLogsAsync()
+    {
+        _errorMessage = null;
+        _isLoading = true;
+        _loadingMessage = "Loading logs…";
+        _entries = [];
+        _logFilePath = null;
+
+        try
+        {
+            _instance = await InstanceService.GetByIdAsync(InstanceId);
+            if (_instance is null)
+            {
+                _pageTitle = "Logs";
+                return;
+            }
+
+            _pageTitle = $"{_instance.DeployableApplication.Name} logs";
+            _environment = await EnvironmentService.GetTrackedEnvironmentAsync(_instance.EnvironmentId);
+
+            if (string.IsNullOrWhiteSpace(_instance.LogPath))
+            {
+                _loadingMessage = "Resolving log path…";
+                var resolution = await LogPathResolutionService.EnsureLogPathAsync(InstanceId);
+                if (resolution.RefreshedEnvironment)
+                {
+                    _loadingMessage = "Refreshing environment…";
+                }
+
+                if (!resolution.IsSuccess)
+                {
+                    _errorMessage = resolution.ErrorMessage;
+                    return;
+                }
+
+                _instance = await InstanceService.GetByIdAsync(InstanceId);
+            }
+
+            await ReadLogsAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+            _isRefreshing = false;
+            _isBusy = false;
+        }
+    }
+
+    private async Task ReadLogsAsync()
+    {
+        var result = await LogReaderService.ReadAsync(InstanceId, _maxLines);
+        if (!result.IsSuccess)
+        {
+            _errorMessage = result.ErrorMessage;
+            _entries = [];
+            _logFilePath = result.LogFilePath;
+            return;
+        }
+
+        _entries = result.Entries;
+        _logFilePath = result.LogFilePath;
+    }
+
+    private async Task RefreshTailAsync()
+    {
+        _isBusy = true;
+        _isRefreshing = true;
+        _errorMessage = null;
+
+        try
+        {
+            await ReadLogsAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isRefreshing = false;
+            _isBusy = false;
+        }
+    }
+
+    private async Task LoadMoreAsync()
+    {
+        _maxLines = Math.Min(_maxLines + MaxLinesStep, MaxAllowedLines);
+        await RefreshTailAsync();
+    }
+}

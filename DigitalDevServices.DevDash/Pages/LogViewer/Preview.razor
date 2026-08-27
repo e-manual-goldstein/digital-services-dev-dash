@@ -1,0 +1,210 @@
+@page "/log-viewer/preview"
+@using DigitalDevServices.DevDash.LogViewer
+@inject ISampleLogService SampleLogService
+
+<PageTitle>Log preview</PageTitle>
+
+<h1 class="mb-1">Log preview</h1>
+<p class="text-muted mb-4">
+    Step through sample log files to see how each format is parsed into discrete entries.
+</p>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <label class="form-label" for="log-sample">Sample format</label>
+        <InputSelect id="log-sample"
+                     class="form-select"
+                     TValue="string"
+                     Value="_selectedSampleId"
+                     ValueChanged="OnSampleChangedAsync"
+                     ValueExpression="() => _selectedSampleId"
+                     disabled="@_isLoading">
+            @foreach (var sample in _samples)
+            {
+                <option value="@sample.Id">@sample.DisplayName</option>
+            }
+        </InputSelect>
+        @if (_selectedSample is not null)
+        {
+            <p class="text-muted small mb-0 mt-2">@_selectedSample.Description</p>
+        }
+    </div>
+</div>
+
+@if (_isLoading)
+{
+    <p class="text-muted">Loading sample log…</p>
+}
+else if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="alert alert-danger" role="alert">@_errorMessage</div>
+}
+else if (_entries.Count == 0)
+{
+    <div class="alert alert-light border" role="status">
+        No entries were parsed from this sample.
+    </div>
+}
+else
+{
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <p class="text-muted mb-0">
+            Entry @(_currentIndex + 1) of @_entries.Count
+        </p>
+        <div class="btn-group" role="group" aria-label="Entry navigation">
+            <button type="button" class="btn btn-outline-secondary" disabled="@(_currentIndex == 0)" @onclick="GoFirst">First</button>
+            <button type="button" class="btn btn-outline-secondary" disabled="@(_currentIndex == 0)" @onclick="GoPrevious">Previous</button>
+            <button type="button" class="btn btn-outline-secondary" disabled="@(_currentIndex >= _entries.Count - 1)" @onclick="GoNext">Next</button>
+            <button type="button" class="btn btn-outline-secondary" disabled="@(_currentIndex >= _entries.Count - 1)" @onclick="GoLast">Last</button>
+        </div>
+    </div>
+
+    @if (_currentEntry is not null)
+    {
+        <div class="card log-entry-card mb-4">
+            <div class="card-body">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                    @if (_currentEntry.Timestamp is not null)
+                    {
+                        <span class="text-muted font-monospace small">
+                            @_currentEntry.Timestamp.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss.fff zzz")
+                        </span>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(_currentEntry.Level))
+                    {
+                        <span class="badge @LogLevelBadge.GetClass(_currentEntry.Level)">@_currentEntry.Level</span>
+                    }
+                </div>
+
+                <h2 class="h6 text-uppercase text-muted">Message</h2>
+                <div class="log-entry-message mb-3">@_currentEntry.Message</div>
+
+                @if (_currentEntry.Properties is { Count: > 0 })
+                {
+                    <h2 class="h6 text-uppercase text-muted">Properties</h2>
+                    <dl class="row small mb-3">
+                        @foreach (var property in _currentEntry.Properties)
+                        {
+                            <dt class="col-sm-3">@property.Key</dt>
+                            <dd class="col-sm-9 font-monospace text-break">@property.Value</dd>
+                        }
+                    </dl>
+                }
+
+                <details>
+                    <summary class="text-muted">Raw source</summary>
+                    <div class="log-entry-raw mt-2">@_currentEntry.RawText</div>
+                </details>
+            </div>
+        </div>
+    }
+
+    <h2 class="h5 mb-2">All entries</h2>
+    <div class="list-group">
+        @for (var index = 0; index < _entries.Count; index++)
+        {
+            var entry = _entries[index];
+            var entryIndex = index;
+            <button type="button"
+                    class="list-group-item list-group-item-action d-flex flex-wrap align-items-center gap-2 @(entryIndex == _currentIndex ? "active" : string.Empty)"
+                    @onclick="() => SelectEntry(entryIndex)">
+                <span class="text-muted small font-monospace">
+                    @(entry.Timestamp?.ToLocalTime().ToString("HH:mm:ss") ?? "—")
+                </span>
+                @if (!string.IsNullOrWhiteSpace(entry.Level))
+                {
+                    <span class="badge @LogLevelBadge.GetClass(entry.Level)">@entry.Level</span>
+                }
+                <span class="text-truncate flex-grow-1">@GetPreviewLine(entry.Message)</span>
+            </button>
+        }
+    </div>
+}
+
+@code {
+    private IReadOnlyList<SampleLogDefinition> _samples = [];
+    private IReadOnlyList<ParsedLogEntry> _entries = [];
+    private string _selectedSampleId = string.Empty;
+    private SampleLogDefinition? _selectedSample;
+    private int _currentIndex;
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    private ParsedLogEntry? _currentEntry =>
+        _entries.Count == 0 || _currentIndex < 0 || _currentIndex >= _entries.Count
+            ? null
+            : _entries[_currentIndex];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _samples = SampleLogService.GetSamples();
+        if (_samples.Count == 0)
+        {
+            _isLoading = false;
+            _errorMessage = "No sample logs are configured.";
+            return;
+        }
+
+        _selectedSampleId = _samples[0].Id;
+        await LoadSampleAsync();
+    }
+
+    private async Task OnSampleChangedAsync(string sampleId)
+    {
+        _selectedSampleId = sampleId;
+        await LoadSampleAsync();
+    }
+
+    private async Task LoadSampleAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+        _entries = [];
+        _currentIndex = 0;
+        _selectedSample = _samples.FirstOrDefault(sample => sample.Id == _selectedSampleId);
+
+        try
+        {
+            _entries = await SampleLogService.LoadSampleAsync(_selectedSampleId);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void SelectEntry(int index)
+    {
+        _currentIndex = index;
+    }
+
+    private void GoFirst() => _currentIndex = 0;
+
+    private void GoPrevious()
+    {
+        if (_currentIndex > 0)
+        {
+            _currentIndex--;
+        }
+    }
+
+    private void GoNext()
+    {
+        if (_currentIndex < _entries.Count - 1)
+        {
+            _currentIndex++;
+        }
+    }
+
+    private void GoLast() => _currentIndex = Math.Max(0, _entries.Count - 1);
+
+    private static string GetPreviewLine(string message)
+    {
+        var line = message.ReplaceLineEndings(" ").Trim();
+        return line.Length <= 120 ? line : line[..117] + "…";
+    }
+}
