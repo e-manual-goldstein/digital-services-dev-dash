@@ -94,6 +94,7 @@ public sealed class LogReaderService : ILogReaderService
             {
                 LogFilePath = resolvedLogFilePath,
                 RawLinesRead = rawLinesRead,
+                RawContent = content,
                 ErrorMessage = ex.Message
             };
         }
@@ -102,7 +103,8 @@ public sealed class LogReaderService : ILogReaderService
         {
             Entries = entries,
             LogFilePath = resolvedLogFilePath,
-            RawLinesRead = rawLinesRead
+            RawLinesRead = rawLinesRead,
+            RawContent = content
         };
     }
 }

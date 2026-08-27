@@ -8,6 +8,8 @@ public class LogReadResult
 
     public int RawLinesRead { get; init; }
 
+    public string? RawContent { get; init; }
+
     public string? ErrorMessage { get; init; }
 
     public bool IsSuccess => string.IsNullOrWhiteSpace(ErrorMessage);

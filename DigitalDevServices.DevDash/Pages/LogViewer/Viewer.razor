@@ -91,6 +91,17 @@ else
         <div class="alert alert-danger" role="alert">@_errorMessage</div>
     }
 
+    @if (!string.IsNullOrWhiteSpace(_rawContent))
+    {
+        <div class="card mb-3">
+            <div class="card-body py-3">
+                <CollapsibleSection Title="Raw log content">
+                    <div class="log-entry-raw">@_rawContent</div>
+                </CollapsibleSection>
+            </div>
+        </div>
+    }
+
     @if (_entries.Count == 0 && string.IsNullOrWhiteSpace(_errorMessage))
     {
         <div class="alert alert-light border text-center py-4" role="status">
@@ -154,6 +165,7 @@ else
     private IReadOnlyList<AvailableLogFile> _availableLogFiles = [];
     private string? _selectedLogFilePath;
     private string? _logFilePath;
+    private string? _rawContent;
     private string _pageTitle = "Logs";
     private string _loadingMessage = "Loading logs…";
     private string? _errorMessage;
@@ -178,6 +190,7 @@ else
         _loadingMessage = "Loading logs…";
         _entries = [];
         _logFilePath = null;
+        _rawContent = null;
         _availableLogFiles = [];
         _selectedLogFilePath = null;
 
@@ -261,11 +274,13 @@ else
             _errorMessage = result.ErrorMessage;
             _entries = [];
             _logFilePath = result.LogFilePath;
+            _rawContent = result.RawContent;
             return;
         }
 
         _entries = result.Entries;
         _logFilePath = result.LogFilePath;
+        _rawContent = result.RawContent;
         _selectedLogFilePath ??= result.LogFilePath;
     }
 

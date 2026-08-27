@@ -37,6 +37,7 @@ public sealed class LogReaderServiceTests
         Assert.IsTrue(result.IsSuccess);
         Assert.AreEqual(logFilePath, result.LogFilePath);
         Assert.HasCount(3, result.Entries);
+        StringAssert.Contains(result.RawContent!, "Background worker started");
         Assert.AreEqual("INFO", result.Entries[0].Level);
         Assert.IsNotNull(result.Entries[0].Timestamp);
         Assert.AreEqual("WARN", result.Entries[1].Level);
@@ -157,6 +158,7 @@ public sealed class LogReaderServiceTests
 
         Assert.IsFalse(result.IsSuccess);
         StringAssert.Contains(result.ErrorMessage!, "log format profile");
+        StringAssert.Contains(result.RawContent!, "Background worker started");
     }
 
     [TestMethod]

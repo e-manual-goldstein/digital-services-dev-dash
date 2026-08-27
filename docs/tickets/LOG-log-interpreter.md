@@ -24,7 +24,7 @@
 | [LOG-003](#log-003) | Done | Log viewer UI (environment → instance picker) | LOG-002, ENV-005, APP-004 |
 | [LOG-004](#log-004) | Todo | Log filtering (level, text search) | LOG-003 |
 | [LOG-005](#log-005) | Done | Log file selection when path is a directory | LOG-003 |
-| [LOG-006](#log-006) | Todo | Raw log content debug panel | LOG-003 |
+| [LOG-006](#log-006) | Done | Raw log content debug panel | LOG-003 |
 | [LOG-007](#log-007) | Todo | Override log format profile on viewer | LOG-003 |
 
 ---
@@ -163,9 +163,9 @@ Prototype sample files live in [`samples/logs/`](../../samples/logs/README.md) (
 |-------|--------|
 | **ID** | LOG-006 |
 | **Title** | Raw log content debug panel |
-| **Status** | Todo |
-| **Description** | Add a **`CollapsibleSection`** on the log viewer page titled e.g. **Raw log content**, collapsed by default, showing the unformatted text returned by the tail read (same bytes/lines used for parsing, before any format interpretation). Extend `LogReadResult` with a `RawContent` (or equivalent) field populated by `LogFileTailReader`. Use existing monospace / `pre-wrap` styling (see `site.css` `.log-entry-raw`). Panel updates when the user refreshes, loads more lines, or selects a different file (**LOG-005**). Purpose: debug parser and path issues while the LOG epic is still evolving. |
-| **Test / demo** | Open viewer → expand **Raw log content** → see exact tail text from disk → **Refresh tail** → panel matches new read. Unit test asserts `LogReadResult` includes raw content on success. |
+| **Status** | Done |
+| **Description** | Added `RawContent` to `LogReadResult`, populated from the tail read in `LogReaderService` (including when parsing fails after a successful read). Log viewer page shows a collapsed-by-default **`CollapsibleSection`** titled **Raw log content** with monospace `pre-wrap` styling (`.log-entry-raw`). Panel updates on refresh, load more, and file selection. |
+| **Test / demo** | Open viewer → expand **Raw log content** → see exact tail text → **Refresh tail** → panel updates. `dotnet test --filter LogReaderServiceTests` asserts `RawContent` on success and parse-failure paths. |
 | **Depends on** | LOG-003 |
 
 ### LOG-007
