@@ -259,6 +259,37 @@ public sealed class LogReaderServiceTests
         StringAssert.Contains(result.ErrorMessage!, "not in the configured log directory");
     }
 
+    [TestMethod]
+    public async Task ReadAsync_UsesFormatOverrideInsteadOfConfiguredProfile()
+    {
+        await using var fixture = await LogReaderServiceFixture.CreateAsync();
+        var logDirectory = await fixture.CreateLogDirectoryAsync();
+        var logFilePath = Path.Combine(logDirectory, "app.log");
+        await File.WriteAllTextAsync(logFilePath, """
+            {"@t":"2026-08-23T08:15:02.1123456+01:00","@l":"Information","@mt":"Application starting"}
+            """);
+
+        var application = await fixture.DeployableApplicationService.CreateAsync("API Host");
+        await fixture.ProfileService.UpsertAsync(new LogFormatProfileUpsert
+        {
+            DeployableApplicationId = application.Id,
+            FormatName = LogFormatNames.PlainText
+        });
+
+        var instance = await fixture.CreateApplicationInstanceAsync(application.Id, logFilePath);
+        var wrongProfileResult = await fixture.ReaderService.ReadAsync(instance.Id);
+        var overrideResult = await fixture.ReaderService.ReadAsync(
+            instance.Id,
+            formatName: LogFormatNames.SerilogJson);
+
+        Assert.IsTrue(wrongProfileResult.IsSuccess);
+        Assert.IsEmpty(wrongProfileResult.Entries);
+        Assert.IsTrue(overrideResult.IsSuccess);
+        Assert.HasCount(1, overrideResult.Entries);
+        Assert.AreEqual("Information", overrideResult.Entries[0].Level);
+        Assert.AreEqual("Application starting", overrideResult.Entries[0].Message);
+    }
+
     private sealed class LogReaderServiceFixture : IAsyncDisposable
     {
         private readonly ServiceProvider _serviceProvider;

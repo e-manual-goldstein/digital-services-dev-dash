@@ -40,6 +40,7 @@ public sealed class LogReaderService : ILogReaderService
         Guid applicationInstanceId,
         int maxLines = LogFileTailReader.DefaultMaxLines,
         string? logFilePath = null,
+        string? formatName = null,
         CancellationToken cancellationToken = default)
     {
         var instance = await _applicationInstanceService
@@ -84,9 +85,11 @@ public sealed class LogReaderService : ILogReaderService
 
         try
         {
-            entries = await _logParsingService
-                .ParseForDeployableApplicationAsync(instance.DeployableApplicationId, content, cancellationToken)
-                .ConfigureAwait(false);
+            entries = !string.IsNullOrWhiteSpace(formatName)
+                ? _logParsingService.ParseWithFormat(formatName, content)
+                : await _logParsingService
+                    .ParseForDeployableApplicationAsync(instance.DeployableApplicationId, content, cancellationToken)
+                    .ConfigureAwait(false);
         }
         catch (InvalidOperationException ex)
         {

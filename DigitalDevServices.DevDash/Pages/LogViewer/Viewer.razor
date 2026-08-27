@@ -4,6 +4,8 @@
 @inject IApplicationInstanceService InstanceService
 @inject ILogPathResolutionService LogPathResolutionService
 @inject ILogReaderService LogReaderService
+@inject ILogFormatProfileService LogFormatProfileService
+@inject ILogParsingService LogParsingService
 
 <PageTitle>@_pageTitle</PageTitle>
 
@@ -86,6 +88,45 @@ else
         </div>
     }
 
+    <div class="card mb-3">
+        <div class="card-body py-3">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-lg-6">
+                    <label class="form-label mb-1" for="log-parse-format">Parse as</label>
+                    <InputSelect id="log-parse-format"
+                                 class="form-select"
+                                 TValue="string"
+                                 Value="_selectedParseFormat"
+                                 ValueChanged="OnParseFormatChangedAsync"
+                                 ValueExpression="() => _selectedParseFormat"
+                                 disabled="@(_isBusy || string.IsNullOrWhiteSpace(_rawContent))">
+                        @if (string.IsNullOrWhiteSpace(_configuredFormatName))
+                        {
+                            <option value="">Select format…</option>
+                        }
+                        @foreach (var formatName in _supportedParseFormats)
+                        {
+                            <option value="@formatName">@LogFormatNames.GetDisplayName(formatName)</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <p class="text-muted small mb-0">
+                        Configured:
+                        @if (!string.IsNullOrWhiteSpace(_configuredFormatName))
+                        {
+                            <span>@LogFormatNames.GetDisplayName(_configuredFormatName)</span>
+                        }
+                        else
+                        {
+                            <span>(none)</span>
+                        }
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @if (!string.IsNullOrWhiteSpace(_errorMessage))
     {
         <div class="alert alert-danger" role="alert">@_errorMessage</div>
@@ -166,6 +207,9 @@ else
     private string? _selectedLogFilePath;
     private string? _logFilePath;
     private string? _rawContent;
+    private string? _configuredFormatName;
+    private string? _selectedParseFormat;
+    private IReadOnlyList<string> _supportedParseFormats = [];
     private string _pageTitle = "Logs";
     private string _loadingMessage = "Loading logs…";
     private string? _errorMessage;
@@ -177,6 +221,11 @@ else
     private bool CanLoadMore => _maxLines < MaxAllowedLines;
 
     private bool _showLogFilePicker => _availableLogFiles.Count > 1;
+
+    protected override void OnInitialized()
+    {
+        _supportedParseFormats = LogParsingService.GetSupportedFormatNames();
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -191,6 +240,8 @@ else
         _entries = [];
         _logFilePath = null;
         _rawContent = null;
+        _configuredFormatName = null;
+        _selectedParseFormat = null;
         _availableLogFiles = [];
         _selectedLogFilePath = null;
 
@@ -205,6 +256,10 @@ else
 
             _pageTitle = $"{_instance.DeployableApplication.Name} logs";
             _environment = await EnvironmentService.GetTrackedEnvironmentAsync(_instance.EnvironmentId);
+
+            var profile = await LogFormatProfileService.GetByDeployableApplicationIdAsync(_instance.DeployableApplicationId);
+            _configuredFormatName = profile?.FormatName;
+            _selectedParseFormat = _configuredFormatName;
 
             if (string.IsNullOrWhiteSpace(_instance.LogPath))
             {
@@ -266,9 +321,43 @@ else
         await RefreshTailAsync();
     }
 
+    private Task OnParseFormatChangedAsync(string? formatName)
+    {
+        _selectedParseFormat = formatName;
+
+        if (string.IsNullOrWhiteSpace(_rawContent))
+        {
+            return Task.CompletedTask;
+        }
+
+        if (string.IsNullOrWhiteSpace(formatName))
+        {
+            _entries = [];
+            _errorMessage = null;
+            return Task.CompletedTask;
+        }
+
+        try
+        {
+            _entries = LogParsingService.ParseWithFormat(formatName, _rawContent);
+            _errorMessage = null;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _errorMessage = ex.Message;
+            _entries = [];
+        }
+
+        return Task.CompletedTask;
+    }
+
     private async Task ReadLogsAsync()
     {
-        var result = await LogReaderService.ReadAsync(InstanceId, _maxLines, _selectedLogFilePath);
+        var result = await LogReaderService.ReadAsync(
+            InstanceId,
+            _maxLines,
+            _selectedLogFilePath,
+            formatName: _selectedParseFormat);
         if (!result.IsSuccess)
         {
             _errorMessage = result.ErrorMessage;

@@ -25,7 +25,7 @@
 | [LOG-004](#log-004) | Todo | Log filtering (level, text search) | LOG-003 |
 | [LOG-005](#log-005) | Done | Log file selection when path is a directory | LOG-003 |
 | [LOG-006](#log-006) | Done | Raw log content debug panel | LOG-003 |
-| [LOG-007](#log-007) | Todo | Override log format profile on viewer | LOG-003 |
+| [LOG-007](#log-007) | Done | Override log format profile on viewer | LOG-003 |
 
 ---
 
@@ -174,7 +174,7 @@ Prototype sample files live in [`samples/logs/`](../../samples/logs/README.md) (
 |-------|--------|
 | **ID** | LOG-007 |
 | **Title** | Override log format profile on viewer |
-| **Status** | Todo |
+| **Status** | Done |
 | **Description** | Add a **Parse as** dropdown on `/log-viewer/{instanceId}` listing all supported formats from `LogFormatNames` / `ILogParsingService.GetSupportedFormatNames()` (Serilog JSON, plain text, NLog multiline, log4net pattern). Default selection is the deployable application’s assigned `LogFormatProfile` when one exists; otherwise no format pre-selected. Changing the dropdown re-parses the currently loaded raw content using `ILogParsingService.ParseWithFormat` without requiring a deployable-app profile — useful when the assigned profile is wrong or missing. Show the assigned profile as read-only context (e.g. “Configured: Plain text”) beside the override control. Extend `ILogReaderService.ReadAsync` with an optional `formatName` override, or re-parse client-side via a dedicated endpoint/service method that accepts content + format name. Override is per-view session only (not saved to `LogFormatProfile`). |
 | **Test / demo** | Load a Serilog JSON file with assigned profile **Plain text** → garbled table → set **Parse as** to **Serilog JSON** → entries parse correctly. Change format back and forth without re-reading from disk. `dotnet test` covers read/parse with format override. |
 | **Depends on** | LOG-003 |
