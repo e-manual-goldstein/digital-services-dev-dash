@@ -23,6 +23,9 @@
 | [LOG-002](#log-002) | Done | Log file reader using ApplicationInstance paths | APP-002, LOG-001 |
 | [LOG-003](#log-003) | Done | Log viewer UI (environment → instance picker) | LOG-002, ENV-005, APP-004 |
 | [LOG-004](#log-004) | Todo | Log filtering (level, text search) | LOG-003 |
+| [LOG-005](#log-005) | Todo | Log file selection when path is a directory | LOG-003 |
+| [LOG-006](#log-006) | Todo | Raw log content debug panel | LOG-003 |
+| [LOG-007](#log-007) | Todo | Override log format profile on viewer | LOG-003 |
 
 ---
 
@@ -53,7 +56,7 @@ One profile per **DeployableApplication** — same format across all environment
 
 ### Log source
 
-- **Resolved path** on **ApplicationInstance.LogPath** (file or directory — if directory, read newest `*.log`; see LOG-002).
+- **Resolved path** on **ApplicationInstance.LogPath** (file or directory — if directory, read newest `*.log` today; **LOG-005** adds explicit file picker).
 - **Template** on **DeployableApplication.PathToLogFiles** (APP-005) — used to *produce* `LogPath` when it is missing or incomplete; not re-evaluated on every log read when a usable stored path already exists.
 - **Lazy environment refresh (LOG-003):** when the user opens logs and `LogPath` cannot be determined from the instance plus cached environment data, call **`RefreshEnvironmentAsync`** for that environment (full remote fetch: `GetEnvironment` + `GetDeploymentDetailsForEnvironment`), build a `LogPathTemplateContext` from refreshed `RemoteEnvironmentDetails` + instance fields, resolve via `ILogPathTemplateService`, **persist** the result on `ApplicationInstance.LogPath`, then read logs. Do **not** refresh on every visit when `LogPath` is already set and valid.
 - Support tail/read-last-N-lines for large files (LOG-002).
@@ -62,7 +65,7 @@ One profile per **DeployableApplication** — same format across all environment
 
 | Step | When | Behaviour |
 |------|------|-----------|
-| 1 | User clicks **View Logs** (or navigates to `/logs/{instanceId}`) | If `ApplicationInstance.LogPath` is set and usable → read logs immediately |
+| 1 | User clicks **View Logs** (or navigates to `/log-viewer/{instanceId}`) | If `ApplicationInstance.LogPath` is set and usable → read logs immediately |
 | 2 | `LogPath` empty but deployable app has `PathToLogFiles` | Build `LogPathTemplateContext` from instance + cached `RemoteEnvironmentDetails` (and matching web app row when relevant) |
 | 3 | Required template tokens still missing | **`RefreshEnvironmentAsync`** → retry context build → resolve template → save `LogPath` on instance → read logs |
 | 4 | No template and no `LogPath` | Show clear error — user must configure path on deployable app or instance |
@@ -73,15 +76,17 @@ Token sources (see APP-005): `{AppName}`, `{EnvironmentCode}`, `{EnvironmentName
 
 ### Viewer UX
 
-1. Select **Environment** (or arrive via `/logs/{instanceId}` from environment details **View Logs**)
+1. Select **Environment** (or arrive via `/log-viewer/{instanceId}` from environment details **View Logs**)
 2. **LOG-003 pre-read:** run log path resolution flow above (may show brief “Refreshing environment…” when a remote fetch is needed)
 3. Select **ApplicationInstance** when using cascade entry (filtered to that environment)
-4. Stream or paginate parsed entries
-5. Filters: minimum level (hide INFO and below), text contains, time range (future — LOG-004)
+4. **LOG-005:** when `LogPath` is a directory, pick which log file to view (default: newest `*.log` by write time)
+5. Stream or paginate parsed entries; **LOG-007** optional format override dropdown for debugging parsers
+6. **LOG-006:** collapsible panel showing raw unformatted file content (tail read) for parser debugging
+7. Filters: minimum level (hide INFO and below), text contains, time range (future — LOG-004)
 
 ### Sample logs and preview UI
 
-Prototype sample files live in [`samples/logs/`](../../samples/logs/README.md) (Serilog JSON, plain text, NLog multiline, log4net pattern). The **Log preview** page at `/logs/preview` loads these files, parses them with format-specific parsers, and lets you step through entries one at a time. Parser code in `DigitalDevServices.Services.Logs` is the starting point for LOG-001.
+Prototype sample files live in [`samples/logs/`](../../samples/logs/README.md) (Serilog JSON, plain text, NLog multiline, log4net pattern). The **Log preview** page at `/log-viewer/preview` loads these files, parses them with format-specific parsers, and lets you step through entries one at a time. Parser code in `DigitalDevServices.Services.Logs` is the starting point for LOG-001.
 
 ### Plugin angle
 
@@ -126,8 +131,8 @@ Prototype sample files live in [`samples/logs/`](../../samples/logs/README.md) (
 | **ID** | LOG-003 |
 | **Title** | Log viewer UI (environment → instance picker) |
 | **Status** | Done |
-| **Description** | Blazor **Log Viewer** at `/logs` (environment → application instance picker) and `/logs/{instanceId}` (deep link from environment details **Logs**). `ILogPathResolutionService.EnsureLogPathAsync` resolves `PathToLogFiles` from cached environment data when `LogPath` is empty; calls `RefreshEnvironmentAsync` once when template tokens are missing, persists resolved `LogPath` on the instance, then reads via `ILogReaderService`. Skips refresh when `LogPath` is already set. Table UI shows timestamp, level badge, and message; **Refresh tail** and **Load more** (up to 10,000 lines). Nav and home card added. Unit tests in `LogPathResolutionServiceTests`. |
-| **Test / demo** | Instance with `LogPath` set → **Logs** from UAT-01 details → entries appear with no environment refresh. Instance with empty `LogPath` but app template and stale cache → **Logs** → environment refresh → path saved → logs appear. `/logs` picker reaches same viewer. `dotnet test --filter "LogPathResolutionServiceTests|LogReaderServiceTests"` → pass. |
+| **Description** | Blazor **Log Viewer** at `/log-viewer` (environment → application instance picker) and `/log-viewer/{instanceId}` (deep link from environment details **Logs**). `ILogPathResolutionService.EnsureLogPathAsync` resolves `PathToLogFiles` from cached environment data when `LogPath` is empty; calls `RefreshEnvironmentAsync` once when template tokens are missing, persists resolved `LogPath` on the instance, then reads via `ILogReaderService`. Skips refresh when `LogPath` is already set. Table UI shows timestamp, level badge, and message; **Refresh tail** and **Load more** (up to 10,000 lines). Nav and home card added. Unit tests in `LogPathResolutionServiceTests`. |
+| **Test / demo** | Instance with `LogPath` set → **Logs** from UAT-01 details → entries appear with no environment refresh. Instance with empty `LogPath` but app template and stale cache → **Logs** → environment refresh → path saved → logs appear. `/log-viewer` picker reaches same viewer. `dotnet test --filter "LogPathResolutionServiceTests|LogReaderServiceTests"` → pass. |
 | **Depends on** | LOG-002, ENV-005, APP-004 |
 
 ### LOG-004
@@ -139,4 +144,37 @@ Prototype sample files live in [`samples/logs/`](../../samples/logs/README.md) (
 | **Status** | Todo |
 | **Description** | Add filters to log viewer: minimum level dropdown (e.g. hide INFO), free-text search on message, clear filters. Client-side filter on loaded page; server-side filter for reload. |
 | **Test / demo** | Load logs → set “Warning and above” → INFO lines hidden → search “timeout” → matching rows only. |
+| **Depends on** | LOG-003 |
+
+### LOG-005
+
+| Field | Detail |
+|-------|--------|
+| **ID** | LOG-005 |
+| **Title** | Log file selection when path is a directory |
+| **Status** | Todo |
+| **Description** | Today `LogPathResolver` picks the newest `*.log` in a directory with no user choice. When `ApplicationInstance.LogPath` resolves to a directory (or contains multiple log files), expose a **Log file** dropdown on `/log-viewer/{instanceId}` listing available files (at minimum `*.log` in that directory; show file name, size, and last modified). Default selection remains the newest file by write time (current behaviour). Extend `ILogReaderService` (or add a companion service) with `ListLogFilesAsync` and allow `ReadAsync` to accept an optional explicit file path. Selection is per-view session (component state or query string) — do not persist to `ApplicationInstance.LogPath`. When `LogPath` is already a single file, hide the dropdown or show it disabled with one item. |
+| **Test / demo** | Instance with `LogPath` = directory containing `app-2026-08-25.log` and `app-2026-08-26.log` → viewer opens on newest → switch dropdown to older file → table and source path update. `dotnet test` covers file listing and read with explicit path. |
+| **Depends on** | LOG-003 |
+
+### LOG-006
+
+| Field | Detail |
+|-------|--------|
+| **ID** | LOG-006 |
+| **Title** | Raw log content debug panel |
+| **Status** | Todo |
+| **Description** | Add a **`CollapsibleSection`** on the log viewer page titled e.g. **Raw log content**, collapsed by default, showing the unformatted text returned by the tail read (same bytes/lines used for parsing, before any format interpretation). Extend `LogReadResult` with a `RawContent` (or equivalent) field populated by `LogFileTailReader`. Use existing monospace / `pre-wrap` styling (see `site.css` `.log-entry-raw`). Panel updates when the user refreshes, loads more lines, or selects a different file (**LOG-005**). Purpose: debug parser and path issues while the LOG epic is still evolving. |
+| **Test / demo** | Open viewer → expand **Raw log content** → see exact tail text from disk → **Refresh tail** → panel matches new read. Unit test asserts `LogReadResult` includes raw content on success. |
+| **Depends on** | LOG-003 |
+
+### LOG-007
+
+| Field | Detail |
+|-------|--------|
+| **ID** | LOG-007 |
+| **Title** | Override log format profile on viewer |
+| **Status** | Todo |
+| **Description** | Add a **Parse as** dropdown on `/log-viewer/{instanceId}` listing all supported formats from `LogFormatNames` / `ILogParsingService.GetSupportedFormatNames()` (Serilog JSON, plain text, NLog multiline, log4net pattern). Default selection is the deployable application’s assigned `LogFormatProfile` when one exists; otherwise no format pre-selected. Changing the dropdown re-parses the currently loaded raw content using `ILogParsingService.ParseWithFormat` without requiring a deployable-app profile — useful when the assigned profile is wrong or missing. Show the assigned profile as read-only context (e.g. “Configured: Plain text”) beside the override control. Extend `ILogReaderService.ReadAsync` with an optional `formatName` override, or re-parse client-side via a dedicated endpoint/service method that accepts content + format name. Override is per-view session only (not saved to `LogFormatProfile`). |
+| **Test / demo** | Load a Serilog JSON file with assigned profile **Plain text** → garbled table → set **Parse as** to **Serilog JSON** → entries parse correctly. Change format back and forth without re-reading from disk. `dotnet test` covers read/parse with format override. |
 | **Depends on** | LOG-003 |

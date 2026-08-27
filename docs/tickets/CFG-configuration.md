@@ -22,8 +22,8 @@
 | [CFG-001](#cfg-001) | Done | Configuration setting model and storage | APP-002 |
 | [CFG-002](#cfg-002) | Done | Import settings from deployed application locations | CFG-001, APP-004 |
 | [CFG-003](#cfg-003) | Done | Settings browser UI (view all settings for an instance) | CFG-002, ENV-005 |
-| [CFG-004](#cfg-004) | Todo | Compare setting by name across apps in one environment | CFG-002, ENV-002 |
-| [CFG-005](#cfg-005) | Todo | Compare setting by name for one app across environments | CFG-002, APP-004 |
+| [CFG-004](#cfg-004) | Shelved | Compare setting by name across apps in one environment | CFG-002, ENV-002 |
+| [CFG-005](#cfg-005) | Shelved | Compare setting by name for one app across environments | CFG-002, APP-004 |
 
 ---
 
@@ -111,10 +111,12 @@ Uniqueness: one row per (`ApplicationInstanceId`, `Key`) — refresh replaces va
 |-------|--------|
 | **ID** | CFG-004 |
 | **Title** | Compare setting by name across apps in one environment |
-| **Status** | Todo |
+| **Status** | Shelved |
 | **Description** | Blazor compare view: pick environment + setting key (autocomplete from known keys) → grid of each deployed app and its value. Highlight differences. |
 | **Test / demo** | Pick `ConnectionStrings:Default` in UAT-01 → see all apps’ values side by side. |
 | **Depends on** | CFG-002, ENV-002 |
+
+Shelved — compare views deprioritized; per-instance browse (CFG-003) sufficient for now. Revisit when cross-app comparison within an environment is needed.
 
 ### CFG-005
 
@@ -122,7 +124,9 @@ Uniqueness: one row per (`ApplicationInstanceId`, `Key`) — refresh replaces va
 |-------|--------|
 | **ID** | CFG-005 |
 | **Title** | Compare setting by name for one app across environments |
-| **Status** | Todo |
+| **Status** | Shelved |
 | **Description** | Blazor compare view: pick DeployableApplication + setting key → grid of each environment where deployed and value. Highlight differences. |
 | **Test / demo** | Pick “Customer Portal API” + `FeatureFlags:Beta` → see values in UAT-01 vs other envs. |
 | **Depends on** | CFG-002, APP-004 |
+
+Shelved — compare views deprioritized; per-instance browse (CFG-003) sufficient for now. Revisit when cross-environment comparison for one app is needed.
