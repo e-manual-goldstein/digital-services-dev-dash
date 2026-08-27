@@ -26,6 +26,7 @@
 | [LOG-005](#log-005) | Done | Log file selection when path is a directory | LOG-003 |
 | [LOG-006](#log-006) | Done | Raw log content debug panel | LOG-003 |
 | [LOG-007](#log-007) | Done | Override log format profile on viewer | LOG-003 |
+| [LOG-008](#log-008) | Todo | Custom regex log parser (Entry / EntryStart) | LOG-001, LOG-007 |
 
 ---
 
@@ -40,7 +41,7 @@ One profile per **DeployableApplication** — same format across all environment
 | `Id` | `Guid` | PK |
 | `DeployableApplicationId` | `Guid` | FK, unique |
 | `FormatName` | `string` | e.g. `SerilogJson`, `NLogXml`, `PlainText` |
-| `ParserConfig` | `string` | JSON config: timestamp pattern, level token, message layout, multiline rules |
+| `ParserConfig` | `string` | JSON config — built-in formats use `{}`; **LOG-008** stores custom regex pattern(s) here when `FormatName` is `CustomRegex` |
 | `Notes` | `string?` | |
 | `UpdatedAt` | `DateTimeOffset?` | |
 
@@ -91,6 +92,59 @@ Prototype sample files live in [`samples/logs/`](../../samples/logs/README.md) (
 ### Plugin angle
 
 - Parser implementations may live in `DigitalDevServices.Plugins` — profile selects parser by `FormatName`.
+- **LOG-008:** a single built-in `CustomRegex` parser reads per-app patterns from `LogFormatProfile.ParserConfig` rather than requiring a new C# class per format.
+
+### Custom regex parser (LOG-008)
+
+Built-in parsers (`PlainText`, `NLogMultiline`, `Log4NetPattern`, etc.) all reduce log text to the same `ParsedLogEntry` shape using regex capture groups — mainly `timestamp`, `level`, and `message`, with optional extras (e.g. `logger`) mapped to `Properties`.
+
+**Goal:** let a user define their own regex without shipping code.
+
+| Mode | Behaviour | Built-in analogue |
+|------|-----------|-------------------|
+| **Entry** | Each line that matches the pattern is one complete entry | `PlainTextLogParser` |
+| **EntryStart** | A matching line starts a new entry; subsequent non-matching lines are appended to `message` / `RawText` until the next match | `NLogMultilineLogParser` |
+
+**`ParserConfig` JSON** (when `FormatName` = `CustomRegex`):
+
+| Field | Type | Notes |
+|-------|------|--------|
+| `mode` | `"Entry"` \| `"EntryStart"` | Required |
+| `pattern` | `string` | .NET regex applied per line (Entry) or to detect entry starts (EntryStart). Must be valid and compile within a timeout |
+| `timestampFormat` | `string?` | Optional `DateTimeOffset.TryParseExact` format when `timestamp` group is present; otherwise `TryParse` |
+| `multiline` | `bool` | Optional alias — `true` ≡ `EntryStart` |
+
+**Named capture groups** (convention, same as built-in parsers):
+
+| Group | Maps to | Required |
+|-------|---------|----------|
+| `message` | `ParsedLogEntry.Message` | Yes (on matching lines) |
+| `timestamp` | `ParsedLogEntry.Timestamp` | No |
+| `level` | `ParsedLogEntry.Level` | No |
+| *any other* | `ParsedLogEntry.Properties[key]` | No |
+
+**Parsing pipeline changes:**
+
+- `ILogParsingService` / `LogParsingService` passes `LogFormatProfile.ParserConfig` when `FormatName` is `CustomRegex` (extend `ILogEntryParser` or add a dedicated `ICustomRegexLogParser` invoked from the registry).
+- Validate pattern on profile save (compile + smoke match optional); reject patterns that fail compilation or exceed regex timeout.
+- `LogFormatNames` adds `CustomRegex`; display name **Custom regex**.
+
+**UI (Applications admin):**
+
+- Log format dropdown includes **Custom regex**.
+- When selected, show **Mode** (`Entry` / `EntryStart`), **Pattern** textarea, optional **Timestamp format**, and short help listing required/optional named groups with copy-paste examples derived from `PlainText` / `NLogMultiline` patterns.
+- Persist config JSON in `ParserConfig` on save (today `ParserConfig` is stored but not surfaced in the form).
+
+**Viewer / preview:**
+
+- Assigned `CustomRegex` profile works in log viewer and via deployable-app parse path.
+- Optional stretch: allow **Parse as → Custom regex** in viewer when the app has a saved custom pattern (reuses LOG-007 override UX).
+
+**Out of scope (LOG-008):**
+
+- Arbitrary code/script parsers
+- Per-environment pattern overrides (pattern remains per **DeployableApplication** via `LogFormatProfile`)
+- Regex debugger with highlighted captures (future enhancement)
 
 ### Out of scope (epic v1)
 
@@ -178,3 +232,14 @@ Prototype sample files live in [`samples/logs/`](../../samples/logs/README.md) (
 | **Description** | Add a **Parse as** dropdown on `/log-viewer/{instanceId}` listing all supported formats from `LogFormatNames` / `ILogParsingService.GetSupportedFormatNames()` (Serilog JSON, plain text, NLog multiline, log4net pattern). Default selection is the deployable application’s assigned `LogFormatProfile` when one exists; otherwise no format pre-selected. Changing the dropdown re-parses the currently loaded raw content using `ILogParsingService.ParseWithFormat` without requiring a deployable-app profile — useful when the assigned profile is wrong or missing. Show the assigned profile as read-only context (e.g. “Configured: Plain text”) beside the override control. Extend `ILogReaderService.ReadAsync` with an optional `formatName` override, or re-parse client-side via a dedicated endpoint/service method that accepts content + format name. Override is per-view session only (not saved to `LogFormatProfile`). |
 | **Test / demo** | Load a Serilog JSON file with assigned profile **Plain text** → garbled table → set **Parse as** to **Serilog JSON** → entries parse correctly. Change format back and forth without re-reading from disk. `dotnet test` covers read/parse with format override. |
 | **Depends on** | LOG-003 |
+
+### LOG-008
+
+| Field | Detail |
+|-------|--------|
+| **ID** | LOG-008 |
+| **Title** | Custom regex log parser (Entry / EntryStart) |
+| **Status** | Todo |
+| **Description** | Add a **Custom regex** log format (`FormatName` = `CustomRegex`) driven by `LogFormatProfile.ParserConfig` JSON. User supplies a .NET regex with named capture groups (`message` required; `timestamp`, `level`, and other groups optional → `Properties`). Two modes: **Entry** (one entry per matching line, like `PlainTextLogParser`) and **EntryStart** (matching line opens an entry; following non-matching lines append to message/raw text, like `NLogMultilineLogParser`). Implement `CustomRegexLogParser` (or equivalent) plus `CustomRegexParserConfig` model and validation (compile pattern, enforce timeout, validate mode + required groups). Extend `LogParsingService` to pass `ParserConfig` when parsing with a custom profile. **Applications** admin UI: when **Custom regex** is selected, show mode dropdown, pattern textarea, optional timestamp format field, and inline help with example patterns. Persist via existing `LogFormatProfileUpsert.ParserConfig`. Unit tests cover both modes using patterns equivalent to simplified Plain text and NLog samples. |
+| **Test / demo** | **Applications** → edit app → log format **Custom regex** → mode **Entry** → paste Plain-text-style pattern → save. Point instance log path at a matching file → **Logs** → entries parse with timestamp/level/message. Switch to **EntryStart** with NLog-style header pattern → stack trace lines fold into previous entry message. Invalid regex → clear validation error on save. `dotnet test --filter CustomRegex` → pass. |
+| **Depends on** | LOG-001, LOG-007 |
