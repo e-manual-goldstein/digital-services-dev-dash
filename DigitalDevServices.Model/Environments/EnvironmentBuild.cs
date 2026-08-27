@@ -19,14 +19,14 @@ public class EnvironmentBuild
 
     public EnvironmentBuildParameter[] Parameters { get; set; } = [];
 
-    public string? BuildVersionNumber => TryGetParameterValue("codeBuildNumber") ?? TryGetParameterValue("Build Version");
+    public string? BuildVersionNumber => TryGetParameterValue("codeBuildNumber") ?? TryGetParameterValue("BuildVersion");
 
     public string? Result { get; set; }
 
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }
 
-    public string? TryGetParameterValue(string parameterName)
+    public string? TryGetParameterValue(string parameterName, bool notNull = false)
     {
         if (Parameters.Length == 0)
         {
@@ -35,7 +35,10 @@ public class EnvironmentBuild
 
         var match = Parameters.FirstOrDefault(parameter =>
             string.Equals(parameter.Name, parameterName, StringComparison.OrdinalIgnoreCase));
-
+        if (notNull && match?.Value is null)
+        {
+            throw new ArgumentNullException();
+        }
         return string.IsNullOrWhiteSpace(match?.Value) ? null : match.Value.Trim();
     }
 }
