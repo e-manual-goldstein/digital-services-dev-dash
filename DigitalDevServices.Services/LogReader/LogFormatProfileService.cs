@@ -42,9 +42,16 @@ public sealed class LogFormatProfileService : ILogFormatProfileService
         ArgumentNullException.ThrowIfNull(upsert);
 
         var formatName = NormalizeRequiredText(upsert.FormatName, nameof(upsert.FormatName));
-        if (!_parserRegistry.TryGetParser(formatName, out _))
+        if (!string.Equals(formatName, LogFormatNames.CustomRegex, StringComparison.OrdinalIgnoreCase)
+            && !_parserRegistry.TryGetParser(formatName, out _))
         {
             throw new InvalidOperationException($"Log format '{formatName}' is not supported.");
+        }
+
+        var parserConfig = NormalizeParserConfig(upsert.ParserConfig);
+        if (string.Equals(formatName, LogFormatNames.CustomRegex, StringComparison.OrdinalIgnoreCase))
+        {
+            CustomRegexParserConfigValidator.ValidateJson(parserConfig);
         }
 
         await EnsureDeployableApplicationExistsAsync(upsert.DeployableApplicationId, cancellationToken)
@@ -67,7 +74,7 @@ public sealed class LogFormatProfileService : ILogFormatProfileService
         }
 
         existing.FormatName = formatName;
-        existing.ParserConfig = NormalizeParserConfig(upsert.ParserConfig);
+        existing.ParserConfig = parserConfig;
         existing.Notes = NormalizeOptionalText(upsert.Notes);
         existing.UpdatedAt = now;
 

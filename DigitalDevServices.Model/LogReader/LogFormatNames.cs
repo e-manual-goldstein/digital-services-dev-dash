@@ -10,12 +10,15 @@ public static class LogFormatNames
 
     public const string Log4NetPattern = "Log4NetPattern";
 
+    public const string CustomRegex = "CustomRegex";
+
     public static IReadOnlyList<string> All { get; } =
     [
         SerilogJson,
         PlainText,
         NLogMultiline,
-        Log4NetPattern
+        Log4NetPattern,
+        CustomRegex
     ];
 
     public static string GetDisplayName(string formatName) => formatName switch
@@ -24,6 +27,7 @@ public static class LogFormatNames
         PlainText => "Plain text",
         NLogMultiline => "NLog multiline",
         Log4NetPattern => "log4net pattern",
+        CustomRegex => "Custom regex",
         _ => formatName
     };
 }

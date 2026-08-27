@@ -9,7 +9,7 @@ public interface ILogParsingService
         string content,
         CancellationToken cancellationToken = default);
 
-    IReadOnlyList<ParsedLogEntry> ParseWithFormat(string formatName, string content);
+    IReadOnlyList<ParsedLogEntry> ParseWithFormat(string formatName, string content, string? parserConfig = null);
 
     IReadOnlyList<string> GetSupportedFormatNames();
 }

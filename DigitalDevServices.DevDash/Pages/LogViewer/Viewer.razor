@@ -258,6 +258,7 @@ else
     private string? _logFilePath;
     private string? _rawContent;
     private string? _configuredFormatName;
+    private string? _configuredParserConfig;
     private string? _selectedParseFormat;
     private IReadOnlyList<string> _supportedParseFormats = [];
     private string _minimumLevel = LogEntryFilter.MinimumLevelAll;
@@ -299,6 +300,7 @@ else
         _logFilePath = null;
         _rawContent = null;
         _configuredFormatName = null;
+        _configuredParserConfig = null;
         _selectedParseFormat = null;
         _availableLogFiles = [];
         _selectedLogFilePath = null;
@@ -317,6 +319,7 @@ else
 
             var profile = await LogFormatProfileService.GetByDeployableApplicationIdAsync(_instance.DeployableApplicationId);
             _configuredFormatName = profile?.FormatName;
+            _configuredParserConfig = profile?.ParserConfig;
             _selectedParseFormat = _configuredFormatName;
 
             if (string.IsNullOrWhiteSpace(_instance.LogPath))
@@ -397,7 +400,12 @@ else
 
         try
         {
-            _allEntries = LogParsingService.ParseWithFormat(formatName, _rawContent);
+            _allEntries = LogParsingService.ParseWithFormat(
+                formatName,
+                _rawContent,
+                string.Equals(formatName, LogFormatNames.CustomRegex, StringComparison.OrdinalIgnoreCase)
+                    ? _configuredParserConfig
+                    : null);
             _errorMessage = null;
         }
         catch (InvalidOperationException ex)
@@ -415,7 +423,10 @@ else
             InstanceId,
             _maxLines,
             _selectedLogFilePath,
-            formatName: _selectedParseFormat);
+            formatName: _selectedParseFormat,
+            parserConfig: string.Equals(_selectedParseFormat, LogFormatNames.CustomRegex, StringComparison.OrdinalIgnoreCase)
+                ? _configuredParserConfig
+                : null);
         if (!result.IsSuccess)
         {
             _errorMessage = result.ErrorMessage;

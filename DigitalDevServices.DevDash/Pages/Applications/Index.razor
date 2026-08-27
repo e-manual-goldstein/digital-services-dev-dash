@@ -81,6 +81,38 @@
                         </InputSelect>
                         <div class="form-text">How log files for this application are parsed in the log viewer.</div>
                     </div>
+                    @if (IsCustomRegexFormatSelected)
+                    {
+                        <div class="col-12">
+                            <label class="form-label" for="app-custom-regex-mode">Custom regex mode</label>
+                            <InputSelect id="app-custom-regex-mode"
+                                         class="form-select"
+                                         @bind-Value="_formModel.CustomRegexMode"
+                                         disabled="@_isBusy">
+                                <option value="@CustomRegexParserConfig.ModeEntry">Entry (one line per match)</option>
+                                <option value="@CustomRegexParserConfig.ModeEntryStart">EntryStart (multiline entries)</option>
+                            </InputSelect>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="app-custom-regex-pattern">Pattern</label>
+                            <InputTextArea id="app-custom-regex-pattern"
+                                           class="form-control font-monospace"
+                                           rows="4"
+                                           @bind-Value="_formModel.CustomRegexPattern"
+                                           disabled="@_isBusy" />
+                            <div class="form-text">
+                                .NET regex with named groups: <code>message</code> (required), optional <code>timestamp</code>, <code>level</code>, and any others → properties.
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="app-custom-regex-timestamp-format">Timestamp format</label>
+                            <InputText id="app-custom-regex-timestamp-format"
+                                       class="form-control font-monospace"
+                                       @bind-Value="_formModel.CustomRegexTimestampFormat"
+                                       disabled="@_isBusy" />
+                            <div class="form-text">Optional <code>DateTimeOffset.TryParseExact</code> format when the pattern captures <code>timestamp</code>.</div>
+                        </div>
+                    }
                     <div class="col-12">
                         <label class="form-label" for="app-log-format-notes">Log format notes</label>
                         <InputTextArea id="app-log-format-notes"
@@ -369,6 +401,22 @@ else
             LogFormatName = profile?.FormatName ?? string.Empty,
             LogFormatNotes = profile?.Notes ?? string.Empty
         };
+
+        if (string.Equals(profile?.FormatName, LogFormatNames.CustomRegex, StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var customConfig = CustomRegexParserConfig.Parse(profile!.ParserConfig);
+                _formModel.CustomRegexMode = customConfig.Mode;
+                _formModel.CustomRegexPattern = customConfig.Pattern;
+                _formModel.CustomRegexTimestampFormat = customConfig.TimestampFormat ?? string.Empty;
+            }
+            catch (InvalidOperationException)
+            {
+                _formModel.CustomRegexMode = CustomRegexParserConfig.ModeEntry;
+            }
+        }
+
         _isFormVisible = true;
         _deletingId = null;
     }
@@ -516,9 +564,28 @@ else
         {
             DeployableApplicationId = deployableApplicationId,
             FormatName = formatName,
+            ParserConfig = BuildParserConfigJson(formatName),
             Notes = NormalizeOptional(_formModel.LogFormatNotes)
         });
     }
+
+    private string? BuildParserConfigJson(string formatName)
+    {
+        if (!string.Equals(formatName, LogFormatNames.CustomRegex, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return new CustomRegexParserConfig
+        {
+            Mode = _formModel.CustomRegexMode,
+            Pattern = _formModel.CustomRegexPattern.Trim(),
+            TimestampFormat = NormalizeOptional(_formModel.CustomRegexTimestampFormat)
+        }.ToJson();
+    }
+
+    private bool IsCustomRegexFormatSelected =>
+        string.Equals(_formModel.LogFormatName, LogFormatNames.CustomRegex, StringComparison.OrdinalIgnoreCase);
 
     private string GetSampleLogPathPreview() => GetSampleTemplatePreview(_formModel.PathToLogFiles);
 
@@ -564,6 +631,12 @@ else
 
         [StringLength(2000, ErrorMessage = "Log format notes must be 2000 characters or fewer.")]
         public string LogFormatNotes { get; set; } = string.Empty;
+
+        public string CustomRegexMode { get; set; } = CustomRegexParserConfig.ModeEntry;
+
+        public string CustomRegexPattern { get; set; } = string.Empty;
+
+        public string CustomRegexTimestampFormat { get; set; } = string.Empty;
 
         [StringLength(2000, ErrorMessage = "Path to log files must be 2000 characters or fewer.")]
         public string PathToLogFiles { get; set; } = string.Empty;

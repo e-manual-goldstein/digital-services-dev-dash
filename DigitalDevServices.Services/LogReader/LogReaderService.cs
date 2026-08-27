@@ -41,6 +41,7 @@ public sealed class LogReaderService : ILogReaderService
         int maxLines = LogFileTailReader.DefaultMaxLines,
         string? logFilePath = null,
         string? formatName = null,
+        string? parserConfig = null,
         CancellationToken cancellationToken = default)
     {
         var instance = await _applicationInstanceService
@@ -86,7 +87,7 @@ public sealed class LogReaderService : ILogReaderService
         try
         {
             entries = !string.IsNullOrWhiteSpace(formatName)
-                ? _logParsingService.ParseWithFormat(formatName, content)
+                ? _logParsingService.ParseWithFormat(formatName, content, parserConfig)
                 : await _logParsingService
                     .ParseForDeployableApplicationAsync(instance.DeployableApplicationId, content, cancellationToken)
                     .ConfigureAwait(false);

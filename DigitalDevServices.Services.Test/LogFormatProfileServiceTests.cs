@@ -137,6 +137,7 @@ public sealed class LogFormatProfileServiceTests
             services.AddSingleton<ILogEntryParser, NLogMultilineLogParser>();
             services.AddSingleton<ILogEntryParser, Log4NetPatternLogParser>();
             services.AddSingleton<LogParserRegistry>();
+            services.AddSingleton<CustomRegexLogParser>();
             services.AddScoped<ILogFormatProfileService, LogFormatProfileService>();
             services.AddScoped<ILogParsingService, LogParsingService>();
 

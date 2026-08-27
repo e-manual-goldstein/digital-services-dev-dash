@@ -14,5 +14,6 @@ public interface ILogReaderService
         int maxLines = LogFileTailReader.DefaultMaxLines,
         string? logFilePath = null,
         string? formatName = null,
+        string? parserConfig = null,
         CancellationToken cancellationToken = default);
 }
