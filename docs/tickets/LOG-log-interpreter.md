@@ -22,7 +22,7 @@
 | [LOG-001](#log-001) | Done | LogFormatProfile per DeployableApplication | APP-001 |
 | [LOG-002](#log-002) | Done | Log file reader using ApplicationInstance paths | APP-002, LOG-001 |
 | [LOG-003](#log-003) | Done | Log viewer UI (environment → instance picker) | LOG-002, ENV-005, APP-004 |
-| [LOG-004](#log-004) | Todo | Log filtering (level, text search) | LOG-003 |
+| [LOG-004](#log-004) | Done | Log filtering (level, text search) | LOG-003 |
 | [LOG-005](#log-005) | Done | Log file selection when path is a directory | LOG-003 |
 | [LOG-006](#log-006) | Done | Raw log content debug panel | LOG-003 |
 | [LOG-007](#log-007) | Done | Override log format profile on viewer | LOG-003 |
@@ -141,9 +141,9 @@ Prototype sample files live in [`samples/logs/`](../../samples/logs/README.md) (
 |-------|--------|
 | **ID** | LOG-004 |
 | **Title** | Log filtering (level, text search) |
-| **Status** | Todo |
-| **Description** | Add filters to log viewer: minimum level dropdown (e.g. hide INFO), free-text search on message, clear filters. Client-side filter on loaded page; server-side filter for reload. |
-| **Test / demo** | Load logs → set “Warning and above” → INFO lines hidden → search “timeout” → matching rows only. |
+| **Status** | Done |
+| **Description** | **Minimum level** dropdown (All, Debug+, Info+, Warning+, Error+) and **Search message** text box on `/log-viewer/{instanceId}`. **Clear filters** resets both. `LogEntryFilter` applies level and case-insensitive message search client-side on loaded entries; filters persist across refresh, load more, file change, and format override without re-reading from disk. Shows “X of Y entries” when filters are active and a dedicated empty state when nothing matches. Unit tests in `LogEntryFilterTests`. |
+| **Test / demo** | Load logs → set **Warning and above** → INFO hidden → search `timeout` → matching rows only → **Clear filters** restores full list. `dotnet test --filter LogEntryFilterTests` → pass. |
 | **Depends on** | LOG-003 |
 
 ### LOG-005

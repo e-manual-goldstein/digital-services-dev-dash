@@ -10,13 +10,13 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~LOG-007~~ | [LOG](tickets/LOG-log-interpreter.md) | Override log format profile on viewer |
+| ~~LOG-004~~ | [LOG](tickets/LOG-log-interpreter.md) | Log filtering (level, text search) |
 
 ## Active (recommended order)
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| LOG-004 | [LOG](tickets/LOG-log-interpreter.md) | Log filtering (level, text search) |
+| *(none)* | | |
 
 ## Epic progress
 
@@ -26,7 +26,6 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 |------|-------------|-------------------|-----------------|---------------|----------|
 | [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Named pipeline feeds (no branch matching v1) | 2 | 1 | 3 | 🟩🟩🟩🟩🟩🟩🟨🟨🟨⬜ 67% |
 | [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 3 | 2 | 5 | 🟩🟩🟩🟩🟩🟩🟨🟨🟨🟨 60% |
-| [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | 6 | 0 | 7 | 🟩🟩🟩🟩🟩🟩🟩🟨⬜ 86% |
 
 *Progress bar: 10 squares — 🟩 completed, 🟨 shelved, ⬜ open; percentage = completed only.*
 
@@ -61,6 +60,7 @@ Unprioritized — not in the active queue. See [IDE-ideas.md](tickets/IDE-ideas.
 | [Environments (ENV)](tickets/ENV-environments.md) | Remote API + local tracking + environment details hub | ENV-001 – ENV-017 |
 | [Foundation (FND)](tickets/FND-foundation.md) | Blazor skeleton and layout | FND-001 – FND-002 |
 | [Applications (APP)](tickets/APP-applications.md) | Deployable app vs instance | APP-001 – APP-005 |
+| [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | LOG-001 – LOG-007 |
 
 ## Domain model (overview)
 

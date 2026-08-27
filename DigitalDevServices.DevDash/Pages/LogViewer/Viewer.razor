@@ -127,6 +127,43 @@ else
         </div>
     </div>
 
+    <div class="card mb-3">
+        <div class="card-body py-3">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-lg-4">
+                    <label class="form-label mb-1" for="log-min-level">Minimum level</label>
+                    <InputSelect id="log-min-level"
+                                 class="form-select"
+                                 @bind-Value="_minimumLevel"
+                                 disabled="@(_allEntries.Count == 0)">
+                        @foreach (var option in LogEntryFilter.MinimumLevelOptions)
+                        {
+                            <option value="@option.Value">@option.Label</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-12 col-lg-5">
+                    <label class="form-label mb-1" for="log-search">Search message</label>
+                    <input id="log-search"
+                           type="search"
+                           class="form-control"
+                           placeholder="Contains text…"
+                           @bind="_searchText"
+                           @bind:event="oninput"
+                           disabled="@(_allEntries.Count == 0)" />
+                </div>
+                <div class="col-12 col-lg-3">
+                    <button type="button"
+                            class="btn btn-outline-secondary w-100"
+                            disabled="@(!HasActiveFilters)"
+                            @onclick="ClearFilters">
+                        Clear filters
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @if (!string.IsNullOrWhiteSpace(_errorMessage))
     {
         <div class="alert alert-danger" role="alert">@_errorMessage</div>
@@ -143,17 +180,30 @@ else
         </div>
     }
 
-    @if (_entries.Count == 0 && string.IsNullOrWhiteSpace(_errorMessage))
+    @if (_allEntries.Count == 0 && string.IsNullOrWhiteSpace(_errorMessage))
     {
         <div class="alert alert-light border text-center py-4" role="status">
             <p class="mb-0 text-muted">No log entries were parsed from the current tail.</p>
         </div>
     }
-    else if (_entries.Count > 0)
+    else if (_allEntries.Count > 0 && FilteredEntries.Count == 0)
+    {
+        <div class="alert alert-light border text-center py-4" role="status">
+            <p class="mb-0 text-muted">No entries match the current filters.</p>
+        </div>
+    }
+    else if (FilteredEntries.Count > 0)
     {
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
             <p class="text-muted small mb-0">
-                Showing @_entries.Count parsed entries from the last @_maxLines raw lines
+                @if (HasActiveFilters)
+                {
+                    <span>Showing @FilteredEntries.Count of @_allEntries.Count parsed entries from the last @_maxLines raw lines</span>
+                }
+                else
+                {
+                    <span>Showing @_allEntries.Count parsed entries from the last @_maxLines raw lines</span>
+                }
             </p>
         </div>
 
@@ -167,7 +217,7 @@ else
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var entry in _entries)
+                    @foreach (var entry in FilteredEntries)
                     {
                         <tr>
                             <td class="text-muted small font-monospace">
@@ -202,7 +252,7 @@ else
 
     private ApplicationInstance? _instance;
     private CachedEnvironment? _environment;
-    private IReadOnlyList<ParsedLogEntry> _entries = [];
+    private IReadOnlyList<ParsedLogEntry> _allEntries = [];
     private IReadOnlyList<AvailableLogFile> _availableLogFiles = [];
     private string? _selectedLogFilePath;
     private string? _logFilePath;
@@ -210,6 +260,8 @@ else
     private string? _configuredFormatName;
     private string? _selectedParseFormat;
     private IReadOnlyList<string> _supportedParseFormats = [];
+    private string _minimumLevel = LogEntryFilter.MinimumLevelAll;
+    private string _searchText = string.Empty;
     private string _pageTitle = "Logs";
     private string _loadingMessage = "Loading logs…";
     private string? _errorMessage;
@@ -221,6 +273,12 @@ else
     private bool CanLoadMore => _maxLines < MaxAllowedLines;
 
     private bool _showLogFilePicker => _availableLogFiles.Count > 1;
+
+    private IReadOnlyList<ParsedLogEntry> FilteredEntries =>
+        LogEntryFilter.Apply(_allEntries, _minimumLevel, _searchText);
+
+    private bool HasActiveFilters =>
+        !string.IsNullOrWhiteSpace(_minimumLevel) || !string.IsNullOrWhiteSpace(_searchText);
 
     protected override void OnInitialized()
     {
@@ -237,7 +295,7 @@ else
         _errorMessage = null;
         _isLoading = true;
         _loadingMessage = "Loading logs…";
-        _entries = [];
+        _allEntries = [];
         _logFilePath = null;
         _rawContent = null;
         _configuredFormatName = null;
@@ -332,20 +390,20 @@ else
 
         if (string.IsNullOrWhiteSpace(formatName))
         {
-            _entries = [];
+            _allEntries = [];
             _errorMessage = null;
             return Task.CompletedTask;
         }
 
         try
         {
-            _entries = LogParsingService.ParseWithFormat(formatName, _rawContent);
+            _allEntries = LogParsingService.ParseWithFormat(formatName, _rawContent);
             _errorMessage = null;
         }
         catch (InvalidOperationException ex)
         {
             _errorMessage = ex.Message;
-            _entries = [];
+            _allEntries = [];
         }
 
         return Task.CompletedTask;
@@ -361,13 +419,13 @@ else
         if (!result.IsSuccess)
         {
             _errorMessage = result.ErrorMessage;
-            _entries = [];
+            _allEntries = [];
             _logFilePath = result.LogFilePath;
             _rawContent = result.RawContent;
             return;
         }
 
-        _entries = result.Entries;
+        _allEntries = result.Entries;
         _logFilePath = result.LogFilePath;
         _rawContent = result.RawContent;
         _selectedLogFilePath ??= result.LogFilePath;
@@ -398,5 +456,11 @@ else
     {
         _maxLines = Math.Min(_maxLines + MaxLinesStep, MaxAllowedLines);
         await RefreshTailAsync();
+    }
+
+    private void ClearFilters()
+    {
+        _minimumLevel = LogEntryFilter.MinimumLevelAll;
+        _searchText = string.Empty;
     }
 }
