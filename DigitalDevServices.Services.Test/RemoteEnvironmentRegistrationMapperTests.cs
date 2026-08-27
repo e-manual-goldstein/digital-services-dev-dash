@@ -319,6 +319,68 @@ public sealed class RemoteEnvironmentRegistrationMapperTests
         Assert.AreEqual("https://uat-01.example.com/api", prefill.Instance.HomepageUrl);
     }
 
+    [TestMethod]
+    public async Task BuildFromWindowsServiceAsync_WhenApplicationExists_UsesBinaryPathAndResolvesLogPath()
+    {
+        await using var fixture = await MapperFixture.CreateAsync();
+        var environment = await fixture.CreateTrackedEnvironmentAsync(46);
+        await fixture.DeployableApplicationService.CreateAsync(
+            "Digital Services Worker",
+            isWebApp: false,
+            pathToLogFiles: @"{MachineName}\{AppName}\Logs");
+
+        var details = new RemoteEnvironmentDetails
+        {
+            Id = 46,
+            Code = "UAT-01",
+            Name = "UAT-01",
+            EnvironmentType = "UAT"
+        };
+
+        var prefill = await fixture.Mapper.BuildFromWindowsServiceAsync(
+            environment.Id,
+            details,
+            new EnvironmentWindowsService
+            {
+                MachineName = "UAT-01-APP",
+                DisplayName = "Digital Services Worker",
+                BinaryPathName = @"C:\Services\DigitalServices.Worker.exe"
+            });
+
+        Assert.IsFalse(prefill.RequiresApplicationCreate);
+        Assert.AreEqual(RemoteRegistrationSource.WindowsService, prefill.Source);
+        Assert.AreEqual(@"C:\Services\DigitalServices.Worker.exe", prefill.Instance.PhysicalPath);
+        Assert.AreEqual(@"UAT-01-APP\Digital Services Worker\Logs", prefill.Instance.LogPath);
+    }
+
+    [TestMethod]
+    public async Task BuildFromWindowsServiceAsync_WhenApplicationMissing_ReturnsApplicationAndInstancePrefill()
+    {
+        await using var fixture = await MapperFixture.CreateAsync();
+        var environment = await fixture.CreateTrackedEnvironmentAsync(47);
+
+        var prefill = await fixture.Mapper.BuildFromWindowsServiceAsync(
+            environment.Id,
+            new RemoteEnvironmentDetails
+            {
+                Id = 47,
+                Code = "UAT-01",
+                Name = "UAT-01",
+                EnvironmentType = "UAT"
+            },
+            new EnvironmentWindowsService
+            {
+                MachineName = "UAT-01-APP",
+                DisplayName = "Message Queue Listener",
+                BinaryPathName = @"C:\Services\MessageQueue.Listener.exe"
+            });
+
+        Assert.IsTrue(prefill.RequiresApplicationCreate);
+        Assert.AreEqual("Message Queue Listener", prefill.Application!.Name);
+        Assert.IsFalse(prefill.Application.IsWebApp);
+        Assert.AreEqual(@"C:\Services\MessageQueue.Listener.exe", prefill.Instance.PhysicalPath);
+    }
+
     private sealed class MapperFixture : IAsyncDisposable, IDisposable
     {
         private readonly ServiceProvider _serviceProvider;

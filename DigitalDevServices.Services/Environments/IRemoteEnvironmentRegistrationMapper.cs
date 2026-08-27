@@ -20,6 +20,13 @@ public interface IRemoteEnvironmentRegistrationMapper
         RemoteEnvironmentDeploymentDetails? deploymentDetails = null,
         CancellationToken cancellationToken = default);
 
+    Task<RemoteRegistrationPrefill> BuildFromWindowsServiceAsync(
+        Guid environmentId,
+        RemoteEnvironmentDetails environmentDetails,
+        EnvironmentWindowsService windowsService,
+        RemoteEnvironmentDeploymentDetails? deploymentDetails = null,
+        CancellationToken cancellationToken = default);
+
     ApplicationInstanceRegistrationPrefill BuildManualDeploymentPrefill(
         RemoteEnvironmentDetails environmentDetails,
         DeployableApplication deployableApplication,

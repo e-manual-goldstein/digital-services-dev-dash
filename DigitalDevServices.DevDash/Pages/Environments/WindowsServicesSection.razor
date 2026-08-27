@@ -1,0 +1,94 @@
+@namespace DigitalDevServices.DevDash.Pages.Environments
+@inject IRemoteEnvironmentRegistrationMapper RegistrationMapper
+@inject IRegistrationPrefillState RegistrationPrefillState
+@inject NavigationManager Navigation
+
+<EnvironmentDetailsCollectionSection Title="Windows services" Items="WindowsServices">
+    <HeaderContent>
+        <tr>
+            <th>Machine name</th>
+            <th>Display name</th>
+            <th>Binary path</th>
+            <th style="width: 9rem;"></th>
+        </tr>
+    </HeaderContent>
+    <RowTemplate Context="service">
+        <tr>
+            <td>@(service.MachineName ?? "—")</td>
+            <td>@(service.DisplayName ?? "—")</td>
+            <td><code>@(service.BinaryPathName ?? "—")</code></td>
+            <td>
+                @if (CanRegister(service))
+                {
+                    <div class="d-flex align-items-center gap-2">
+                        @if (IsRegistered(service))
+                        {
+                            <span class="badge text-bg-success">Registered</span>
+                        }
+                        <button type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                disabled="@IsBusy"
+                                @onclick="() => BeginRegistrationAsync(service)">
+                            @(IsRegistered(service) ? "Update" : "Register")
+                        </button>
+                    </div>
+                }
+            </td>
+        </tr>
+    </RowTemplate>
+</EnvironmentDetailsCollectionSection>
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<EnvironmentWindowsService> WindowsServices { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public RemoteEnvironmentDetails EnvironmentDetails { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public Guid EnvironmentId { get; set; }
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<ApplicationInstance> Instances { get; set; } = [];
+
+    [Parameter]
+    public RemoteEnvironmentDeploymentDetails? DeploymentDetails { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback<RemoteRegistrationPrefill> OnRegistrationRequested { get; set; }
+
+    [Parameter]
+    public bool IsBusy { get; set; }
+
+    private static bool CanRegister(EnvironmentWindowsService service) =>
+        service.ResolveDeployableApplicationName() is not null &&
+        !string.IsNullOrWhiteSpace(service.BinaryPathName);
+
+    private bool IsRegistered(EnvironmentWindowsService service)
+    {
+        var applicationName = service.ResolveDeployableApplicationName();
+        return applicationName is not null &&
+            Instances.Any(instance =>
+                instance.DeployableApplication.Name.Equals(
+                    applicationName,
+                    StringComparison.OrdinalIgnoreCase));
+    }
+
+    private async Task BeginRegistrationAsync(EnvironmentWindowsService service)
+    {
+        var prefill = await RegistrationMapper.BuildFromWindowsServiceAsync(
+            EnvironmentId,
+            EnvironmentDetails,
+            service,
+            DeploymentDetails);
+
+        if (prefill.RequiresApplicationCreate)
+        {
+            RegistrationPrefillState.Set(prefill);
+            Navigation.NavigateTo("/applications");
+            return;
+        }
+
+        await OnRegistrationRequested.InvokeAsync(prefill);
+    }
+}

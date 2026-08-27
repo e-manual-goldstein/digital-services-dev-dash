@@ -145,4 +145,68 @@ public sealed class RemoteEnvironmentRegistrationService : IRemoteEnvironmentReg
             },
             cancellationToken).ConfigureAwait(false);
     }
+
+    public async Task<ApplicationInstance> RegisterFromWindowsServiceAsync(
+        Guid environmentId,
+        EnvironmentWindowsService windowsService,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(windowsService);
+
+        var applicationName = windowsService.ResolveDeployableApplicationName()
+            ?? throw new ArgumentException("Display name or binary path is required.", nameof(windowsService));
+        var binaryPath = windowsService.BinaryPathName?.Trim()
+            ?? throw new ArgumentException("Binary path is required.", nameof(windowsService));
+
+        if (binaryPath.Length == 0)
+        {
+            throw new ArgumentException("Binary path is required.", nameof(windowsService));
+        }
+
+        var deployableApplication = await _deployableApplicationService
+            .GetByNameAsync(applicationName, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (deployableApplication is null)
+        {
+            deployableApplication = await _deployableApplicationService
+                .CreateAsync(applicationName, isWebApp: false, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+        }
+        else if (deployableApplication.IsWebApp)
+        {
+            deployableApplication = await _deployableApplicationService.UpdateAsync(
+                deployableApplication.Id,
+                deployableApplication.Name,
+                deployableApplication.ProjectKey,
+                deployableApplication.Notes,
+                isWebApp: false,
+                pathToLogFiles: deployableApplication.PathToLogFiles,
+                pathToPhysicalPath: deployableApplication.PathToPhysicalPath,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+        }
+
+        var existingInstances = await _applicationInstanceService
+            .GetByEnvironmentIdAsync(environmentId, cancellationToken)
+            .ConfigureAwait(false);
+        var existing = existingInstances.SingleOrDefault(instance =>
+            instance.DeployableApplicationId == deployableApplication.Id);
+
+        return await _applicationInstanceService.UpsertAsync(
+            new ApplicationInstanceUpsert
+            {
+                DeployableApplicationId = deployableApplication.Id,
+                EnvironmentId = environmentId,
+                BuildVersionNumber = existing?.BuildVersionNumber ?? RemoteEnvironmentRegistrationDefaults.BuildNumber,
+                PipelineFeedId = existing?.PipelineFeedId,
+                SourceBranch = existing?.SourceBranch,
+                DeployedAt = existing?.DeployedAt,
+                PhysicalPath = binaryPath,
+                LogPath = existing?.LogPath,
+                HomepageUrl = existing?.HomepageUrl,
+                SqlServerInstance = existing?.SqlServerInstance,
+                Notes = existing?.Notes
+            },
+            cancellationToken).ConfigureAwait(false);
+    }
 }

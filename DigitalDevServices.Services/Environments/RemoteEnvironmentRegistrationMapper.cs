@@ -132,6 +132,60 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
         };
     }
 
+    public async Task<RemoteRegistrationPrefill> BuildFromWindowsServiceAsync(
+        Guid environmentId,
+        RemoteEnvironmentDetails environmentDetails,
+        EnvironmentWindowsService windowsService,
+        RemoteEnvironmentDeploymentDetails? deploymentDetails = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(windowsService);
+        ArgumentNullException.ThrowIfNull(environmentDetails);
+
+        var applicationName = windowsService.ResolveDeployableApplicationName()
+            ?? throw new ArgumentException("Display name or binary path is required.", nameof(windowsService));
+        var binaryPath = windowsService.BinaryPathName?.Trim()
+            ?? throw new ArgumentException("Binary path is required.", nameof(windowsService));
+
+        if (binaryPath.Length == 0)
+        {
+            throw new ArgumentException("Binary path is required.", nameof(windowsService));
+        }
+
+        var deployableApplication = await _deployableApplicationService
+            .GetByNameAsync(applicationName, cancellationToken)
+            .ConfigureAwait(false);
+        var existingInstance = await FindExistingInstanceAsync(
+            environmentId,
+            deployableApplication?.Id,
+            cancellationToken).ConfigureAwait(false);
+
+        DeployableApplicationRegistrationPrefill? applicationPrefill = deployableApplication is null
+            ? new DeployableApplicationRegistrationPrefill
+            {
+                Name = applicationName,
+                IsWebApp = false
+            }
+            : null;
+
+        var instancePrefill = BuildWindowsServiceInstancePrefill(
+            deployableApplication,
+            existingInstance,
+            environmentDetails,
+            windowsService,
+            deploymentDetails,
+            applicationName,
+            binaryPath);
+
+        return new RemoteRegistrationPrefill
+        {
+            EnvironmentLocalId = environmentId,
+            Source = RemoteRegistrationSource.WindowsService,
+            Application = applicationPrefill,
+            Instance = instancePrefill
+        };
+    }
+
     public ApplicationInstanceRegistrationPrefill BuildManualDeploymentPrefill(
         RemoteEnvironmentDetails environmentDetails,
         DeployableApplication deployableApplication,
@@ -226,6 +280,67 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
             Notes = existingInstance?.Notes
         };
     }
+
+    private ApplicationInstanceRegistrationPrefill BuildWindowsServiceInstancePrefill(
+        DeployableApplication? deployableApplication,
+        ApplicationInstance? existingInstance,
+        RemoteEnvironmentDetails environmentDetails,
+        EnvironmentWindowsService windowsService,
+        RemoteEnvironmentDeploymentDetails? deploymentDetails,
+        string applicationName,
+        string binaryPath)
+    {
+        var templateContext = BuildWindowsServiceTemplateContext(
+            deployableApplication,
+            environmentDetails,
+            windowsService,
+            applicationName,
+            binaryPath);
+
+        var resolvedPhysicalPath = TryResolvePhysicalPath(deployableApplication, templateContext)
+            ?? binaryPath
+            ?? existingInstance?.PhysicalPath;
+
+        var logPathContext = BuildWindowsServiceTemplateContext(
+            deployableApplication,
+            environmentDetails,
+            windowsService,
+            applicationName,
+            resolvedPhysicalPath);
+        var resolvedLogPath = TryResolveLogPath(deployableApplication, logPathContext);
+
+        return new ApplicationInstanceRegistrationPrefill
+        {
+            ExistingInstanceId = existingInstance?.Id,
+            DeployableApplicationId = deployableApplication?.Id,
+            BuildVersionNumber = existingInstance?.BuildVersionNumber
+                ?? GetSuggestedBuildNumber(deploymentDetails, applicationName),
+            PipelineFeedId = existingInstance?.PipelineFeedId,
+            SourceBranch = existingInstance?.SourceBranch
+                ?? GetSuggestedSourceBranch(deploymentDetails, applicationName),
+            DeployedAt = existingInstance?.DeployedAt,
+            PhysicalPath = resolvedPhysicalPath,
+            LogPath = resolvedLogPath ?? existingInstance?.LogPath,
+            HomepageUrl = existingInstance?.HomepageUrl,
+            SqlServerInstance = existingInstance?.SqlServerInstance,
+            Notes = existingInstance?.Notes
+        };
+    }
+
+    private static LogPathTemplateContext BuildWindowsServiceTemplateContext(
+        DeployableApplication? deployableApplication,
+        RemoteEnvironmentDetails environmentDetails,
+        EnvironmentWindowsService windowsService,
+        string? applicationName,
+        string? physicalPath) =>
+        new()
+        {
+            AppName = deployableApplication?.Name ?? applicationName,
+            EnvironmentCode = environmentDetails.Code,
+            EnvironmentName = environmentDetails.Name,
+            MachineName = windowsService.MachineName,
+            PhysicalPath = physicalPath
+        };
 
     private static string GetSuggestedBuildNumber(
         RemoteEnvironmentDeploymentDetails? deploymentDetails,

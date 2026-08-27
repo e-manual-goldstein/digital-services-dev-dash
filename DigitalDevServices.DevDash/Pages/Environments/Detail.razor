@@ -159,22 +159,13 @@ else
                      IsBusy="@(_isBusy || _isSavingDeployment)"
                      OnRegistrationRequested="HandleRegistrationRequestedAsync" />
 
-    <EnvironmentDetailsCollectionSection Title="Windows services" Items="_environment.Details.WindowsServices">
-        <HeaderContent>
-            <tr>
-                <th>Machine name</th>
-                <th>Display name</th>
-                <th>Binary path</th>
-            </tr>
-        </HeaderContent>
-        <RowTemplate Context="service">
-            <tr>
-                <td>@(service.MachineName ?? "—")</td>
-                <td>@(service.DisplayName ?? "—")</td>
-                <td><code>@(service.BinaryPathName ?? "—")</code></td>
-            </tr>
-        </RowTemplate>
-    </EnvironmentDetailsCollectionSection>
+    <WindowsServicesSection WindowsServices="_environment.Details.WindowsServices"
+                            EnvironmentDetails="_environment.Details"
+                            DeploymentDetails="_environment.DeploymentDetails"
+                            EnvironmentId="LocalId"
+                            Instances="_instances"
+                            IsBusy="@(_isBusy || _isSavingDeployment)"
+                            OnRegistrationRequested="HandleRegistrationRequestedAsync" />
 
     <div class="mt-4">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">

@@ -14,4 +14,9 @@ public interface IRemoteEnvironmentRegistrationService
         Guid environmentId,
         EnvironmentWebApplication webApplication,
         CancellationToken cancellationToken = default);
+
+    Task<ApplicationInstance> RegisterFromWindowsServiceAsync(
+        Guid environmentId,
+        EnvironmentWindowsService windowsService,
+        CancellationToken cancellationToken = default);
 }

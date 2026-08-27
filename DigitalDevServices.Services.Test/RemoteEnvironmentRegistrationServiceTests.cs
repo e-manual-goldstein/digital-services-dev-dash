@@ -152,6 +152,57 @@ public sealed class RemoteEnvironmentRegistrationServiceTests
         Assert.AreEqual(1, await fixture.Db.ApplicationInstances.CountAsync());
     }
 
+    [TestMethod]
+    public async Task RegisterFromWindowsServiceAsync_CreatesDeployableApplicationAndInstanceFromDisplayName()
+    {
+        await using var fixture = await RegistrationFixture.CreateAsync();
+        var environment = await fixture.CreateTrackedEnvironmentAsync(34);
+
+        var instance = await fixture.Service.RegisterFromWindowsServiceAsync(
+            environment.Id,
+            new EnvironmentWindowsService
+            {
+                MachineName = "UAT-01-APP",
+                DisplayName = "Digital Services Worker",
+                BinaryPathName = @"C:\Services\DigitalServices.Worker.exe"
+            });
+
+        Assert.AreEqual("Digital Services Worker", instance.DeployableApplication.Name);
+        Assert.IsFalse(instance.DeployableApplication.IsWebApp);
+        Assert.AreEqual(@"C:\Services\DigitalServices.Worker.exe", instance.PhysicalPath);
+        Assert.AreEqual("0", instance.BuildVersionNumber);
+    }
+
+    [TestMethod]
+    public async Task RegisterFromWindowsServiceAsync_UpdatesExistingInstancePhysicalPath()
+    {
+        await using var fixture = await RegistrationFixture.CreateAsync();
+        var environment = await fixture.CreateTrackedEnvironmentAsync(35);
+        var application = await fixture.DeployableApplicationService.CreateAsync(
+            "Digital Services Worker",
+            isWebApp: false);
+
+        await fixture.ApplicationInstanceService.UpsertAsync(new Model.Applications.ApplicationInstanceUpsert
+        {
+            DeployableApplicationId = application.Id,
+            EnvironmentId = environment.Id,
+            BuildVersionNumber = "1.2.3",
+            PhysicalPath = @"C:\old\path\worker.exe"
+        });
+
+        var updated = await fixture.Service.RegisterFromWindowsServiceAsync(
+            environment.Id,
+            new EnvironmentWindowsService
+            {
+                DisplayName = "Digital Services Worker",
+                BinaryPathName = @"C:\Services\DigitalServices.Worker.exe"
+            });
+
+        Assert.AreEqual("1.2.3", updated.BuildVersionNumber);
+        Assert.AreEqual(@"C:\Services\DigitalServices.Worker.exe", updated.PhysicalPath);
+        Assert.AreEqual(1, await fixture.Db.ApplicationInstances.CountAsync());
+    }
+
     private sealed class RegistrationFixture : IAsyncDisposable
     {
         private readonly ServiceProvider _serviceProvider;

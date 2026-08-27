@@ -134,6 +134,7 @@ public sealed class RemoteEnvironmentDetailsTests
         Assert.AreEqual("UAT-01-APP", details.WindowsServices[0].MachineName);
         Assert.AreEqual("Digital Services Worker", details.WindowsServices[0].DisplayName);
         Assert.AreEqual(@"C:\Services\DigitalServices.Worker.exe", details.WindowsServices[0].BinaryPathName);
+        Assert.AreEqual("Digital Services Worker", details.WindowsServices[0].ResolveDeployableApplicationName());
     }
 
     [TestMethod]
