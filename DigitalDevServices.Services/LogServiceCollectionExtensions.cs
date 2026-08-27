@@ -13,7 +13,6 @@ public static class LogServiceCollectionExtensions
         services.AddSingleton<ILogEntryParser, Log4NetPatternLogParser>();
         services.AddSingleton<LogParserRegistry>();
         services.AddSingleton<CustomRegexLogParser>();
-        services.AddSingleton<ISampleLogService, SampleLogService>();
         services.AddScoped<ILogFormatProfileService, LogFormatProfileService>();
         services.AddScoped<ILogParsingService, LogParsingService>();
         services.AddScoped<ILogReaderService, LogReaderService>();

@@ -85,9 +85,9 @@ Token sources (see APP-005): `{AppName}`, `{EnvironmentCode}`, `{EnvironmentName
 6. **LOG-006:** collapsible panel showing raw unformatted file content (tail read) for parser debugging
 7. Filters: minimum level (hide INFO and below), text contains, time range (future — LOG-004)
 
-### Sample logs and preview UI
+### Sample log files
 
-Prototype sample files live in [`samples/logs/`](../../samples/logs/README.md) (Serilog JSON, plain text, NLog multiline, log4net pattern). The **Log preview** page at `/log-viewer/preview` loads these files, parses them with format-specific parsers, and lets you step through entries one at a time. Parser code in `DigitalDevServices.Services.Logs` is the starting point for LOG-001.
+Fixture files in [`samples/logs/`](../../samples/logs/README.md) (Serilog JSON, plain text, NLog multiline, log4net pattern) support parser unit tests. The prototype **Log preview** page has been removed now that the log viewer is complete.
 
 ### Plugin angle
 
@@ -135,10 +135,9 @@ Built-in parsers (`PlainText`, `NLogMultiline`, `Log4NetPattern`, etc.) all redu
 - When selected, show **Mode** (`Entry` / `EntryStart`), **Pattern** textarea, optional **Timestamp format**, and short help listing required/optional named groups with copy-paste examples derived from `PlainText` / `NLogMultiline` patterns.
 - Persist config JSON in `ParserConfig` on save (today `ParserConfig` is stored but not surfaced in the form).
 
-**Viewer / preview:**
+**Viewer:**
 
-- Assigned `CustomRegex` profile works in log viewer and via deployable-app parse path.
-- Optional stretch: allow **Parse as → Custom regex** in viewer when the app has a saved custom pattern (reuses LOG-007 override UX).
+- Assigned `CustomRegex` profile works in log viewer via deployable-app parse path.
 
 **Out of scope (LOG-008):**
 

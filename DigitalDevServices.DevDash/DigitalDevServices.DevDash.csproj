@@ -15,8 +15,4 @@
     <PackageReference Include="Radzen.Blazor" Version="9.0.4" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Content Include="..\samples\logs\**\*" LinkBase="samples\logs" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
 </Project>
