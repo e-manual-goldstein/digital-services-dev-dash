@@ -10,7 +10,7 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~ENV-015~~ | [ENV](tickets/ENV-environments.md) | Register from remote → pre-filled application/deployment forms |
+| ~~LOG-003~~ | [LOG](tickets/LOG-log-interpreter.md) | Log viewer UI (environment → instance picker) |
 
 ## Active (recommended order)
 
@@ -18,7 +18,6 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 |----------|------|-------------|
 | CFG-004 | [CFG](tickets/CFG-configuration.md) | Compare setting by name across apps in one environment |
 | CFG-005 | [CFG](tickets/CFG-configuration.md) | Compare setting by name for one app across environments |
-| LOG-003 | [LOG](tickets/LOG-log-interpreter.md) | Log viewer UI (environment → instance picker) |
 | LOG-004 | [LOG](tickets/LOG-log-interpreter.md) | Log filtering (level, text search) |
 
 ## Epic progress
@@ -29,7 +28,7 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 |------|-------------|-------------------|-----------------|---------------|----------|
 | [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Named pipeline feeds (no branch matching v1) | 2 | 1 | 3 | 🟩🟩🟩🟩🟩🟩🟨🟨🟨⬜ 67% |
 | [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 3 | 0 | 5 | 🟩🟩🟩🟩🟩🟨🟨🟨⬜⬜ 60% |
-| [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | 2 | 0 | 4 | 🟩🟩🟩🟩🟨🟨🟨⬜⬜⬜ 50% |
+| [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | 3 | 0 | 4 | 🟩🟩🟩🟩🟩🟩🟨🟨⬜⬜ 75% |
 
 *Progress bar: 10 squares — 🟩 completed, 🟨 shelved, ⬜ open; percentage = completed only.*
 

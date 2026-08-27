@@ -21,7 +21,7 @@
 |----|--------|-------|------------|
 | [LOG-001](#log-001) | Done | LogFormatProfile per DeployableApplication | APP-001 |
 | [LOG-002](#log-002) | Done | Log file reader using ApplicationInstance paths | APP-002, LOG-001 |
-| [LOG-003](#log-003) | Todo | Log viewer UI (environment → instance picker) | LOG-002, ENV-005, APP-004 |
+| [LOG-003](#log-003) | Done | Log viewer UI (environment → instance picker) | LOG-002, ENV-005, APP-004 |
 | [LOG-004](#log-004) | Todo | Log filtering (level, text search) | LOG-003 |
 
 ---
@@ -125,9 +125,9 @@ Prototype sample files live in [`samples/logs/`](../../samples/logs/README.md) (
 |-------|--------|
 | **ID** | LOG-003 |
 | **Title** | Log viewer UI (environment → instance picker) |
-| **Status** | Todo |
-| **Description** | Blazor **Log Viewer** page at `/logs/{instanceId}` (deep link from environment details **View Logs**) and cascade dropdowns Environment → ApplicationInstance as an alternate entry. **Before reading logs:** if `ApplicationInstance.LogPath` is missing or template tokens cannot be satisfied from cached environment data, call `RefreshEnvironmentAsync`, resolve `DeployableApplication.PathToLogFiles` via `ILogPathTemplateService` + `LogPathTemplateContext`, persist resolved `LogPath` on the instance, then proceed. If `LogPath` is already set, use it directly (no refresh). Display parsed entries in a table (time, level badge, message). Load more / tail refresh button. Uses `ILogReaderService` (stored `LogPath`) and the deployable app's `LogFormatProfile`. Show loading state during environment refresh; surface clear errors when path cannot be resolved. |
-| **Test / demo** | Instance with `LogPath` set → **View Logs** → logs appear with no environment refresh. Instance with empty `LogPath` but app template `{MachineName}\{EnvironmentCode}\{AppName}\Logs` and stale/missing cache → **View Logs** → brief refresh → path resolved and saved → logs appear. From UAT-01 details and from **Log Viewer** picker → same behaviour. `dotnet test --filter "LogReaderServiceTests|LogPathResolution*"` → pass (add tests for resolution helper when implemented). |
+| **Status** | Done |
+| **Description** | Blazor **Log Viewer** at `/logs` (environment → application instance picker) and `/logs/{instanceId}` (deep link from environment details **Logs**). `ILogPathResolutionService.EnsureLogPathAsync` resolves `PathToLogFiles` from cached environment data when `LogPath` is empty; calls `RefreshEnvironmentAsync` once when template tokens are missing, persists resolved `LogPath` on the instance, then reads via `ILogReaderService`. Skips refresh when `LogPath` is already set. Table UI shows timestamp, level badge, and message; **Refresh tail** and **Load more** (up to 10,000 lines). Nav and home card added. Unit tests in `LogPathResolutionServiceTests`. |
+| **Test / demo** | Instance with `LogPath` set → **Logs** from UAT-01 details → entries appear with no environment refresh. Instance with empty `LogPath` but app template and stale cache → **Logs** → environment refresh → path saved → logs appear. `/logs` picker reaches same viewer. `dotnet test --filter "LogPathResolutionServiceTests|LogReaderServiceTests"` → pass. |
 | **Depends on** | LOG-002, ENV-005, APP-004 |
 
 ### LOG-004

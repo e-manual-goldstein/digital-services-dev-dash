@@ -16,6 +16,7 @@ public static class LogServiceCollectionExtensions
         services.AddScoped<ILogFormatProfileService, LogFormatProfileService>();
         services.AddScoped<ILogParsingService, LogParsingService>();
         services.AddScoped<ILogReaderService, LogReaderService>();
+        services.AddScoped<ILogPathResolutionService, LogPathResolutionService>();
 
         return services;
     }
