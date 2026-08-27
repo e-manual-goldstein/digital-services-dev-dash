@@ -124,7 +124,7 @@ public sealed class LogPathResolutionService : ILogPathResolutionService
             AppName = instance.DeployableApplication.Name,
             EnvironmentCode = environmentDetails.Code,
             EnvironmentName = environmentDetails.Name,
-            MachineName = remoteMatch.GetTemplateContextWebSite(environmentDetails)?.MachineName,
+            MachineName = remoteMatch.GetMachineName(environmentDetails),
             ApplicationPoolName = remoteMatch.WebApplication?.ApplicationPoolName,
             VirtualPath = remoteMatch.WebApplication?.Path,
             PhysicalPath = instance.PhysicalPath

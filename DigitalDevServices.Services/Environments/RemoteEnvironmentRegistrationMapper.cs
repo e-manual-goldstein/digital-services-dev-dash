@@ -69,7 +69,8 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
             applicationName,
             homepageUrl: homepageUrl,
             userPhysicalPathOverride: null,
-            remotePhysicalPath: remoteMatch.WebApplication?.PhysicalPath?.Trim() ?? existingInstance?.PhysicalPath);
+            remotePhysicalPath: remoteMatch.WebApplication?.PhysicalPath?.Trim() ?? existingInstance?.PhysicalPath,
+            machineName: remoteMatch.GetMachineName(environmentDetails));
 
         return new RemoteRegistrationPrefill
         {
@@ -121,7 +122,8 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
             applicationName,
             homepageUrl: existingInstance?.HomepageUrl,
             userPhysicalPathOverride: null,
-            remotePhysicalPath: webApplication.PhysicalPath?.Trim() ?? existingInstance?.PhysicalPath);
+            remotePhysicalPath: webApplication.PhysicalPath?.Trim() ?? existingInstance?.PhysicalPath,
+            machineName: webSite.MachineName);
 
         return new RemoteRegistrationPrefill
         {
@@ -208,7 +210,9 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
             deployableApplication.Name,
             homepageUrl: remoteMatch.EnvironmentUrl?.Url?.Trim(),
             userPhysicalPathOverride: userPhysicalPathOverride,
-            remotePhysicalPath: remoteMatch.WebApplication?.PhysicalPath?.Trim());
+            remotePhysicalPath: remoteMatch.WebApplication?.PhysicalPath?.Trim()
+                ?? remoteMatch.WindowsService?.BinaryPathName?.Trim(),
+            machineName: remoteMatch.GetMachineName(environmentDetails));
     }
 
     private async Task<ApplicationInstance?> FindExistingInstanceAsync(
@@ -238,7 +242,8 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
         string? applicationName,
         string? homepageUrl,
         string? userPhysicalPathOverride,
-        string? remotePhysicalPath)
+        string? remotePhysicalPath,
+        string? machineName = null)
     {
         var templateContext = BuildTemplateContext(
             deployableApplication,
@@ -246,7 +251,8 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
             webSite,
             webApplication,
             applicationName,
-            remotePhysicalPath);
+            remotePhysicalPath,
+            machineName);
 
         var resolvedPhysicalPath = !string.IsNullOrWhiteSpace(userPhysicalPathOverride)
             ? userPhysicalPathOverride.Trim()
@@ -260,7 +266,8 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
             webSite,
             webApplication,
             applicationName,
-            resolvedPhysicalPath);
+            resolvedPhysicalPath,
+            machineName);
         var resolvedLogPath = TryResolveLogPath(deployableApplication, logPathContext);
 
         return new ApplicationInstanceRegistrationPrefill
@@ -366,13 +373,14 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
         EnvironmentWebSite? webSite,
         EnvironmentWebApplication? webApplication,
         string? applicationName,
-        string? physicalPath) =>
+        string? physicalPath,
+        string? machineName = null) =>
         new()
         {
             AppName = deployableApplication?.Name ?? applicationName,
             EnvironmentCode = environmentDetails.Code,
             EnvironmentName = environmentDetails.Name,
-            MachineName = webSite?.MachineName,
+            MachineName = machineName ?? webSite?.MachineName,
             ApplicationPoolName = webApplication?.ApplicationPoolName,
             VirtualPath = webApplication?.Path,
             PhysicalPath = physicalPath

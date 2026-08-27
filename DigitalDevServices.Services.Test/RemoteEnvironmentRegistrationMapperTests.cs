@@ -111,6 +111,38 @@ public sealed class RemoteEnvironmentRegistrationMapperTests
     }
 
     [TestMethod]
+    public void BuildManualDeploymentPrefill_ResolvesLogPathFromMatchingWindowsService()
+    {
+        using var fixture = MapperFixture.CreateSync();
+        var application = fixture.DeployableApplicationService.CreateAsync(
+            "Digital Services Worker",
+            isWebApp: false,
+            pathToLogFiles: @"\\{MachineName}\{AppName}\Logs").GetAwaiter().GetResult();
+
+        var prefill = fixture.Mapper.BuildManualDeploymentPrefill(
+            new RemoteEnvironmentDetails
+            {
+                Id = 1,
+                Code = "UAT-01",
+                Name = "UAT-01",
+                EnvironmentType = "UAT",
+                WindowsServices =
+                [
+                    new EnvironmentWindowsService
+                    {
+                        MachineName = "UAT-01-APP",
+                        DisplayName = "Digital Services Worker",
+                        BinaryPathName = @"C:\Services\DigitalServices.Worker.exe"
+                    }
+                ]
+            },
+            application);
+
+        Assert.AreEqual(@"\\UAT-01-APP\Digital Services Worker\Logs", prefill.LogPath);
+        Assert.AreEqual(@"C:\Services\DigitalServices.Worker.exe", prefill.PhysicalPath);
+    }
+
+    [TestMethod]
     public async Task BuildFromEnvironmentUrlAsync_ResolvesLogPathWhenMatchingWebApplicationExists()
     {
         await using var fixture = await MapperFixture.CreateAsync();

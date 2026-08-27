@@ -102,6 +102,35 @@ public sealed class LogPathResolutionServiceTests
         StringAssert.Contains(result.ErrorMessage!, "not found");
     }
 
+    [TestMethod]
+    public async Task EnsureLogPathAsync_ResolvesFromTemplateUsingMatchingWindowsService()
+    {
+        await using var fixture = await LogPathResolutionFixture.CreateAsync();
+        var environment = await fixture.CreateTrackedEnvironmentAsync(
+            remoteId: 45,
+            machineName: null,
+            windowsServices:
+            [
+                new EnvironmentWindowsService
+                {
+                    MachineName = "UAT-01-APP",
+                    DisplayName = "Digital Services Worker",
+                    BinaryPathName = @"C:\Services\DigitalServices.Worker.exe"
+                }
+            ]);
+        var application = await fixture.DeployableApplicationService.CreateAsync(
+            "Digital Services Worker",
+            isWebApp: false,
+            pathToLogFiles: @"\\{MachineName}\{AppName}\Logs");
+        var instance = await fixture.CreateInstanceAsync(application.Id, environment.Id, logPath: null);
+
+        var result = await fixture.ResolutionService.EnsureLogPathAsync(instance.Id);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(@"\\UAT-01-APP\Digital Services Worker\Logs", result.LogPath);
+        Assert.IsFalse(result.RefreshedEnvironment);
+    }
+
     private sealed class LogPathResolutionFixture : IAsyncDisposable
     {
         private readonly ServiceProvider _serviceProvider;
@@ -157,7 +186,10 @@ public sealed class LogPathResolutionServiceTests
                 serviceProvider.GetRequiredService<IApplicationInstanceService>());
         }
 
-        public async Task<TrackedEnvironment> CreateTrackedEnvironmentAsync(int remoteId, string? machineName)
+        public async Task<TrackedEnvironment> CreateTrackedEnvironmentAsync(
+            int remoteId,
+            string? machineName,
+            IReadOnlyList<EnvironmentWindowsService>? windowsServices = null)
         {
             var environment = new TrackedEnvironment
             {
@@ -174,7 +206,7 @@ public sealed class LogPathResolutionServiceTests
                 LocalId = environment.Id,
                 RemoteId = remoteId,
                 IsFavourite = false,
-                Details = CreateEnvironmentDetails(remoteId, machineName),
+                Details = CreateEnvironmentDetails(remoteId, machineName, windowsServices),
                 DateLastUpdated = DateTimeOffset.UtcNow,
                 IsFromCache = true
             });
@@ -182,7 +214,10 @@ public sealed class LogPathResolutionServiceTests
             return environment;
         }
 
-        public RemoteEnvironmentDetails CreateEnvironmentDetails(int remoteId, string? machineName) =>
+        public RemoteEnvironmentDetails CreateEnvironmentDetails(
+            int remoteId,
+            string? machineName,
+            IReadOnlyList<EnvironmentWindowsService>? windowsServices = null) =>
             new()
             {
                 Id = remoteId,
@@ -206,7 +241,8 @@ public sealed class LogPathResolutionServiceTests
                                 }
                             ]
                         }
-                    ]
+                    ],
+                WindowsServices = windowsServices?.ToArray() ?? []
             };
 
         public async Task<ApplicationInstance> CreateInstanceAsync(

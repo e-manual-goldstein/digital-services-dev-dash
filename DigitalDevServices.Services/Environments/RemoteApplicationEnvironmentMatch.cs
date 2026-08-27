@@ -41,6 +41,21 @@ internal static class RemoteApplicationEnvironmentMatch
             }
         }
 
+        foreach (var windowsService in environmentDetails.WindowsServices)
+        {
+            if (string.Equals(
+                    windowsService.ResolveDeployableApplicationName(),
+                    normalizedName,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return new RemoteApplicationEnvironmentMatchResult
+                {
+                    EnvironmentUrl = environmentUrl,
+                    WindowsService = windowsService
+                };
+            }
+        }
+
         return new RemoteApplicationEnvironmentMatchResult
         {
             EnvironmentUrl = environmentUrl
@@ -55,6 +70,30 @@ internal sealed class RemoteApplicationEnvironmentMatchResult
     public EnvironmentWebSite? WebSite { get; init; }
 
     public EnvironmentWebApplication? WebApplication { get; init; }
+
+    public EnvironmentWindowsService? WindowsService { get; init; }
+
+    public string? GetMachineName(RemoteEnvironmentDetails environmentDetails)
+    {
+        if (!string.IsNullOrWhiteSpace(WebSite?.MachineName))
+        {
+            return WebSite.MachineName.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(WindowsService?.MachineName))
+        {
+            return WindowsService.MachineName.Trim();
+        }
+
+        if (EnvironmentUrl is not null)
+        {
+            return environmentDetails.WebSites
+                .FirstOrDefault(site => !string.IsNullOrWhiteSpace(site.MachineName))
+                ?.MachineName?.Trim();
+        }
+
+        return null;
+    }
 
     public EnvironmentWebSite? GetTemplateContextWebSite(RemoteEnvironmentDetails environmentDetails)
     {
