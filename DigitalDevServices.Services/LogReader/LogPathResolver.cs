@@ -38,7 +38,7 @@ internal static class LogPathResolver
                 {
                     ConfiguredLogPath = trimmed,
                     IsDirectory = true,
-                    ErrorMessage = $"No .log files found in directory: {trimmed}"
+                    ErrorMessage = $"No {LogFileExtensions.Description} files found in directory: {trimmed}"
                 };
                 return false;
             }
@@ -108,9 +108,9 @@ internal static class LogPathResolver
                 return false;
             }
 
-            if (!selectedPath.EndsWith(".log", StringComparison.OrdinalIgnoreCase))
+            if (!LogFileExtensions.IsSupported(selectedPath))
             {
-                errorMessage = "Selected file is not a .log file.";
+                errorMessage = $"Selected file is not a supported log file ({LogFileExtensions.Description}).";
                 return false;
             }
 
@@ -137,12 +137,21 @@ internal static class LogPathResolver
         return true;
     }
 
-    private static IReadOnlyList<AvailableLogFile> EnumerateLogFiles(string directoryPath) =>
-        Directory
-            .EnumerateFiles(directoryPath, "*.log", SearchOption.TopDirectoryOnly)
+    private static IReadOnlyList<AvailableLogFile> EnumerateLogFiles(string directoryPath)
+    {
+        var files = new List<string>();
+
+        foreach (var extension in LogFileExtensions.All)
+        {
+            files.AddRange(Directory.EnumerateFiles(directoryPath, $"*{extension}", SearchOption.TopDirectoryOnly));
+        }
+
+        return files
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderByDescending(File.GetLastWriteTimeUtc)
             .Select(CreateAvailableLogFile)
             .ToList();
+    }
 
     private static AvailableLogFile CreateAvailableLogFile(string filePath)
     {

@@ -187,6 +187,54 @@ public sealed class LogReaderServiceTests
     }
 
     [TestMethod]
+    public async Task ListLogFilesAsync_IncludesTxtFilesInDirectory()
+    {
+        await using var fixture = await LogReaderServiceFixture.CreateAsync();
+        var logDirectory = await fixture.CreateLogDirectoryAsync();
+        var logPath = Path.Combine(logDirectory, "app.log");
+        var txtPath = Path.Combine(logDirectory, "service.txt");
+
+        await File.WriteAllTextAsync(logPath, "log");
+        await File.WriteAllTextAsync(txtPath, "txt");
+        File.SetLastWriteTimeUtc(logPath, DateTime.UtcNow.AddHours(-1));
+        File.SetLastWriteTimeUtc(txtPath, DateTime.UtcNow);
+
+        var application = await fixture.DeployableApplicationService.CreateAsync("Worker Host");
+        var instance = await fixture.CreateApplicationInstanceAsync(application.Id, logDirectory);
+        var result = await fixture.ReaderService.ListLogFilesAsync(instance.Id);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.HasCount(2, result.Files);
+        Assert.AreEqual("service.txt", result.Files[0].FileName);
+        Assert.AreEqual("app.log", result.Files[1].FileName);
+    }
+
+    [TestMethod]
+    public async Task ReadAsync_ReadsExplicitTxtFileInDirectory()
+    {
+        await using var fixture = await LogReaderServiceFixture.CreateAsync();
+        var logDirectory = await fixture.CreateLogDirectoryAsync();
+        var txtPath = Path.Combine(logDirectory, "worker.txt");
+
+        await File.WriteAllTextAsync(txtPath, "2026-08-23 09:00:00.000 INFO  [WorkerHost] Text log entry");
+
+        var application = await fixture.DeployableApplicationService.CreateAsync("Worker Host");
+        await fixture.ProfileService.UpsertAsync(new LogFormatProfileUpsert
+        {
+            DeployableApplicationId = application.Id,
+            FormatName = LogFormatNames.PlainText
+        });
+
+        var instance = await fixture.CreateApplicationInstanceAsync(application.Id, logDirectory);
+        var result = await fixture.ReaderService.ReadAsync(instance.Id, logFilePath: txtPath);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(txtPath, result.LogFilePath);
+        Assert.HasCount(1, result.Entries);
+        Assert.AreEqual("Text log entry", result.Entries[0].Message);
+    }
+
+    [TestMethod]
     public async Task ListLogFilesAsync_ReturnsSingleFileWhenPathIsFile()
     {
         await using var fixture = await LogReaderServiceFixture.CreateAsync();
