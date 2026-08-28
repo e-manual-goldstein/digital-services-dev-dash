@@ -6,7 +6,26 @@ namespace DigitalDevServices.Services.Test;
 public sealed class LogParserTests
 {
     [TestMethod]
-    public void SerilogJsonLogParser_ParsesOneEntryPerLine()
+    public void SerilogJsonLogParser_ParsesEcsStyleProperties()
+    {
+        const string content = """
+            {"@timestamp":"2026-08-23T08:15:02.1123456+01:00","log":{"level":"Information"},"message":"Application starting","Environment":"UAT-01"}
+            {"@timestamp":"2026-08-23T08:15:18.4400000+01:00","log":{"level":"Error"},"message":"Payment failed","error":{"message":"Connection timed out","stack_trace":"System.Net.Http.HttpRequestException: Connection timed out\n   at PaymentClient.PostAsync(String url)"},"OrderId":"ORD-1"}
+            """;
+
+        var entries = new SerilogJsonLogParser().Parse(content);
+
+        Assert.HasCount(2, entries);
+        Assert.AreEqual("Information", entries[0].Level);
+        Assert.AreEqual("Application starting", entries[0].Message);
+        Assert.AreEqual("UAT-01", entries[0].Properties!["Environment"]);
+        Assert.AreEqual("Error", entries[1].Level);
+        StringAssert.Contains(entries[1].Message, "Payment failed");
+        StringAssert.Contains(entries[1].Message, "Connection timed out");
+    }
+
+    [TestMethod]
+    public void SerilogJsonLogParser_ParsesLegacyCompactProperties()
     {
         const string content = """
             {"@t":"2026-08-23T08:15:02.1123456+01:00","@l":"Information","@mt":"Application starting","Environment":"UAT-01"}

@@ -27,6 +27,8 @@
 | [LOG-006](#log-006) | Done | Raw log content debug panel | LOG-003 |
 | [LOG-007](#log-007) | Done | Override log format profile on viewer | LOG-003 |
 | [LOG-008](#log-008) | Done | Custom regex log parser (Entry / EntryStart) | LOG-001, LOG-007 |
+| [LOG-009](#log-009) | Open | Per-entry raw log modal on viewer table | LOG-003 |
+| [LOG-010](#log-010) | Open | Structured exception detail modal for error rows | LOG-003, LOG-009 |
 
 ---
 
@@ -242,3 +244,25 @@ Built-in parsers (`PlainText`, `NLogMultiline`, `Log4NetPattern`, etc.) all redu
 | **Description** | Added **Custom regex** log format (`FormatName` = `CustomRegex`) driven by `LogFormatProfile.ParserConfig` JSON (`mode`, `pattern`, optional `timestampFormat`). `CustomRegexLogParser` supports **Entry** (one line per match) and **EntryStart** (multiline continuation) using named capture groups (`message` required; `timestamp`, `level`, others → `Properties`). `CustomRegexParserConfigValidator` validates pattern compile, timeout, and required groups on profile save. **Applications** admin shows mode, pattern, and timestamp format fields when **Custom regex** is selected. Log viewer uses saved `ParserConfig` when parsing with a custom profile or **Parse as** override. Unit tests in `CustomRegexLogParserTests`. |
 | **Test / demo** | **Applications** → **Custom regex** → Entry mode with Plain-text-style pattern → save → logs parse in viewer. EntryStart mode with NLog-style header → stack lines fold into message. Invalid pattern → error on save. `dotnet test --filter CustomRegexLogParserTests` → pass. |
 | **Depends on** | LOG-001, LOG-007 |
+
+### LOG-009
+
+| Field | Detail |
+|-------|--------|
+| **ID** | LOG-009 |
+| **Title** | Per-entry raw log modal on viewer table |
+| **Status** | Open |
+| **Description** | On `/log-viewer/{instanceId}`, add a **View raw entry** action to each row in the parsed log table. Clicking opens a floating modal dialog showing the unformatted source text for that entry (`ParsedLogEntry.RawText`) in monospace `pre-wrap` styling — the exact line(s) from the log file before field extraction, including JSON blobs, stack traces, and continuation lines for multiline parsers. Modal title should identify the entry briefly (e.g. timestamp + level when available). Provide a clear **Close** control (and standard dismiss: backdrop click, Escape). Only one modal open at a time. Reuse Bootstrap modal patterns already available in the app; extract a small shared component if that keeps `Viewer.razor` readable. This is per-entry detail; the existing **Raw log content** panel (LOG-006) remains the tail-of-file debug view. No backend changes required unless `RawText` is missing for some formats — in that case ensure parsers populate it. |
+| **Test / demo** | Open log viewer with mixed entries (plain text + multiline exception) → **View raw entry** on a row → modal shows full raw text → Close dismisses → open another row → previous modal replaced. Keyboard: Escape closes. Mobile: modal scrolls when content is long. |
+| **Depends on** | LOG-003 |
+
+### LOG-010
+
+| Field | Detail |
+|-------|--------|
+| **ID** | LOG-010 |
+| **Title** | Structured exception detail modal for error rows |
+| **Status** | Open |
+| **Description** | Enhance error rendering on `/log-viewer/{instanceId}` so **Error** rows (and **Fatal** / **Critical**, matching existing level badge rules) can show structured exception detail in a modal — separate from **View raw entry** (LOG-009). **Model:** extend `ParsedLogEntry` with optional structured exception data, e.g. `ParsedLogException` with `Type`, `Message`, `StackTrace`, and recursive `InnerException` (or `IReadOnlyList<ParsedLogException>` for a flattened chain). Keep a short summary in the table `Message` column; do not duplicate the full stack in the grid. **Parsing:** update built-in parsers to populate exception detail instead of only appending stack text to `Message` — Serilog JSON (`error.*`, legacy `@x`), NLog/log4net multiline continuation blocks, plain text / custom regex where stack lines are already grouped. Add a shared helper to parse .NET exception text into nested inner exceptions (recognise `Inner exception`, `--- End of inner exception stack trace ---`, chained `at …` blocks). When structure cannot be inferred, fall back to a single block with full text from `Message` / `RawText`. **UI:** on qualifying error rows where exception detail exists, show **View exception** (or **View error**) beside **View raw entry**. Modal reuses the LOG-009 Bootstrap modal pattern: title with timestamp + level; body shows the outer exception message, stack trace, then each inner exception unwound (type, message, stack) with clear visual separation (headings or indented sections). Monospace `pre-wrap` for stack frames. Dismiss via Close, backdrop, Escape. **Out of scope:** fixing the underlying log format; live symbolication; copying to clipboard (optional nice-to-have). |
+| **Test / demo** | Serilog error line with `error.stack_trace` → table shows short message → **View exception** → modal shows outer + inner chain. NLog multiline error with stack → same. Non-error row → no button. Error row without parseable exception → button hidden or disabled with tooltip. `dotnet test` covers exception text parser and at least one format integration. |
+| **Depends on** | LOG-003, LOG-009 |

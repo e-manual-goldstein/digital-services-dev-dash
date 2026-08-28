@@ -1,11 +1,25 @@
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using DigitalDevServices.Model.Logs;
 
 namespace DigitalDevServices.Services.Logs;
 
-public sealed partial class SerilogJsonLogParser : ILogEntryParser
+public sealed class SerilogJsonLogParser : ILogEntryParser
 {
+    private static readonly string[] ReservedPropertyNames =
+    [
+        "@timestamp",
+        "message",
+        "log",
+        "error",
+        "level",
+        "@t",
+        "@l",
+        "@mt",
+        "@m",
+        "@x",
+        "@r"
+    ];
+
     public string FormatName => "SerilogJson";
 
     public IReadOnlyList<ParsedLogEntry> Parse(string content)
@@ -24,39 +38,20 @@ public sealed partial class SerilogJsonLogParser : ILogEntryParser
                 using var document = JsonDocument.Parse(line);
                 var root = document.RootElement;
 
-                DateTimeOffset? timestamp = null;
-                if (root.TryGetProperty("@t", out var timestampElement)
-                    && DateTimeOffset.TryParse(timestampElement.GetString(), out var parsedTimestamp))
-                {
-                    timestamp = parsedTimestamp;
-                }
-
-                var level = root.TryGetProperty("@l", out var levelElement)
-                    ? levelElement.GetString()
-                    : null;
-
-                var message = root.TryGetProperty("@mt", out var messageElement)
-                    ? messageElement.GetString() ?? line
-                    : line;
+                var timestamp = TryGetTimestamp(root);
+                var level = TryGetLevel(root);
+                var message = TryGetMessage(root) ?? line;
+                message = AppendExceptionDetails(message, root);
 
                 var properties = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var property in root.EnumerateObject())
                 {
-                    if (property.Name is "@t" or "@l" or "@mt" or "@x" or "@r")
+                    if (IsReservedProperty(property.Name))
                     {
                         continue;
                     }
 
                     properties[property.Name] = property.Value.ToString();
-                }
-
-                if (root.TryGetProperty("@x", out var exceptionElement))
-                {
-                    var exception = exceptionElement.GetString();
-                    if (!string.IsNullOrWhiteSpace(exception))
-                    {
-                        message = $"{message}\n{exception}";
-                    }
                 }
 
                 entries.Add(new ParsedLogEntry
@@ -80,5 +75,116 @@ public sealed partial class SerilogJsonLogParser : ILogEntryParser
         }
 
         return entries;
+    }
+
+    private static DateTimeOffset? TryGetTimestamp(JsonElement root)
+    {
+        foreach (var propertyName in new[] { "@timestamp", "@t" })
+        {
+            if (TryGetString(root, propertyName, out var value)
+                && DateTimeOffset.TryParse(value, out var parsedTimestamp))
+            {
+                return parsedTimestamp;
+            }
+        }
+
+        return null;
+    }
+
+    private static string? TryGetLevel(JsonElement root)
+    {
+        if (TryGetNestedString(root, ["log", "level"], out var nestedLevel))
+        {
+            return nestedLevel;
+        }
+
+        foreach (var propertyName in new[] { "level", "@l" })
+        {
+            if (TryGetString(root, propertyName, out var value))
+            {
+                return value;
+            }
+        }
+
+        return null;
+    }
+
+    private static string? TryGetMessage(JsonElement root)
+    {
+        foreach (var propertyName in new[] { "message", "@m", "@mt" })
+        {
+            if (TryGetString(root, propertyName, out var value))
+            {
+                return value;
+            }
+        }
+
+        return null;
+    }
+
+    private static string AppendExceptionDetails(string message, JsonElement root)
+    {
+        if (TryGetNestedString(root, ["error", "stack_trace"], out var stackTrace)
+            && !string.IsNullOrWhiteSpace(stackTrace))
+        {
+            return $"{message}\n{stackTrace}";
+        }
+
+        if (TryGetNestedString(root, ["error", "message"], out var errorMessage)
+            && !string.IsNullOrWhiteSpace(errorMessage))
+        {
+            return $"{message}\n{errorMessage}";
+        }
+
+        if (TryGetString(root, "@x", out var exception) && !string.IsNullOrWhiteSpace(exception))
+        {
+            return $"{message}\n{exception}";
+        }
+
+        return message;
+    }
+
+    private static bool IsReservedProperty(string propertyName) =>
+        ReservedPropertyNames.Contains(propertyName, StringComparer.OrdinalIgnoreCase);
+
+    private static bool TryGetString(JsonElement root, string propertyName, out string? value)
+    {
+        value = null;
+        if (!root.TryGetProperty(propertyName, out var element))
+        {
+            return false;
+        }
+
+        value = element.ValueKind switch
+        {
+            JsonValueKind.String => element.GetString(),
+            JsonValueKind.Null or JsonValueKind.Undefined => null,
+            _ => element.ToString()
+        };
+
+        return !string.IsNullOrWhiteSpace(value);
+    }
+
+    private static bool TryGetNestedString(JsonElement root, IReadOnlyList<string> path, out string? value)
+    {
+        value = null;
+        var current = root;
+
+        foreach (var segment in path)
+        {
+            if (!current.TryGetProperty(segment, out current))
+            {
+                return false;
+            }
+        }
+
+        value = current.ValueKind switch
+        {
+            JsonValueKind.String => current.GetString(),
+            JsonValueKind.Null or JsonValueKind.Undefined => null,
+            _ => current.ToString()
+        };
+
+        return !string.IsNullOrWhiteSpace(value);
     }
 }
