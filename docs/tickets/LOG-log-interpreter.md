@@ -27,7 +27,7 @@
 | [LOG-006](#log-006) | Done | Raw log content debug panel | LOG-003 |
 | [LOG-007](#log-007) | Done | Override log format profile on viewer | LOG-003 |
 | [LOG-008](#log-008) | Done | Custom regex log parser (Entry / EntryStart) | LOG-001, LOG-007 |
-| [LOG-009](#log-009) | Open | Per-entry raw log modal on viewer table | LOG-003 |
+| [LOG-009](#log-009) | Done | Per-entry raw log modal on viewer table | LOG-003 |
 | [LOG-010](#log-010) | Open | Structured exception detail modal for error rows | LOG-003, LOG-009 |
 
 ---
@@ -251,10 +251,11 @@ Built-in parsers (`PlainText`, `NLogMultiline`, `Log4NetPattern`, etc.) all redu
 |-------|--------|
 | **ID** | LOG-009 |
 | **Title** | Per-entry raw log modal on viewer table |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | On `/log-viewer/{instanceId}`, add a **View raw entry** action to each row in the parsed log table. Clicking opens a floating modal dialog showing the unformatted source text for that entry (`ParsedLogEntry.RawText`) in monospace `pre-wrap` styling — the exact line(s) from the log file before field extraction, including JSON blobs, stack traces, and continuation lines for multiline parsers. Modal title should identify the entry briefly (e.g. timestamp + level when available). Provide a clear **Close** control (and standard dismiss: backdrop click, Escape). Only one modal open at a time. Reuse Bootstrap modal patterns already available in the app; extract a small shared component if that keeps `Viewer.razor` readable. This is per-entry detail; the existing **Raw log content** panel (LOG-006) remains the tail-of-file debug view. No backend changes required unless `RawText` is missing for some formats — in that case ensure parsers populate it. |
 | **Test / demo** | Open log viewer with mixed entries (plain text + multiline exception) → **View raw entry** on a row → modal shows full raw text → Close dismisses → open another row → previous modal replaced. Keyboard: Escape closes. Mobile: modal scrolls when content is long. |
 | **Depends on** | LOG-003 |
+| **Implementation** | Shared `TextDetailModal` component (Bootstrap modal, scrollable body, Close / backdrop / Escape). Log viewer table **View raw entry** button per row; `LogEntryDisplay.FormatModalTitle` for modal title. |
 
 ### LOG-010
 

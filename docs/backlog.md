@@ -10,13 +10,12 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~LOG-008~~ | [LOG](tickets/LOG-log-interpreter.md) | Custom regex log parser (Entry / EntryStart) |
+| ~~LOG-009~~ | [LOG](tickets/LOG-log-interpreter.md) | Per-entry **View raw entry** modal on log viewer table rows |
 
 ## Active (recommended order)
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| LOG-009 | [LOG](tickets/LOG-log-interpreter.md) | Per-entry **View raw entry** modal on log viewer table rows |
 | LOG-010 | [LOG](tickets/LOG-log-interpreter.md) | **View exception** modal for error rows (stack trace + inner exceptions) |
 
 ## Epic progress
@@ -25,7 +24,7 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 
 | Epic | Description | Tickets Completed | Tickets Shelved | Total Tickets | Progress |
 |------|-------------|-------------------|-----------------|---------------|----------|
-| [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | 8 | 0 | 10 | 🟩🟩🟩🟩🟩🟩🟩🟩⬜⬜ 80% |
+| [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | 9 | 0 | 10 | 🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜ 90% |
 | [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Named pipeline feeds (no branch matching v1) | 2 | 1 | 3 | 🟩🟩🟩🟩🟩🟩🟨🟨🟨⬜ 67% |
 | [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 3 | 2 | 5 | 🟩🟩🟩🟩🟩🟩🟨🟨🟨🟨 60% |
 

@@ -1,5 +1,6 @@
 @page "/log-viewer/{InstanceId:guid}"
 @using DigitalDevServices.DevDash.LogViewer
+@using DigitalDevServices.DevDash.Shared.Components
 @inject IEnvironmentService EnvironmentService
 @inject IApplicationInstanceService InstanceService
 @inject ILogPathResolutionService LogPathResolutionService
@@ -214,6 +215,7 @@ else
                         <th style="width: 12rem;">Time</th>
                         <th style="width: 7rem;">Level</th>
                         <th>Message</th>
+                        <th style="width: 9rem;"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -234,6 +236,13 @@ else
                                 }
                             </td>
                             <td class="font-monospace small text-break">@entry.Message</td>
+                            <td>
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-secondary"
+                                        @onclick="() => ShowRawEntry(entry)">
+                                    View raw entry
+                                </button>
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -241,6 +250,11 @@ else
         </div>
     }
 }
+
+<TextDetailModal IsOpen="_rawEntryModalEntry is not null"
+                 Title="@(_rawEntryModalEntry is null ? string.Empty : LogEntryDisplay.FormatModalTitle(_rawEntryModalEntry))"
+                 Body="@(_rawEntryModalEntry?.RawText ?? string.Empty)"
+                 OnClose="CloseRawEntryModal" />
 
 @code {
     private const int DefaultMaxLines = 100;
@@ -253,6 +267,7 @@ else
     private ApplicationInstance? _instance;
     private CachedEnvironment? _environment;
     private IReadOnlyList<ParsedLogEntry> _allEntries = [];
+    private ParsedLogEntry? _rawEntryModalEntry;
     private IReadOnlyList<AvailableLogFile> _availableLogFiles = [];
     private string? _selectedLogFilePath;
     private string? _logFilePath;
@@ -297,6 +312,7 @@ else
         _isLoading = true;
         _loadingMessage = "Loading logs…";
         _allEntries = [];
+        _rawEntryModalEntry = null;
         _logFilePath = null;
         _rawContent = null;
         _configuredFormatName = null;
@@ -474,4 +490,8 @@ else
         _minimumLevel = LogEntryFilter.MinimumLevelAll;
         _searchText = string.Empty;
     }
+
+    private void ShowRawEntry(ParsedLogEntry entry) => _rawEntryModalEntry = entry;
+
+    private void CloseRawEntryModal() => _rawEntryModalEntry = null;
 }
