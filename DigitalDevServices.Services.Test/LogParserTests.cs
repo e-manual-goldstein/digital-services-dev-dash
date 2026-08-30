@@ -9,8 +9,8 @@ public sealed class LogParserTests
     public void SerilogJsonLogParser_ParsesEcsStyleProperties()
     {
         const string content = """
-            {"@timestamp":"2026-08-23T08:15:02.1123456+01:00","log":{"level":"Information"},"message":"Application starting","Environment":"UAT-01"}
-            {"@timestamp":"2026-08-23T08:15:18.4400000+01:00","log":{"level":"Error"},"message":"Payment failed","error":{"message":"Connection timed out","stack_trace":"System.Net.Http.HttpRequestException: Connection timed out\n   at PaymentClient.PostAsync(String url)"},"OrderId":"ORD-1"}
+            {"@timestamp":"2026-08-23T08:15:02.1123456+01:00","log.level":"Information","message":"Application starting","Environment":"UAT-01"}
+            {"@timestamp":"2026-08-23T08:15:18.4400000+01:00","log.level":"Error","message":"Payment failed","error":{"message":"Connection timed out","stack_trace":"System.Net.Http.HttpRequestException: Connection timed out\n   at PaymentClient.PostAsync(String url)"},"OrderId":"ORD-1"}
             """;
 
         var entries = new SerilogJsonLogParser().Parse(content);

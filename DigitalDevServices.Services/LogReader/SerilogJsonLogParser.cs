@@ -9,7 +9,7 @@ public sealed class SerilogJsonLogParser : ILogEntryParser
     [
         "@timestamp",
         "message",
-        "log",
+        "log.level",
         "error",
         "level",
         "@t",
@@ -93,12 +93,7 @@ public sealed class SerilogJsonLogParser : ILogEntryParser
 
     private static string? TryGetLevel(JsonElement root)
     {
-        if (TryGetNestedString(root, ["log", "level"], out var nestedLevel))
-        {
-            return nestedLevel;
-        }
-
-        foreach (var propertyName in new[] { "level", "@l" })
+        foreach (var propertyName in new[] { "log.level", "level", "@l" })
         {
             if (TryGetString(root, propertyName, out var value))
             {
