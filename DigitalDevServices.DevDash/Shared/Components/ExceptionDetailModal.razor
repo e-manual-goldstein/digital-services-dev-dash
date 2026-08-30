@@ -10,7 +10,7 @@
          aria-labelledby="@_titleId"
          @ref="_modalElement"
          @onkeydown="HandleKeyDownAsync">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable" @onclick:stopPropagation="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable log-exception-modal" @onclick:stopPropagation="true">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="@_titleId">@Title</h5>
@@ -39,7 +39,7 @@
                                 }
                                 @if (!string.IsNullOrWhiteSpace(item.StackTrace))
                                 {
-                                    <pre class="log-entry-raw mb-0">@item.StackTrace</pre>
+                                    <pre class="log-exception-stack mb-0">@item.StackTrace</pre>
                                 }
                             </section>
                             index++;
