@@ -11,6 +11,12 @@ public sealed class SerilogJsonLogParser : ILogEntryParser
         "message",
         "log.level",
         "error",
+        "error.message",
+        "error.stack_trace",
+        "error.type",
+        "error_message",
+        "error_stack_trace",
+        "error_type",
         "level",
         "@t",
         "@l",
@@ -41,7 +47,7 @@ public sealed class SerilogJsonLogParser : ILogEntryParser
                 var timestamp = TryGetTimestamp(root);
                 var level = TryGetLevel(root);
                 var message = TryGetMessage(root) ?? line;
-                message = AppendExceptionDetails(message, root);
+                var exception = SerilogExceptionExtractor.TryExtract(root);
 
                 var properties = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var property in root.EnumerateObject())
@@ -60,6 +66,7 @@ public sealed class SerilogJsonLogParser : ILogEntryParser
                     Level = level,
                     Message = message,
                     RawText = line,
+                    Exception = exception,
                     Properties = properties.Count == 0 ? null : properties
                 });
             }
@@ -117,28 +124,6 @@ public sealed class SerilogJsonLogParser : ILogEntryParser
         return null;
     }
 
-    private static string AppendExceptionDetails(string message, JsonElement root)
-    {
-        if (TryGetNestedString(root, ["error", "stack_trace"], out var stackTrace)
-            && !string.IsNullOrWhiteSpace(stackTrace))
-        {
-            return $"{message}\n{stackTrace}";
-        }
-
-        if (TryGetNestedString(root, ["error", "message"], out var errorMessage)
-            && !string.IsNullOrWhiteSpace(errorMessage))
-        {
-            return $"{message}\n{errorMessage}";
-        }
-
-        if (TryGetString(root, "@x", out var exception) && !string.IsNullOrWhiteSpace(exception))
-        {
-            return $"{message}\n{exception}";
-        }
-
-        return message;
-    }
-
     private static bool IsReservedProperty(string propertyName) =>
         ReservedPropertyNames.Contains(propertyName, StringComparer.OrdinalIgnoreCase);
 
@@ -155,29 +140,6 @@ public sealed class SerilogJsonLogParser : ILogEntryParser
             JsonValueKind.String => element.GetString(),
             JsonValueKind.Null or JsonValueKind.Undefined => null,
             _ => element.ToString()
-        };
-
-        return !string.IsNullOrWhiteSpace(value);
-    }
-
-    private static bool TryGetNestedString(JsonElement root, IReadOnlyList<string> path, out string? value)
-    {
-        value = null;
-        var current = root;
-
-        foreach (var segment in path)
-        {
-            if (!current.TryGetProperty(segment, out current))
-            {
-                return false;
-            }
-        }
-
-        value = current.ValueKind switch
-        {
-            JsonValueKind.String => current.GetString(),
-            JsonValueKind.Null or JsonValueKind.Undefined => null,
-            _ => current.ToString()
         };
 
         return !string.IsNullOrWhiteSpace(value);

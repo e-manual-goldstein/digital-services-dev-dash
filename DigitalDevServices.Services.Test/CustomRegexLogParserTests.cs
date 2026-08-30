@@ -58,8 +58,9 @@ public sealed class CustomRegexLogParserTests
 
         Assert.HasCount(2, entries);
         Assert.AreEqual("ERROR", entries[0].Level);
-        StringAssert.Contains(entries[0].Message, "SMTP handshake failed");
-        StringAssert.Contains(entries[0].Message, "MailClient.Connect()");
+        Assert.AreEqual("SMTP handshake failed", entries[0].Message);
+        Assert.IsNotNull(entries[0].Exception);
+        StringAssert.Contains(entries[0].Exception!.StackTrace!, "MailClient.Connect()");
         StringAssert.Contains(entries[0].RawText, "EmailSender.Send()");
         Assert.AreEqual("INFO", entries[1].Level);
     }

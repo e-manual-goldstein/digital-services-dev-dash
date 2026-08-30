@@ -177,13 +177,16 @@ public sealed class CustomRegexLogParser
         public void Build(List<ParsedLogEntry> entries, string? timestampFormat)
         {
             var properties = ExtractProperties(_match);
+            var fullMessage = _message.ToString();
+            var (message, exception) = LogEntryExceptionSplitter.Split(fullMessage);
 
             entries.Add(new ParsedLogEntry
             {
                 Timestamp = ParseTimestamp(_match.Groups["timestamp"], timestampFormat),
                 Level = GetOptionalGroupValue(_match, "level"),
-                Message = _message.ToString(),
+                Message = message,
                 RawText = _rawText.ToString(),
+                Exception = exception,
                 Properties = properties.Count == 0 ? null : properties
             });
         }

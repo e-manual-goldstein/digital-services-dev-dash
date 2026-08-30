@@ -20,8 +20,9 @@ public sealed class LogParserTests
         Assert.AreEqual("Application starting", entries[0].Message);
         Assert.AreEqual("UAT-01", entries[0].Properties!["Environment"]);
         Assert.AreEqual("Error", entries[1].Level);
-        StringAssert.Contains(entries[1].Message, "Payment failed");
-        StringAssert.Contains(entries[1].Message, "Connection timed out");
+        Assert.AreEqual("Payment failed", entries[1].Message);
+        Assert.IsNotNull(entries[1].Exception);
+        StringAssert.Contains(entries[1].Exception!.Message!, "Connection timed out");
     }
 
     [TestMethod]
@@ -71,8 +72,10 @@ public sealed class LogParserTests
 
         Assert.HasCount(2, entries);
         Assert.AreEqual("ERROR", entries[0].Level);
-        StringAssert.Contains(entries[0].Message, "Timeout expired");
-        StringAssert.Contains(entries[0].Message, "GetByIdAsync");
+        Assert.AreEqual("Failed to load invoice 5541", entries[0].Message);
+        Assert.IsNotNull(entries[0].Exception);
+        StringAssert.Contains(entries[0].Exception!.Message!, "Timeout expired");
+        StringAssert.Contains(entries[0].Exception.StackTrace!, "GetByIdAsync");
         Assert.AreEqual("INFO", entries[1].Level);
     }
 
@@ -90,7 +93,9 @@ public sealed class LogParserTests
 
         Assert.HasCount(2, entries);
         Assert.AreEqual("ERROR", entries[0].Level);
-        StringAssert.Contains(entries[0].Message, "FileNotFoundException");
+        Assert.AreEqual("Unhandled exception", entries[0].Message);
+        Assert.IsNotNull(entries[0].Exception);
+        Assert.AreEqual("System.IO.FileNotFoundException", entries[0].Exception!.Type);
         Assert.AreEqual("15", entries[0].Properties!["Thread"]);
     }
 

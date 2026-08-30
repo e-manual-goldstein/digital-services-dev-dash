@@ -20,4 +20,13 @@ internal static class LogEntryDisplay
 
         return parts.Count == 0 ? "Log entry" : string.Join(" · ", parts);
     }
+
+    public static bool IsErrorLevel(string? level) =>
+        level?.ToUpperInvariant() switch
+        {
+            "ERROR" or "ERR" or "FATAL" or "CRITICAL" => true,
+            _ => false
+        };
+
+    public static bool HasExceptionDetail(ParsedLogEntry entry) => entry.Exception is not null;
 }

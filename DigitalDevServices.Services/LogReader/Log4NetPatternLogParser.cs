@@ -85,7 +85,8 @@ public sealed partial class Log4NetPatternLogParser : ILogEntryParser
 
         public void Build(List<ParsedLogEntry> entries)
         {
-            var message = _message.ToString();
+            var fullMessage = _message.ToString();
+            var (message, exception) = LogEntryExceptionSplitter.Split(fullMessage);
             DateTimeOffset? timestamp = DateTimeOffset.TryParseExact(
                 _timestampText,
                 "yyyy-MM-dd HH:mm:ss,fff",
@@ -101,6 +102,7 @@ public sealed partial class Log4NetPatternLogParser : ILogEntryParser
                 Level = _level,
                 Message = message,
                 RawText = _rawText.ToString(),
+                Exception = exception,
                 Properties = new Dictionary<string, string>
                 {
                     ["Logger"] = _logger,

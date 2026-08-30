@@ -215,7 +215,7 @@ else
                         <th style="width: 12rem;">Time</th>
                         <th style="width: 7rem;">Level</th>
                         <th>Message</th>
-                        <th style="width: 9rem;"></th>
+                        <th style="width: 11rem;"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -237,11 +237,21 @@ else
                             </td>
                             <td class="font-monospace small text-break">@entry.Message</td>
                             <td>
-                                <button type="button"
-                                        class="btn btn-sm btn-outline-secondary"
-                                        @onclick="() => ShowRawEntry(entry)">
-                                    View raw entry
-                                </button>
+                                <div class="d-flex flex-column gap-1">
+                                    @if (LogEntryDisplay.IsErrorLevel(entry.Level) && LogEntryDisplay.HasExceptionDetail(entry))
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger"
+                                                @onclick="() => ShowException(entry)">
+                                            View exception
+                                        </button>
+                                    }
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-secondary"
+                                            @onclick="() => ShowRawEntry(entry)">
+                                        View raw entry
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -256,6 +266,11 @@ else
                  Body="@(_rawEntryModalEntry?.RawText ?? string.Empty)"
                  OnClose="CloseRawEntryModal" />
 
+<ExceptionDetailModal IsOpen="_exceptionModalEntry is not null"
+                      Title="@(_exceptionModalEntry is null ? string.Empty : LogEntryDisplay.FormatModalTitle(_exceptionModalEntry))"
+                      Exception="_exceptionModalEntry?.Exception"
+                      OnClose="CloseExceptionModal" />
+
 @code {
     private const int DefaultMaxLines = 100;
     private const int MaxLinesStep = 100;
@@ -268,6 +283,7 @@ else
     private CachedEnvironment? _environment;
     private IReadOnlyList<ParsedLogEntry> _allEntries = [];
     private ParsedLogEntry? _rawEntryModalEntry;
+    private ParsedLogEntry? _exceptionModalEntry;
     private IReadOnlyList<AvailableLogFile> _availableLogFiles = [];
     private string? _selectedLogFilePath;
     private string? _logFilePath;
@@ -313,6 +329,7 @@ else
         _loadingMessage = "Loading logs…";
         _allEntries = [];
         _rawEntryModalEntry = null;
+        _exceptionModalEntry = null;
         _logFilePath = null;
         _rawContent = null;
         _configuredFormatName = null;
@@ -494,4 +511,8 @@ else
     private void ShowRawEntry(ParsedLogEntry entry) => _rawEntryModalEntry = entry;
 
     private void CloseRawEntryModal() => _rawEntryModalEntry = null;
+
+    private void ShowException(ParsedLogEntry entry) => _exceptionModalEntry = entry;
+
+    private void CloseExceptionModal() => _exceptionModalEntry = null;
 }

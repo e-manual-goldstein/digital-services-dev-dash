@@ -10,5 +10,7 @@ public class ParsedLogEntry
 
     public required string RawText { get; init; }
 
+    public ParsedLogException? Exception { get; init; }
+
     public IReadOnlyDictionary<string, string>? Properties { get; init; }
 }
