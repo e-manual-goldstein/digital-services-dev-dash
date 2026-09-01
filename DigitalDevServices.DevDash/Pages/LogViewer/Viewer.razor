@@ -1,12 +1,14 @@
 @page "/log-viewer/{InstanceId:guid}"
 @using DigitalDevServices.DevDash.LogViewer
 @using DigitalDevServices.DevDash.Shared.Components
+@implements IAsyncDisposable
 @inject IEnvironmentService EnvironmentService
 @inject IApplicationInstanceService InstanceService
 @inject ILogPathResolutionService LogPathResolutionService
 @inject ILogReaderService LogReaderService
 @inject ILogFormatProfileService LogFormatProfileService
 @inject ILogParsingService LogParsingService
+@inject IJSRuntime JS
 
 <PageTitle>@_pageTitle</PageTitle>
 
@@ -52,7 +54,22 @@ else
                 </p>
             }
         </div>
-        <div class="d-flex flex-wrap gap-2">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            @if (_isLiveWatching)
+            {
+                <span class="badge text-bg-success align-self-center">
+                    <span class="spinner-grow spinner-grow-sm me-1" role="status" aria-hidden="true"></span>
+                    Live
+                </span>
+            }
+            <div class="form-check mb-0 align-self-center">
+                <input id="log-auto-scroll"
+                       class="form-check-input"
+                       type="checkbox"
+                       @bind="_autoScroll"
+                       disabled="@(!_isLiveWatching)" />
+                <label class="form-check-label" for="log-auto-scroll">Auto-scroll</label>
+            </div>
             <button type="button"
                     class="btn btn-outline-secondary"
                     disabled="@_isBusy"
@@ -208,8 +225,8 @@ else
             </p>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-striped table-hover align-middle">
+        <div @ref="_logTableScrollContainer" class="table-responsive log-viewer-table-scroll">
+            <table class="table table-striped table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
                         <th style="width: 12rem;">Time</th>
@@ -272,6 +289,8 @@ else
                       OnClose="CloseExceptionModal" />
 
 @code {
+    private static readonly TimeSpan LivePollInterval = TimeSpan.FromSeconds(2);
+
     private const int DefaultMaxLines = 100;
     private const int MaxLinesStep = 100;
     private const int MaxAllowedLines = 10_000;
@@ -300,7 +319,13 @@ else
     private bool _isLoading = true;
     private bool _isRefreshing;
     private bool _isBusy;
+    private bool _isLiveWatching;
+    private bool _autoScroll = true;
     private int _maxLines = DefaultMaxLines;
+    private long _tailBytePosition;
+    private CancellationTokenSource? _liveTailCts;
+    private PeriodicTimer? _liveTailTimer;
+    private ElementReference _logTableScrollContainer;
 
     private bool CanLoadMore => _maxLines < MaxAllowedLines;
 
@@ -324,6 +349,7 @@ else
 
     private async Task LoadLogsAsync()
     {
+        await StopLiveTailAsync();
         _errorMessage = null;
         _isLoading = true;
         _loadingMessage = "Loading logs…";
@@ -375,6 +401,7 @@ else
 
             await LoadAvailableLogFilesAsync();
             await ReadLogsAsync();
+            await StartLiveTailAsync();
         }
         catch (Exception ex)
         {
@@ -410,33 +437,40 @@ else
             return;
         }
 
+        await StopLiveTailAsync();
         _selectedLogFilePath = logFilePath;
         _maxLines = DefaultMaxLines;
         await RefreshTailAsync();
+        await StartLiveTailAsync();
     }
 
     private Task OnParseFormatChangedAsync(string? formatName)
     {
         _selectedParseFormat = formatName;
+        ReparseRawContent();
+        return Task.CompletedTask;
+    }
 
+    private void ReparseRawContent()
+    {
         if (string.IsNullOrWhiteSpace(_rawContent))
         {
-            return Task.CompletedTask;
+            return;
         }
 
-        if (string.IsNullOrWhiteSpace(formatName))
+        if (string.IsNullOrWhiteSpace(_selectedParseFormat))
         {
             _allEntries = [];
             _errorMessage = null;
-            return Task.CompletedTask;
+            return;
         }
 
         try
         {
             _allEntries = LogParsingService.ParseWithFormat(
-                formatName,
+                _selectedParseFormat,
                 _rawContent,
-                string.Equals(formatName, LogFormatNames.CustomRegex, StringComparison.OrdinalIgnoreCase)
+                string.Equals(_selectedParseFormat, LogFormatNames.CustomRegex, StringComparison.OrdinalIgnoreCase)
                     ? _configuredParserConfig
                     : null);
             _errorMessage = null;
@@ -446,8 +480,6 @@ else
             _errorMessage = ex.Message;
             _allEntries = [];
         }
-
-        return Task.CompletedTask;
     }
 
     private async Task ReadLogsAsync()
@@ -472,8 +504,145 @@ else
         _allEntries = result.Entries;
         _logFilePath = result.LogFilePath;
         _rawContent = result.RawContent;
+        _tailBytePosition = result.TailBytePosition;
         _selectedLogFilePath ??= result.LogFilePath;
     }
+
+    private async Task StartLiveTailAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_logFilePath) || !string.IsNullOrWhiteSpace(_errorMessage))
+        {
+            return;
+        }
+
+        await StopLiveTailAsync();
+
+        _liveTailCts = new CancellationTokenSource();
+        _liveTailTimer = new PeriodicTimer(LivePollInterval);
+        _isLiveWatching = true;
+        _ = PollLiveTailAsync(_liveTailCts.Token);
+    }
+
+    private async Task StopLiveTailAsync()
+    {
+        _isLiveWatching = false;
+
+        if (_liveTailCts is not null)
+        {
+            await _liveTailCts.CancelAsync();
+            _liveTailCts.Dispose();
+            _liveTailCts = null;
+        }
+
+        if (_liveTailTimer is not null)
+        {
+            _liveTailTimer.Dispose();
+            _liveTailTimer = null;
+        }
+    }
+
+    private async Task PollLiveTailAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (_liveTailTimer is not null && await _liveTailTimer.WaitForNextTickAsync(cancellationToken))
+            {
+                var hadNewEntries = false;
+
+                await InvokeAsync(async () =>
+                {
+                    hadNewEntries = await PollForNewEntriesAsync();
+                    StateHasChanged();
+
+                    if (hadNewEntries && _autoScroll)
+                    {
+                        await ScrollToBottomIfNeededAsync();
+                    }
+                });
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private async Task<bool> PollForNewEntriesAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_logFilePath))
+        {
+            return false;
+        }
+
+        try
+        {
+            var result = await LogReaderService.ReadIncrementalAsync(
+                InstanceId,
+                _tailBytePosition,
+                _selectedLogFilePath);
+
+            if (!result.IsSuccess)
+            {
+                _errorMessage = result.ErrorMessage;
+                await StopLiveTailAsync();
+                return false;
+            }
+
+            if (result.WasTruncated)
+            {
+                await ReadLogsAsync();
+                return _allEntries.Count > 0;
+            }
+
+            if (string.IsNullOrEmpty(result.NewRawContent))
+            {
+                _tailBytePosition = result.TailBytePosition;
+                return false;
+            }
+
+            _rawContent = string.IsNullOrEmpty(_rawContent)
+                ? result.NewRawContent
+                : _rawContent + result.NewRawContent;
+            _tailBytePosition = result.TailBytePosition;
+            TrimRawContentToWindow();
+            ReparseRawContent();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+            await StopLiveTailAsync();
+            return false;
+        }
+    }
+
+    private void TrimRawContentToWindow()
+    {
+        if (string.IsNullOrEmpty(_rawContent))
+        {
+            return;
+        }
+
+        var lines = _rawContent.Split('\n');
+        if (lines.Length <= _maxLines)
+        {
+            return;
+        }
+
+        _rawContent = string.Join('\n', lines.AsSpan(lines.Length - _maxLines));
+    }
+
+    private async Task ScrollToBottomIfNeededAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("devDashLogViewer.scrollToBottom", _logTableScrollContainer);
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
+
+    public async ValueTask DisposeAsync() => await StopLiveTailAsync();
 
     private async Task RefreshTailAsync()
     {
@@ -484,6 +653,11 @@ else
         try
         {
             await ReadLogsAsync();
+
+            if (_isLiveWatching)
+            {
+                await ScrollToBottomIfNeededAsync();
+            }
         }
         catch (Exception ex)
         {

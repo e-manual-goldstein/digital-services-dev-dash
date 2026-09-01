@@ -10,14 +10,13 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~LOG-010~~ | [LOG](tickets/LOG-log-interpreter.md) | **View exception** modal for error rows (stack trace + inner exceptions) |
+| ~~LOG-012~~ | [LOG](tickets/LOG-log-interpreter.md) | **Live tail** — file watch, auto-update entries, auto-scroll toggle |
 
 ## Active (recommended order)
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
 | LOG-011 | [LOG](tickets/LOG-log-interpreter.md) | **Raw / JSON / XML** format toggle for text viewers |
-| LOG-012 | [LOG](tickets/LOG-log-interpreter.md) | **Live tail** — file watch, auto-update entries, auto-scroll toggle |
 
 ## Epic progress
 
@@ -25,7 +24,7 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 
 | Epic | Description | Tickets Completed | Tickets Shelved | Total Tickets | Progress |
 |------|-------------|-------------------|-----------------|---------------|----------|
-| [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | 10 | 0 | 12 | 🟩🟩🟩🟩🟩🟩🟩🟩⬜⬜ 83% |
+| [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | 11 | 0 | 12 | 🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜ 92% |
 | [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Named pipeline feeds (no branch matching v1) | 2 | 1 | 3 | 🟩🟩🟩🟩🟩🟩🟨🟨🟨⬜ 67% |
 | [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 3 | 2 | 5 | 🟩🟩🟩🟩🟩🟩🟨🟨🟨🟨 60% |
 
@@ -63,7 +62,7 @@ Unprioritized — not in the active queue. See [IDE-ideas.md](tickets/IDE-ideas.
 | [Foundation (FND)](tickets/FND-foundation.md) | Blazor skeleton and layout | FND-001 – FND-002 |
 | [Applications (APP)](tickets/APP-applications.md) | Deployable app vs instance | APP-001 – APP-005 |
 
-*LOG epic reopened for LOG-011 – LOG-012 — see [Epic progress](#epic-progress).*
+*LOG epic reopened for LOG-011 — see [Epic progress](#epic-progress).*
 
 ## Domain model (overview)
 

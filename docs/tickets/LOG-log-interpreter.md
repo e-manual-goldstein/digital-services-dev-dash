@@ -30,7 +30,7 @@
 | [LOG-009](#log-009) | Done | Per-entry raw log modal on viewer table | LOG-003 |
 | [LOG-010](#log-010) | Done | Structured exception detail modal for error rows | LOG-003, LOG-009 |
 | [LOG-011](#log-011) | Open | Raw / JSON / XML format toggle for text viewers | LOG-006, LOG-009 |
-| [LOG-012](#log-012) | Open | Live tail with file watch and auto-scroll | LOG-003, LOG-005 |
+| [LOG-012](#log-012) | Done | Live tail with file watch and auto-scroll | LOG-003, LOG-005 |
 
 ---
 
@@ -288,7 +288,7 @@ Built-in parsers (`PlainText`, `NLogMultiline`, `Log4NetPattern`, etc.) all redu
 |-------|--------|
 | **ID** | LOG-012 |
 | **Title** | Live tail with file watch and auto-scroll |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | While the user is on `/log-viewer/{instanceId}` viewing a **specific log file**, keep a file-watching mechanism active so new log lines are detected and the parsed entry table updates automatically — without requiring **Refresh tail**. **Watching lifecycle:** start when the viewer has loaded a resolved file path; stop when the user navigates away, changes instance, selects a different file from the dropdown, or the component is disposed. If `LogPath` is a directory, watch the currently selected file only (LOG-005). **Detection:** prefer `FileSystemWatcher` (or equivalent) on the server for the resolved path, with a sensible fallback (e.g. polling file length / last-write time on a short interval) when the path is UNC or watching is unsupported. On change, read only **new** content since the last tail position (track byte offset or line cursor); append newly parsed entries to the in-memory list rather than re-reading the entire tail on every event. Re-apply active filters (LOG-004) and **Parse as** override (LOG-007) to new entries. Cap in-memory growth: continue to respect the current `_maxLines` / load-more window, or trim oldest displayed entries when the window is full (document chosen behaviour). **UI:** add **Auto-scroll** checkbox (default **on**) near the table or toolbar. When enabled and new entries arrive, scroll the table container to the bottom so the newest rows are visible; when disabled, preserve the user's scroll position. If the user has scrolled up manually, optionally pause auto-scroll until they return to the bottom or re-check the box (nice-to-have). Show a subtle **Live** / **Watching** indicator while active; surface read/watch errors without tearing down the page. **Backend:** extend `ILogReaderService` (or add `ILogTailWatcherService`) with incremental read/watch APIs; ensure thread-safe coordination if multiple users watch the same path. **Out of scope:** watching multiple files simultaneously; push notifications outside the log viewer page; editing or deleting log files. |
 | **Test / demo** | Open viewer on a tailing log file → append lines from another process → table updates within a few seconds → auto-scroll shows newest row. Uncheck **Auto-scroll** → append more lines → scroll position unchanged. Switch log file → watch moves to new file. Navigate away → watcher stops (no leaked handles). `dotnet test` covers incremental read / offset tracking. |
 | **Depends on** | LOG-003, LOG-005 |

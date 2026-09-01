@@ -16,4 +16,10 @@ public interface ILogReaderService
         string? formatName = null,
         string? parserConfig = null,
         CancellationToken cancellationToken = default);
+
+    Task<LogIncrementalReadResult> ReadIncrementalAsync(
+        Guid applicationInstanceId,
+        long startPosition,
+        string? logFilePath = null,
+        CancellationToken cancellationToken = default);
 }

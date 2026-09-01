@@ -10,6 +10,8 @@ public class LogReadResult
 
     public string? RawContent { get; init; }
 
+    public long TailBytePosition { get; init; }
+
     public string? ErrorMessage { get; init; }
 
     public bool IsSuccess => string.IsNullOrWhiteSpace(ErrorMessage);

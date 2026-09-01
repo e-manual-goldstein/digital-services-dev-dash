@@ -146,3 +146,8 @@ code {
     border-radius: 0.375rem;
     padding: 0.75rem;
 }
+
+.log-viewer-table-scroll {
+    max-height: min(70vh, 40rem);
+    overflow-y: auto;
+}

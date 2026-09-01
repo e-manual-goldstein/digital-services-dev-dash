@@ -1,3 +1,5 @@
+using DigitalDevServices.Model.Logs;
+
 namespace DigitalDevServices.Services.Logs;
 
 internal static class LogFileTailReader
@@ -89,4 +91,55 @@ internal static class LogFileTailReader
             > MaxAllowedLines => MaxAllowedLines,
             _ => maxLines
         };
+
+    public static long GetFileLength(string filePath) => new FileInfo(filePath).Length;
+
+    public static async Task<LogFileAppendResult> ReadAppendAsync(
+        string filePath,
+        long startPosition,
+        CancellationToken cancellationToken = default)
+    {
+        var fileInfo = new FileInfo(filePath);
+        if (!fileInfo.Exists)
+        {
+            throw new FileNotFoundException("Log file was not found.", filePath);
+        }
+
+        if (startPosition > fileInfo.Length)
+        {
+            return new LogFileAppendResult
+            {
+                StartPosition = startPosition,
+                EndPosition = 0,
+                WasTruncated = true
+            };
+        }
+
+        if (startPosition == fileInfo.Length)
+        {
+            return new LogFileAppendResult
+            {
+                StartPosition = startPosition,
+                EndPosition = fileInfo.Length
+            };
+        }
+
+        await using var stream = new FileStream(
+            filePath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.ReadWrite);
+        stream.Seek(startPosition, SeekOrigin.Begin);
+
+        using var reader = new StreamReader(stream);
+        var content = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+        var endPosition = fileInfo.Length;
+
+        return new LogFileAppendResult
+        {
+            Content = content,
+            StartPosition = startPosition,
+            EndPosition = endPosition
+        };
+    }
 }

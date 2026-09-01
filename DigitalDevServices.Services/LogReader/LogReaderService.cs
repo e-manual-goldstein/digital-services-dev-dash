@@ -108,7 +108,58 @@ public sealed class LogReaderService : ILogReaderService
             Entries = entries,
             LogFilePath = resolvedLogFilePath,
             RawLinesRead = rawLinesRead,
-            RawContent = content
+            RawContent = content,
+            TailBytePosition = LogFileTailReader.GetFileLength(resolvedLogFilePath!)
         };
+    }
+
+    public async Task<LogIncrementalReadResult> ReadIncrementalAsync(
+        Guid applicationInstanceId,
+        long startPosition,
+        string? logFilePath = null,
+        CancellationToken cancellationToken = default)
+    {
+        var instance = await _applicationInstanceService
+            .GetByIdAsync(applicationInstanceId, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (instance is null)
+        {
+            return new LogIncrementalReadResult
+            {
+                ErrorMessage = "Application instance was not found."
+            };
+        }
+
+        if (!LogPathResolver.TryResolveLogFile(instance.LogPath, logFilePath, out var resolvedLogFilePath, out var resolveError))
+        {
+            return new LogIncrementalReadResult
+            {
+                ErrorMessage = resolveError
+            };
+        }
+
+        try
+        {
+            var appendResult = await LogFileTailReader
+                .ReadAppendAsync(resolvedLogFilePath!, startPosition, cancellationToken)
+                .ConfigureAwait(false);
+
+            return new LogIncrementalReadResult
+            {
+                LogFilePath = resolvedLogFilePath,
+                NewRawContent = appendResult.Content,
+                TailBytePosition = appendResult.EndPosition,
+                WasTruncated = appendResult.WasTruncated
+            };
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return new LogIncrementalReadResult
+            {
+                LogFilePath = resolvedLogFilePath,
+                ErrorMessage = $"Could not read log file '{resolvedLogFilePath}': {ex.Message}"
+            };
+        }
     }
 }

@@ -338,6 +338,62 @@ public sealed class LogReaderServiceTests
         Assert.AreEqual("Application starting", overrideResult.Entries[0].Message);
     }
 
+    [TestMethod]
+    public async Task ReadIncrementalAsync_AppendsNewContent()
+    {
+        await using var fixture = await LogReaderServiceFixture.CreateAsync();
+        var logDirectory = await fixture.CreateLogDirectoryAsync();
+        var logFilePath = Path.Combine(logDirectory, "app.log");
+        await File.WriteAllTextAsync(logFilePath, "2026-08-23 09:02:11.004 INFO  [WorkerHost] First entry\n");
+
+        var application = await fixture.DeployableApplicationService.CreateAsync("Worker Host");
+        await fixture.ProfileService.UpsertAsync(new LogFormatProfileUpsert
+        {
+            DeployableApplicationId = application.Id,
+            FormatName = LogFormatNames.PlainText
+        });
+
+        var instance = await fixture.CreateApplicationInstanceAsync(application.Id, logFilePath);
+        var initial = await fixture.ReaderService.ReadAsync(instance.Id);
+
+        Assert.IsTrue(initial.IsSuccess);
+        Assert.HasCount(1, initial.Entries);
+        Assert.IsGreaterThan(0, initial.TailBytePosition);
+
+        await File.AppendAllTextAsync(logFilePath, "2026-08-23 09:02:12.004 WARN  [WorkerHost] Second entry\n");
+
+        var incremental = await fixture.ReaderService.ReadIncrementalAsync(
+            instance.Id,
+            initial.TailBytePosition,
+            logFilePath);
+
+        Assert.IsTrue(incremental.IsSuccess);
+        Assert.IsFalse(incremental.WasTruncated);
+        StringAssert.Contains(incremental.NewRawContent, "Second entry");
+        Assert.IsGreaterThan(initial.TailBytePosition, incremental.TailBytePosition);
+    }
+
+    [TestMethod]
+    public async Task ReadIncrementalAsync_DetectsTruncationWhenFileShrinks()
+    {
+        await using var fixture = await LogReaderServiceFixture.CreateAsync();
+        var logDirectory = await fixture.CreateLogDirectoryAsync();
+        var logFilePath = Path.Combine(logDirectory, "app.log");
+        await File.WriteAllTextAsync(logFilePath, "2026-08-23 09:02:11.004 INFO  [WorkerHost] First entry\n");
+
+        var application = await fixture.DeployableApplicationService.CreateAsync("Worker Host");
+        var instance = await fixture.CreateApplicationInstanceAsync(application.Id, logFilePath);
+        var startPosition = new FileInfo(logFilePath).Length;
+
+        await File.WriteAllTextAsync(logFilePath, "short\n");
+
+        var incremental = await fixture.ReaderService.ReadIncrementalAsync(instance.Id, startPosition, logFilePath);
+
+        Assert.IsTrue(incremental.IsSuccess);
+        Assert.IsTrue(incremental.WasTruncated);
+        Assert.IsEmpty(incremental.NewRawContent);
+    }
+
     private sealed class LogReaderServiceFixture : IAsyncDisposable
     {
         private readonly ServiceProvider _serviceProvider;
