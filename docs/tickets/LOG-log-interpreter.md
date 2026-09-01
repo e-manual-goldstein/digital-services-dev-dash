@@ -29,6 +29,8 @@
 | [LOG-008](#log-008) | Done | Custom regex log parser (Entry / EntryStart) | LOG-001, LOG-007 |
 | [LOG-009](#log-009) | Done | Per-entry raw log modal on viewer table | LOG-003 |
 | [LOG-010](#log-010) | Done | Structured exception detail modal for error rows | LOG-003, LOG-009 |
+| [LOG-011](#log-011) | Open | Raw / JSON / XML format toggle for text viewers | LOG-006, LOG-009 |
+| [LOG-012](#log-012) | Open | Live tail with file watch and auto-scroll | LOG-003, LOG-005 |
 
 ---
 
@@ -268,3 +270,25 @@ Built-in parsers (`PlainText`, `NLogMultiline`, `Log4NetPattern`, etc.) all redu
 | **Test / demo** | Serilog error line with `error.stack_trace` → table shows short message → **View exception** → modal shows outer + inner chain. NLog multiline error with stack → same. Non-error row → no button. Error row without parseable exception → button hidden or disabled with tooltip. `dotnet test` covers exception text parser and at least one format integration. |
 | **Depends on** | LOG-003, LOG-009 |
 | **Implementation** | `ParsedLogException` on `ParsedLogEntry`; `DotNetExceptionTextParser`, `LogEntryExceptionSplitter`, `SerilogExceptionExtractor`; parsers updated (Serilog, NLog, log4net, custom regex EntryStart). `ExceptionDetailModal` + **View exception** on error rows in viewer. Tests in `DotNetExceptionTextParserTests`. |
+
+### LOG-011
+
+| Field | Detail |
+|-------|--------|
+| **ID** | LOG-011 |
+| **Title** | Raw / JSON / XML format toggle for text viewers |
+| **Status** | Open |
+| **Description** | Several UI surfaces show unformatted text that is often JSON (single object, NDJSON lines) or XML. Add a reusable **FormattedTextViewer** (or similar) shared component with a **Raw** / **JSON** / **XML** radio-button group above the content area. **Raw** shows the source string unchanged (current behaviour). **JSON** attempts to parse and pretty-print (indented); **XML** attempts to parse and pretty-print with declaration/indentation. When the selected format cannot be parsed, show the raw text and a short inline hint (e.g. “Not valid JSON”) rather than failing silently. For multi-line content where each line is a separate JSON object (common in log tails), pretty-print line-by-line; leave non-JSON lines as-is or prefix unchanged. Default selection: **Raw**, or auto-select JSON/XML when the entire body parses successfully on first render (optional nice-to-have). Preserve existing monospace / scroll styling (reuse `.log-entry-raw` / `.log-exception-stack` patterns). Selection is per-component instance (session-only; not persisted). **Adopt in:** log viewer **Raw log content** panel (LOG-006), **View raw entry** modal (`TextDetailModal` / LOG-009). **Out of scope for v1:** exception stack traces (`ExceptionDetailModal` — not JSON/XML), configuration value cells, server-side re-fetch. **Implementation:** extract formatting into a small service or static helper (`IFormattedTextService` / `FormattedTextFormatter`) with unit tests for JSON/XML success, invalid input, and NDJSON tails; component lives under `Shared/Components`. |
+| **Test / demo** | Open log viewer on Serilog JSON tail → **Raw log content** → switch to **JSON** → indented structure → switch to **XML** on XML sample → shows formatted tree → invalid JSON shows hint and raw text. **View raw entry** on a single JSON line → same radio group in modal. `dotnet test --filter FormattedText` → pass. |
+| **Depends on** | LOG-006, LOG-009 |
+
+### LOG-012
+
+| Field | Detail |
+|-------|--------|
+| **ID** | LOG-012 |
+| **Title** | Live tail with file watch and auto-scroll |
+| **Status** | Open |
+| **Description** | While the user is on `/log-viewer/{instanceId}` viewing a **specific log file**, keep a file-watching mechanism active so new log lines are detected and the parsed entry table updates automatically — without requiring **Refresh tail**. **Watching lifecycle:** start when the viewer has loaded a resolved file path; stop when the user navigates away, changes instance, selects a different file from the dropdown, or the component is disposed. If `LogPath` is a directory, watch the currently selected file only (LOG-005). **Detection:** prefer `FileSystemWatcher` (or equivalent) on the server for the resolved path, with a sensible fallback (e.g. polling file length / last-write time on a short interval) when the path is UNC or watching is unsupported. On change, read only **new** content since the last tail position (track byte offset or line cursor); append newly parsed entries to the in-memory list rather than re-reading the entire tail on every event. Re-apply active filters (LOG-004) and **Parse as** override (LOG-007) to new entries. Cap in-memory growth: continue to respect the current `_maxLines` / load-more window, or trim oldest displayed entries when the window is full (document chosen behaviour). **UI:** add **Auto-scroll** checkbox (default **on**) near the table or toolbar. When enabled and new entries arrive, scroll the table container to the bottom so the newest rows are visible; when disabled, preserve the user's scroll position. If the user has scrolled up manually, optionally pause auto-scroll until they return to the bottom or re-check the box (nice-to-have). Show a subtle **Live** / **Watching** indicator while active; surface read/watch errors without tearing down the page. **Backend:** extend `ILogReaderService` (or add `ILogTailWatcherService`) with incremental read/watch APIs; ensure thread-safe coordination if multiple users watch the same path. **Out of scope:** watching multiple files simultaneously; push notifications outside the log viewer page; editing or deleting log files. |
+| **Test / demo** | Open viewer on a tailing log file → append lines from another process → table updates within a few seconds → auto-scroll shows newest row. Uncheck **Auto-scroll** → append more lines → scroll position unchanged. Switch log file → watch moves to new file. Navigate away → watcher stops (no leaked handles). `dotnet test` covers incremental read / offset tracking. |
+| **Depends on** | LOG-003, LOG-005 |
