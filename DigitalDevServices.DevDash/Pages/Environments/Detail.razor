@@ -364,57 +364,80 @@ else
         else
         {
             <div class="table-responsive">
-                <table class="table table-striped table-hover align-middle">
+                <table class="table table-striped table-hover align-middle table-deployed-apps">
                     <thead class="table-light">
                         <tr>
-                            <th>Application</th>
-                            <th>Build</th>
-                            <th>Homepage</th>
-                            <th style="width: 22rem;">Actions</th>
+                            <th class="table-deployed-apps__app">Application</th>
+                            <th class="table-deployed-apps__build">Build</th>
+                            <th class="table-deployed-apps__homepage">Homepage</th>
+                            <th class="table-deployed-apps__action">Logs</th>
+                            <th class="table-deployed-apps__action">Configuration</th>
+                            <th class="table-deployed-apps__action">Packages</th>
+                            <th class="table-deployed-apps__action">Edit</th>
+                            <th class="table-deployed-apps__action">Delete</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var instance in _instances)
                         {
                             var isDeleting = _deletingInstanceId == instance.Id;
+                            var hasHomepage = instance.DeployableApplication.IsWebApp
+                                              && !string.IsNullOrWhiteSpace(instance.HomepageUrl);
                             <tr>
-                                <td>@instance.DeployableApplication.Name</td>
-                                <td><code>@instance.BuildVersionNumber</code></td>
-                                <td>
-                                    @if (instance.DeployableApplication.IsWebApp
-                                         && !string.IsNullOrWhiteSpace(instance.HomepageUrl))
+                                <td class="table-deployed-apps__app">
+                                    <span class="table-deployed-apps__truncate" title="@instance.DeployableApplication.Name">
+                                        @instance.DeployableApplication.Name
+                                    </span>
+                                </td>
+                                <td class="table-deployed-apps__build">
+                                    <code class="table-deployed-apps__build-code">@instance.BuildVersionNumber</code>
+                                </td>
+                                <td class="table-deployed-apps__homepage">
+                                    @if (hasHomepage)
                                     {
                                         <a href="@instance.HomepageUrl"
+                                           class="table-deployed-apps__truncate"
                                            target="_blank"
-                                           rel="noopener noreferrer">@instance.HomepageUrl</a>
+                                           rel="noopener noreferrer"
+                                           title="@instance.HomepageUrl">
+                                            @instance.HomepageUrl
+                                        </a>
                                     }
                                     else
                                     {
                                         <span class="text-muted">—</span>
                                     }
                                 </td>
-                                <td>
-                                    <div class="d-flex flex-wrap gap-1">
-                                        <button type="button"
-                                                class="btn btn-sm btn-outline-secondary"
-                                                disabled="@_isBusy"
-                                                @onclick="() => ShowEditDeploymentForm(instance)">
-                                            Edit
-                                        </button>
-                                        <a class="btn btn-sm btn-outline-secondary"
-                                           href="@($"/log-viewer/{instance.Id}")">
-                                            Logs
-                                        </a>
-                                        <a class="btn btn-sm btn-outline-secondary"
-                                           href="@($"/configuration/{instance.Id}")">
-                                            Configuration
-                                        </a>
-                                        <a class="btn btn-sm btn-outline-secondary"
-                                           href="@($"/environments/{LocalId}/instances/{instance.Id}/packages")">
-                                            Packages
-                                        </a>
-                                        @if (isDeleting)
-                                        {
+                                <td class="table-deployed-apps__action">
+                                    <a class="btn btn-sm btn-outline-secondary"
+                                       href="@($"/log-viewer/{instance.Id}")">
+                                        Logs
+                                    </a>
+                                </td>
+                                <td class="table-deployed-apps__action">
+                                    <a class="btn btn-sm btn-outline-secondary"
+                                       href="@($"/configuration/{instance.Id}")">
+                                        Configuration
+                                    </a>
+                                </td>
+                                <td class="table-deployed-apps__action">
+                                    <a class="btn btn-sm btn-outline-secondary"
+                                       href="@($"/environments/{LocalId}/instances/{instance.Id}/packages")">
+                                        Packages
+                                    </a>
+                                </td>
+                                <td class="table-deployed-apps__action">
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-secondary"
+                                            disabled="@_isBusy"
+                                            @onclick="() => ShowEditDeploymentForm(instance)">
+                                        Edit
+                                    </button>
+                                </td>
+                                <td class="table-deployed-apps__action">
+                                    @if (isDeleting)
+                                    {
+                                        <div class="table-deployed-apps__delete-confirm">
                                             <button type="button"
                                                     class="btn btn-sm btn-danger"
                                                     disabled="@_isBusy"
@@ -427,18 +450,18 @@ else
                                                     @onclick="CancelDeleteDeployment">
                                                 Cancel
                                             </button>
-                                        }
-                                        else
-                                        {
-                                            <button type="button"
-                                                    class="btn btn-sm btn-outline-danger"
-                                                    disabled="@_isBusy"
-                                                    title="Remove this deployment from the environment"
-                                                    @onclick="() => PromptDeleteDeployment(instance.Id)">
-                                                Delete
-                                            </button>
-                                        }
-                                    </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger"
+                                                disabled="@_isBusy"
+                                                title="Remove this deployment from the environment"
+                                                @onclick="() => PromptDeleteDeployment(instance.Id)">
+                                            Delete
+                                        </button>
+                                    }
                                 </td>
                             </tr>
                         }

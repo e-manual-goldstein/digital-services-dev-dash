@@ -147,11 +147,92 @@ code {
     padding: 0.75rem;
 }
 
+.log-viewer-page {
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - 1.1rem);
+    max-height: calc(100dvh - 1.1rem);
+    min-height: 0;
+    overflow: hidden;
+}
+
+.log-viewer-page__chrome {
+    flex: 0 0 auto;
+}
+
+.log-viewer-page__table-region {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
 .log-viewer-table-scroll {
-    max-height: min(70vh, 40rem);
-    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
 }
 
 .log-viewer-table-scroll thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
     vertical-align: bottom;
+    background-color: #f8f9fa;
+    box-shadow: inset 0 -1px 0 #dee2e6;
+}
+
+.table-deployed-apps {
+    table-layout: fixed;
+    width: 100%;
+    min-width: 52rem;
+}
+
+.table-deployed-apps__app {
+    width: 22%;
+    max-width: 12rem;
+}
+
+.table-deployed-apps__build {
+    width: 6.5rem;
+}
+
+.table-deployed-apps__homepage {
+    width: 18%;
+    max-width: 11rem;
+}
+
+.table-deployed-apps__action {
+    width: 5.5rem;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.table-deployed-apps thead th.table-deployed-apps__action {
+    font-size: 0.8125rem;
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
+}
+
+.table-deployed-apps__truncate {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.table-deployed-apps__build-code {
+    font-size: 0.8125rem;
+    word-break: break-all;
+}
+
+.table-deployed-apps__delete-confirm {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: stretch;
+}
+
+.table-deployed-apps__delete-confirm .btn {
+    width: 100%;
 }

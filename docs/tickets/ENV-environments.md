@@ -38,7 +38,7 @@
 | [ENV-015](#env-015) | Done | Register from remote data → pre-filled application/deployment forms | ENV-012, ENV-013, APP-003, APP-004, APP-005 |
 | [ENV-016](#env-016) | Done | Fetch deployment/build details on environment refresh | ENV-004, ENV-007 |
 | [ENV-017](#env-017) | Done | `GetBuildVersionDetails` — version control metadata for a build | ENV-016 |
-| [ENV-018](#env-018) | Open | Deployed applications table — action buttons in dedicated columns | ENV-005 |
+| [ENV-018](#env-018) | Done | Deployed applications table — action buttons in dedicated columns | ENV-005 |
 | [ENV-019](#env-019) | Done | In-memory environment refresh snapshot for details sections | ENV-016, ENV-017 |
 | [ENV-020](#env-020) | Open | Environment picker — favourites, code label, display order | ENV-008, LOG-003, CFG-003 |
 
@@ -594,7 +594,7 @@ Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-
 |-------|--------|
 | **ID** | ENV-018 |
 | **Title** | Deployed applications table — action buttons in dedicated columns |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | Redesign the **Deployed applications** table on `/environments/{localId}` (ENV-005). **Layout:** action buttons must not be grouped in a single side column — each action (**Logs**, **Homepage**, **Configuration**, **Packages**, **Edit** / **Update** as applicable) gets its **own column** with a consistent narrow width. **Column widths:** shorten **Application**, **Build**, and **Homepage** columns so the table fits without pushing actions off-screen. Preserve existing behaviour and routes; this is a layout-only change. Responsive: on narrow viewports, horizontal scroll on the table is acceptable; do not collapse actions into a single overflow menu unless necessary for mobile. |
 | **Test / demo** | Open UAT-01 environment details with multiple deployed apps → each action is in a separate column → Application/Build/Homepage columns are compact → all buttons remain clickable. |
 | **Depends on** | ENV-005 |

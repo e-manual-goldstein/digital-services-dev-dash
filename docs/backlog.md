@@ -10,14 +10,12 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~LOG-015~~ | [LOG](tickets/LOG-log-interpreter.md) | **Table header filters** — level and search in grid header |
+| ~~ENV-018~~ | [ENV](tickets/ENV-environments.md) | **Deployed apps table** — action buttons in own columns |
 
 ## Active (recommended order)
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| LOG-016 | [LOG](tickets/LOG-log-interpreter.md) | **Viewport-filling table** — page does not scroll |
-| ENV-018 | [ENV](tickets/ENV-environments.md) | **Deployed apps table** — action buttons in own columns |
 | ENV-020 | [ENV](tickets/ENV-environments.md) | **Environment picker** — favourites, code, display order |
 | PKG-001 | [PKG](tickets/PKG-packages.md) | **Packages** first-class domain (nav and routes) |
 | PKG-002 | [PKG](tickets/PKG-packages.md) | Consume deployment **manifest** file |
@@ -38,9 +36,8 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 | Epic | Description | Tickets Completed | Tickets Shelved | Total Tickets | Progress |
 |------|-------------|-------------------|-----------------|---------------|----------|
 | [Theme (THM)](tickets/THM-theme.md) | Global colour scheme | 0 | 0 | 1 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
-| [Environments (ENV)](tickets/ENV-environments.md) | Remote API + environment details hub | 18 | 0 | 20 | 🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜ 90% |
+| [Environments (ENV)](tickets/ENV-environments.md) | Remote API + environment details hub | 19 | 0 | 20 | 🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜ 95% |
 | [Applications (APP)](tickets/APP-applications.md) | Deployable app vs instance | 5 | 0 | 7 | 🟩🟩🟩🟩🟩🟩🟩⬜⬜⬜ 71% |
-| [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | 15 | 0 | 16 | 🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜ 94% |
 | [Packages (PKG)](tickets/PKG-packages.md) | DLL inspection and comparison | 0 | 0 | 5 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
 | [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 3 | 2 | 7 | 🟩🟩🟩🟩🟩⬜⬜⬜⬜⬜ 43% |
 | [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Named pipeline feeds | 2 | 1 | 4 | 🟩🟩🟩🟩🟩⬜⬜⬜⬜⬜ 50% |
@@ -75,9 +72,10 @@ Unprioritized — not in the active queue. See [IDE-ideas.md](tickets/IDE-ideas.
 
 | Epic | Description | Completed |
 |------|-------------|-----------|
+| [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | LOG-001 – LOG-016 |
 | [Foundation (FND)](tickets/FND-foundation.md) | Blazor skeleton and layout | FND-001 – FND-002 |
 
-*ENV, APP, and LOG epics reopened — see [Epic progress](#epic-progress).*
+*ENV and APP epics reopened — see [Epic progress](#epic-progress). LOG epic complete — see [Completed epics](#completed-epics-100).*
 
 ## Domain model (overview)
 

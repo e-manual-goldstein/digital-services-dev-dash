@@ -34,7 +34,7 @@
 | [LOG-013](#log-013) | Done | Toolbar layout — Log file and Parse as side by side | LOG-005, LOG-007 |
 | [LOG-014](#log-014) | Done | Raw log content modal (replace collapsible panel) | LOG-006, LOG-009 |
 | [LOG-015](#log-015) | Done | Table header filter dropdowns (level and search) | LOG-004 |
-| [LOG-016](#log-016) | Open | Viewport-filling scrollable log table | LOG-012, LOG-015 |
+| [LOG-016](#log-016) | Done | Viewport-filling scrollable log table | LOG-012, LOG-015 |
 
 ---
 
@@ -337,7 +337,7 @@ Built-in parsers (`PlainText`, `NLogMultiline`, `Log4NetPattern`, etc.) all redu
 |-------|--------|
 | **ID** | LOG-016 |
 | **Title** | Viewport-filling scrollable log table |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | The log viewer page itself must **not scroll** — only the entries table scrolls vertically. Layout: fixed header/toolbar area; table container **fills** from below the toolbar to the bottom of the viewport (`100vh` minus nav/header). Table body scrolls inside that region (extend `.log-viewer-table-scroll` from LOG-012). Back link, title, toolbar, and live-tail controls stay visible. Test with live tail (LOG-012) and auto-scroll. |
 | **Test / demo** | Resize browser → page body has no vertical scrollbar → table scrolls internally → live tail auto-scroll still works → filters in header remain visible. |
 | **Depends on** | LOG-012, LOG-015 |
