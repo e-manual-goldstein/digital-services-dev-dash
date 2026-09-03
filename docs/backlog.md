@@ -10,13 +10,12 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~LOG-014~~ | [LOG](tickets/LOG-log-interpreter.md) | **Raw log modal** — replace collapsible panel |
+| ~~LOG-015~~ | [LOG](tickets/LOG-log-interpreter.md) | **Table header filters** — level and search in grid header |
 
 ## Active (recommended order)
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| LOG-015 | [LOG](tickets/LOG-log-interpreter.md) | **Table header filters** — level and search in grid header |
 | LOG-016 | [LOG](tickets/LOG-log-interpreter.md) | **Viewport-filling table** — page does not scroll |
 | ENV-018 | [ENV](tickets/ENV-environments.md) | **Deployed apps table** — action buttons in own columns |
 | ENV-020 | [ENV](tickets/ENV-environments.md) | **Environment picker** — favourites, code, display order |
@@ -41,7 +40,7 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 | [Theme (THM)](tickets/THM-theme.md) | Global colour scheme | 0 | 0 | 1 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
 | [Environments (ENV)](tickets/ENV-environments.md) | Remote API + environment details hub | 18 | 0 | 20 | 🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜ 90% |
 | [Applications (APP)](tickets/APP-applications.md) | Deployable app vs instance | 5 | 0 | 7 | 🟩🟩🟩🟩🟩🟩🟩⬜⬜⬜ 71% |
-| [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | 14 | 0 | 16 | 🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜ 88% |
+| [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | 15 | 0 | 16 | 🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜ 94% |
 | [Packages (PKG)](tickets/PKG-packages.md) | DLL inspection and comparison | 0 | 0 | 5 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
 | [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 3 | 2 | 7 | 🟩🟩🟩🟩🟩⬜⬜⬜⬜⬜ 43% |
 | [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Named pipeline feeds | 2 | 1 | 4 | 🟩🟩🟩🟩🟩⬜⬜⬜⬜⬜ 50% |

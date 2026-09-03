@@ -33,7 +33,7 @@
 | [LOG-012](#log-012) | Done | Live tail with file watch and auto-scroll | LOG-003, LOG-005 |
 | [LOG-013](#log-013) | Done | Toolbar layout — Log file and Parse as side by side | LOG-005, LOG-007 |
 | [LOG-014](#log-014) | Done | Raw log content modal (replace collapsible panel) | LOG-006, LOG-009 |
-| [LOG-015](#log-015) | Open | Table header filter dropdowns (level and search) | LOG-004 |
+| [LOG-015](#log-015) | Done | Table header filter dropdowns (level and search) | LOG-004 |
 | [LOG-016](#log-016) | Open | Viewport-filling scrollable log table | LOG-012, LOG-015 |
 
 ---
@@ -326,7 +326,7 @@ Built-in parsers (`PlainText`, `NLogMultiline`, `Log4NetPattern`, etc.) all redu
 |-------|--------|
 | **ID** | LOG-015 |
 | **Title** | Table header filter dropdowns (level and search) |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | Remove the separate filter card containing **Minimum level** and **Search message**. Embed filters in the **log entries table header**: e.g. level filter as a dropdown in the **Level** column header, search as a compact input or dropdown in the **Message** column header (or a combined filter control in the header row). Preserve LOG-004 filter behaviour client-side. **Clear filters** remains accessible (header chip, reset icon, or small link). |
 | **Test / demo** | Open viewer with mixed levels → filter via header dropdown → search from header → table filters without separate section above. |
 | **Depends on** | LOG-004 |
