@@ -35,6 +35,8 @@ Ticket-driven development for a personal/work Blazor dashboard. Workflow: see [`
 | **PIP** | [PIP-pipeline-feeds.md](PIP-pipeline-feeds.md) | Named pipeline feeds (WIP / Branch / NuGet), BuildNumber |
 | **CFG** | [CFG-configuration.md](CFG-configuration.md) | Shared settings read and compare |
 | **LOG** | [LOG-log-interpreter.md](LOG-log-interpreter.md) | Adaptable log viewer per application |
+| **THM** | [THM-theme.md](THM-theme.md) | Global colour scheme and visual design |
+| **PKG** | [PKG-packages.md](PKG-packages.md) | Deployed package inspection and comparison |
 | **IDE** | [IDE-ideas.md](IDE-ideas.md) | Unprioritized feature ideas |
 
 ## Ticket ID format

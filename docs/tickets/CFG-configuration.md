@@ -24,6 +24,8 @@
 | [CFG-003](#cfg-003) | Done | Settings browser UI (view all settings for an instance) | CFG-002, ENV-005 |
 | [CFG-004](#cfg-004) | Shelved | Compare setting by name across apps in one environment | CFG-002, ENV-002 |
 | [CFG-005](#cfg-005) | Shelved | Compare setting by name for one app across environments | CFG-002, APP-004 |
+| [CFG-006](#cfg-006) | Open | Rename section to Configuration Viewer | CFG-003 |
+| [CFG-007](#cfg-007) | Open | Import web.config, app.config, and exe.config | CFG-002 |
 
 ---
 
@@ -130,3 +132,26 @@ Shelved — compare views deprioritized; per-instance browse (CFG-003) sufficien
 | **Depends on** | CFG-002, APP-004 |
 
 Shelved — compare views deprioritized; per-instance browse (CFG-003) sufficient for now. Revisit when cross-environment comparison for one app is needed.
+
+### CFG-006
+
+| Field | Detail |
+|-------|--------|
+| **ID** | CFG-006 |
+| **Title** | Rename section to Configuration Viewer |
+| **Status** | Open |
+| **Description** | Rebrand the **Configuration** area as **Configuration Viewer** everywhere user-facing: sidebar nav label, page titles (`<PageTitle>` and `<h1>`), landing page card, environment details button label (if space allows), and breadcrumbs/back links. Route paths (`/configuration`) may remain unchanged for bookmark compatibility unless a redirect alias is added. Update home card and nav menu consistently. |
+| **Test / demo** | Sidebar shows **Configuration Viewer** → `/configuration` page title matches → home card updated → deep link from environment still works. |
+| **Depends on** | CFG-003 |
+
+### CFG-007
+
+| Field | Detail |
+|-------|--------|
+| **ID** | CFG-007 |
+| **Title** | Import web.config, app.config, and exe.config |
+| **Status** | Open |
+| **Description** | Extend `IConfigurationImportService` (CFG-002) to locate and import settings from **`web.config`**, **`app.config`**, and **`{appName}.exe.config`** in addition to `appsettings*.json`. Discovery order and merge rules: document precedence when multiple files exist (e.g. `appsettings.json` + `web.config` appSettings + connectionStrings). Flatten XML `appSettings` keys and `connectionStrings` names into the same `Key` / `Value` model with `Source` filename. Handle missing files gracefully (JSON-only apps unchanged). Unit tests with sample XML configs under `samples/config/`. |
+| **Test / demo** | Instance with `PhysicalPath` containing `web.config` → **Refresh settings** → `appSettings` keys appear → `app.config` / `{appName}.exe.config` samples import → source column shows file name. `dotnet test --filter ConfigurationImport` → pass. |
+| **Depends on** | CFG-002 |
+

@@ -22,6 +22,7 @@
 | [PIP-001](#pip-001) | Done | PipelineFeed entity and persistence | ENV-001 |
 | [PIP-002](#pip-002) | Shelved | Resolve feed from branch name on ApplicationInstance | PIP-001, APP-002 |
 | [PIP-003](#pip-003) | Done | Pipeline feed admin UI | PIP-001 |
+| [PIP-004](#pip-004) | Open | Pipeline feeds derived from deployment usage and build branch | ENV-016, ENV-017, APP-002 |
 
 ---
 
@@ -103,3 +104,15 @@ Shelved — branch naming rules are enforced elsewhere; DevDash does not need pa
 | **Description** | Blazor CRUD at `/pipeline-feeds`: list with deployment count, add/edit name and description, delete with confirm step. Nav link and home card enabled. Feeds available for APP-004 instance dropdown. |
 | **Test / demo** | Run DevDash → **Pipeline feeds** → create feed → appears in list → edit description → persists after restart. |
 | **Depends on** | PIP-001 |
+
+### PIP-004
+
+| Field | Detail |
+|-------|--------|
+| **ID** | PIP-004 |
+| **Title** | Pipeline feeds derived from deployment usage and build branch |
+| **Status** | Open |
+| **Description** | Redesign how **Pipeline Feeds** are modelled and surfaced. **Existence rule:** a pipeline feed is meaningful when it has been **used to deploy a suite of applications to an environment** — not as a free-standing admin catalogue only. When an `ApplicationInstance` is registered with a **Build Version Number**, that build almost always corresponds to a **Pipeline Feed Identifier** derivable from the **branch name** in **Build Version Details** (`GetBuildVersionDetails` / ENV-017 `SourceBranch`). **Behaviour:** on environment refresh or instance registration, derive or match `PipelineFeedId` from branch naming (may supersede shelved PIP-002 approach with clearer rules documented here). **UI:** pipeline feeds list shows feeds inferred from active deployments; admin create/edit may remain for edge cases or be demoted. Link instances to feeds automatically when build metadata is available. Document derivation algorithm (e.g. branch prefix → feed name) and fall back to manual selection when derivation fails. **Out of scope:** live Azure DevOps pipeline sync. |
+| **Test / demo** | Register instances with build `123456` → refresh → pipeline feed auto-associated from build branch → feeds list reflects deployments in use → manual feed still selectable when derivation fails. `dotnet test` covers branch→feed mapping. |
+| **Depends on** | ENV-016, ENV-017, APP-002 |
+

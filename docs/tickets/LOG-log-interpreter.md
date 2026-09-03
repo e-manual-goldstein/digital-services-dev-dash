@@ -31,6 +31,10 @@
 | [LOG-010](#log-010) | Done | Structured exception detail modal for error rows | LOG-003, LOG-009 |
 | [LOG-011](#log-011) | Open | Raw / JSON / XML format toggle for text viewers | LOG-006, LOG-009 |
 | [LOG-012](#log-012) | Done | Live tail with file watch and auto-scroll | LOG-003, LOG-005 |
+| [LOG-013](#log-013) | Open | Toolbar layout — Log file and Parse as side by side | LOG-005, LOG-007 |
+| [LOG-014](#log-014) | Open | Raw log content modal (replace collapsible panel) | LOG-006, LOG-009 |
+| [LOG-015](#log-015) | Open | Table header filter dropdowns (level and search) | LOG-004 |
+| [LOG-016](#log-016) | Open | Viewport-filling scrollable log table | LOG-012, LOG-015 |
 
 ---
 
@@ -292,3 +296,48 @@ Built-in parsers (`PlainText`, `NLogMultiline`, `Log4NetPattern`, etc.) all redu
 | **Description** | While the user is on `/log-viewer/{instanceId}` viewing a **specific log file**, keep a file-watching mechanism active so new log lines are detected and the parsed entry table updates automatically — without requiring **Refresh tail**. **Watching lifecycle:** start when the viewer has loaded a resolved file path; stop when the user navigates away, changes instance, selects a different file from the dropdown, or the component is disposed. If `LogPath` is a directory, watch the currently selected file only (LOG-005). **Detection:** prefer `FileSystemWatcher` (or equivalent) on the server for the resolved path, with a sensible fallback (e.g. polling file length / last-write time on a short interval) when the path is UNC or watching is unsupported. On change, read only **new** content since the last tail position (track byte offset or line cursor); append newly parsed entries to the in-memory list rather than re-reading the entire tail on every event. Re-apply active filters (LOG-004) and **Parse as** override (LOG-007) to new entries. Cap in-memory growth: continue to respect the current `_maxLines` / load-more window, or trim oldest displayed entries when the window is full (document chosen behaviour). **UI:** add **Auto-scroll** checkbox (default **on**) near the table or toolbar. When enabled and new entries arrive, scroll the table container to the bottom so the newest rows are visible; when disabled, preserve the user's scroll position. If the user has scrolled up manually, optionally pause auto-scroll until they return to the bottom or re-check the box (nice-to-have). Show a subtle **Live** / **Watching** indicator while active; surface read/watch errors without tearing down the page. **Backend:** extend `ILogReaderService` (or add `ILogTailWatcherService`) with incremental read/watch APIs; ensure thread-safe coordination if multiple users watch the same path. **Out of scope:** watching multiple files simultaneously; push notifications outside the log viewer page; editing or deleting log files. |
 | **Test / demo** | Open viewer on a tailing log file → append lines from another process → table updates within a few seconds → auto-scroll shows newest row. Uncheck **Auto-scroll** → append more lines → scroll position unchanged. Switch log file → watch moves to new file. Navigate away → watcher stops (no leaked handles). `dotnet test` covers incremental read / offset tracking. |
 | **Depends on** | LOG-003, LOG-005 |
+
+### LOG-013
+
+| Field | Detail |
+|-------|--------|
+| **ID** | LOG-013 |
+| **Title** | Toolbar layout — Log file and Parse as side by side |
+| **Status** | Open |
+| **Description** | On `/log-viewer/{instanceId}`, place the **Log file** picker (when path is a directory, LOG-005) and **Parse as** dropdown **side by side** in one toolbar row (responsive: stack on narrow viewports). Remove the redundant **Source:** line at the top of the page showing the resolved log file path — keep **Log path:** when it differs from the instance's configured template path. Consolidate cards/sections so controls are not spread across multiple full-width cards when a single toolbar row suffices. |
+| **Test / demo** | Open viewer on directory log path → Log file + Parse as appear on one row → Source line absent → Log path still shown when applicable. |
+| **Depends on** | LOG-005, LOG-007 |
+
+### LOG-014
+
+| Field | Detail |
+|-------|--------|
+| **ID** | LOG-014 |
+| **Title** | Raw log content modal (replace collapsible panel) |
+| **Status** | Open |
+| **Description** | Remove the **Raw log content** collapsible section (LOG-006) from the main page body. Add a **View raw log** (or similar) button beside **Parse as** that opens the full current tail raw text in a modal dialog — reuse `TextDetailModal` or extend it. Modal shows the same `_rawContent` string as today (monospace, scrollable). LOG-011 formatted JSON/XML toggle may apply inside this modal when that ticket ships; until then, raw text only. |
+| **Test / demo** | Open log viewer → no inline raw panel → click **View raw log** beside Parse as → modal shows tail content → Close dismisses. |
+| **Depends on** | LOG-006, LOG-009 |
+
+### LOG-015
+
+| Field | Detail |
+|-------|--------|
+| **ID** | LOG-015 |
+| **Title** | Table header filter dropdowns (level and search) |
+| **Status** | Open |
+| **Description** | Remove the separate filter card containing **Minimum level** and **Search message**. Embed filters in the **log entries table header**: e.g. level filter as a dropdown in the **Level** column header, search as a compact input or dropdown in the **Message** column header (or a combined filter control in the header row). Preserve LOG-004 filter behaviour client-side. **Clear filters** remains accessible (header chip, reset icon, or small link). |
+| **Test / demo** | Open viewer with mixed levels → filter via header dropdown → search from header → table filters without separate section above. |
+| **Depends on** | LOG-004 |
+
+### LOG-016
+
+| Field | Detail |
+|-------|--------|
+| **ID** | LOG-016 |
+| **Title** | Viewport-filling scrollable log table |
+| **Status** | Open |
+| **Description** | The log viewer page itself must **not scroll** — only the entries table scrolls vertically. Layout: fixed header/toolbar area; table container **fills** from below the toolbar to the bottom of the viewport (`100vh` minus nav/header). Table body scrolls inside that region (extend `.log-viewer-table-scroll` from LOG-012). Back link, title, toolbar, and live-tail controls stay visible. Test with live tail (LOG-012) and auto-scroll. |
+| **Test / demo** | Resize browser → page body has no vertical scrollbar → table scrolls internally → live tail auto-scroll still works → filters in header remain visible. |
+| **Depends on** | LOG-012, LOG-015 |
+

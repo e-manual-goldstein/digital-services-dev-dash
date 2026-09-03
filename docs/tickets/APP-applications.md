@@ -24,6 +24,8 @@
 | [APP-003](#app-003) | Done | DeployableApplication admin UI | APP-001 |
 | [APP-004](#app-004) | Done | ApplicationInstance admin UI | APP-002, ENV-004, ENV-005 |
 | [APP-005](#app-005) | Done | `PathToLogFiles` template on DeployableApplication | APP-001, APP-003 |
+| [APP-006](#app-006) | Open | Wire Source Branch on deployed applications | ENV-017, ENV-019 |
+| [APP-007](#app-007) | Open | Wire Homepage URL on deployed applications | ENV-012, ENV-019 |
 
 ---
 
@@ -166,3 +168,26 @@ Unknown `{tokens}` are left unchanged. Resolved value is stored on `ApplicationI
 | **Description** | Added optional `PathToLogFiles` on `DeployableApplication` (SQLite schema upgrade). `ILogPathTemplateService` resolves templates using `{AppName}`, `{EnvironmentCode}`, `{EnvironmentName}`, `{MachineName}`, `{ApplicationPoolName}`, `{VirtualPath}`, and `{PhysicalPath}` (case-insensitive); unknown tokens are left unchanged and reported in `UnknownTokens`. Persisted via create/update on `IDeployableApplicationService`. `/applications` form includes template field with token list and sample preview. |
 | **Test / demo** | `dotnet test --filter LogPathTemplateServiceTests` → pass. `/applications` → edit app → set `{MachineName}\{EnvironmentCode}\{AppName}\Logs` → save → reload shows template and example preview. |
 | **Depends on** | APP-001, APP-003 |
+
+### APP-006
+
+| Field | Detail |
+|-------|--------|
+| **ID** | APP-006 |
+| **Title** | Wire Source Branch on deployed applications |
+| **Status** | Open |
+| **Description** | **Source Branch** on deployed application instances is not fully wired for display and persistence. Populate `ApplicationInstance.SourceBranch` from authoritative remote data when an environment is refreshed — primarily **`GetBuildVersionDetails`** (`RemoteBuildVersionDetails.SourceBranch`) for the instance's build number, and/or deployment details parameters (e.g. `WipBranch`) from ENV-016 snapshot (ENV-019). Show source branch on the environment details deployed-applications table and in the add/edit deployment form (read-only or pre-filled on refresh). On environment refresh, update existing registered instances automatically when snapshot data provides a branch (user is not required to click **Edit** per row). Registration prefill (`RemoteEnvironmentRegistrationMapper`) should prefer snapshot/build API branch over empty placeholder. |
+| **Test / demo** | Register app with build `123456` → refresh environment → source branch appears on row and in edit form → matches mock `GetBuildVersionDetails` branch. New registration prefill includes branch when build known. |
+| **Depends on** | ENV-017, ENV-019 |
+
+### APP-007
+
+| Field | Detail |
+|-------|--------|
+| **ID** | APP-007 |
+| **Title** | Wire Homepage URL on deployed applications |
+| **Status** | Open |
+| **Description** | **Homepage URL** on deployed web application instances is not fully wired. Derive and persist `ApplicationInstance.HomepageUrl` from remote environment data when available — `EnvironmentUrls`, `WebSites` / `WebApplications`, or matching URL rows in the ENV-019 refresh snapshot — using the same application-name matching rules as ENV-012/ENV-013 registration. On environment refresh, update homepage URL on existing instances when remote data provides a match (without overwriting a deliberate manual override — document precedence: manual edit wins, or last-refreshed remote wins). Deployed-applications table **Homepage** column/link must reflect the wired URL. Non-web apps continue to omit homepage. |
+| **Test / demo** | Web app instance registered from Environment URL → homepage link works → refresh updates URL when remote changes → manual override preserved if implemented. |
+| **Depends on** | ENV-012, ENV-019 |
+

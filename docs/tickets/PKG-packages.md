@@ -1,0 +1,122 @@
+# Epic PKG — Deployed Packages
+
+**Project:** Digital Services Dev Dash
+**Code:** `PKG`
+**Scope:** First-class **Packages** domain for inspecting DLL versions deployed to application instances — decoupled from the Environments epic, with manifest support, build-number-based package resolution, and comparison views.
+
+**Depends on:** APP-002, ENV-006
+**Blocks:** —
+
+---
+
+## Primary user story
+
+> I need to know exactly which DLL versions are on a server, whether they came from the right build artefact, and how two deployments differ — without treating packages as a buried sub-page under Environments.
+
+---
+
+## Ticket summary
+
+| ID | Status | Title | Depends on |
+|----|--------|-------|------------|
+| [PKG-001](#pkg-001) | Open | Packages as first-class domain (nav and routes) | ENV-006 |
+| [PKG-002](#pkg-002) | Open | Consume deployment manifest file when present | PKG-001 |
+| [PKG-003](#pkg-003) | Open | Resolve deployment package by build number for instance view | PKG-001, ENV-016 |
+| [PKG-004](#pkg-004) | Open | Compare DLL versions between two instances of same app | PKG-001 |
+| [PKG-005](#pkg-005) | Open | Compare DLL versions between two apps in same environment | PKG-001 |
+
+---
+
+## Design notes
+
+### Current state (ENV-006)
+
+Packages today live at `/environments/{localId}/instances/{instanceId}/packages` — a filesystem scan of `ApplicationInstance.PhysicalPath` for `*.dll` (recursive), showing file name, file version, and assembly version. Linked from environment details only.
+
+### Target domain
+
+| Concept | Notes |
+|---------|--------|
+| **Packages hub** | Top-level nav entry **Packages** (like Log Viewer and Configuration) |
+| **Instance packages** | Deep link from environment details preserved; canonical route may move to `/packages/{instanceId}` with redirect from old path |
+| **Manifest** | When a deployment manifest file exists in the package / physical path (format TBD — investigate team standard), prefer manifest entries over raw directory scan where possible |
+| **Build artefact** | For a given `ApplicationInstance`, `BuildNumber` may identify the deployment package used to deploy that build — integrate with remote/build APIs where available (ENV-016 / build version details) |
+| **Compare** | Side-by-side diff of DLL name → version across two selected targets |
+
+### Comparison modes
+
+| Mode | User selects | Result |
+|------|--------------|--------|
+| **Same app, two instances** | DeployableApplication + Instance A + Instance B | Grid: DLL → version in A vs B; highlight mismatches |
+| **Same environment, two apps** | Environment + App A + App B | Grid: DLL → version in each app; highlight mismatches |
+
+### Relationships
+
+- **ApplicationInstance** — scan target (`PhysicalPath`, `BuildNumber`)
+- **DeployableApplication** — groups instances for same-app comparison
+- **TrackedEnvironment** — scopes same-environment comparison
+
+### Out of scope (epic v1)
+
+- NuGet gallery / feed browsing
+- Downloading or replacing DLLs on the server
+- Historical package inventory (multiple past builds per slot)
+
+---
+
+## Tickets
+
+### PKG-001
+
+| Field | Detail |
+|-------|--------|
+| **ID** | PKG-001 |
+| **Title** | Packages as first-class domain (nav and routes) |
+| **Status** | Open |
+| **Description** | Promote **Packages** from an Environments sub-route to its own domain alongside Log Viewer and Configuration. **Nav:** add top-level **Packages** link in `NavMenu` and a home card on the landing page. **Routes:** introduce a packages hub (environment → instance picker, mirroring Log Viewer / Configuration patterns) and an instance packages view at a domain-centric URL (e.g. `/packages` and `/packages/{instanceId}`). Keep backward compatibility: existing `/environments/{localId}/instances/{instanceId}/packages` should redirect or remain as an alias. Reuse existing `IDeployedPackageService` scan logic from ENV-006. **Out of scope:** manifest, build resolution, compare views. |
+| **Test / demo** | Sidebar **Packages** → pick environment and instance → DLL table loads → environment details **Packages** button still works → deep link bookmarkable. |
+| **Depends on** | ENV-006 |
+
+### PKG-002
+
+| Field | Detail |
+|-------|--------|
+| **ID** | PKG-002 |
+| **Title** | Consume deployment manifest file when present |
+| **Status** | Open |
+| **Description** | When inspecting packages for an `ApplicationInstance`, detect and parse a **deployment manifest** file in the physical path or associated build artefact location (investigate team convention — e.g. `manifest.json`, `deployment.manifest`, or build output metadata). **Behaviour:** if a valid manifest is found, use it as the authoritative package list (assembly name, version, path); fall back to recursive `*.dll` filesystem scan (current ENV-006 behaviour) when manifest is absent or unreadable. Surface manifest file name and parse warnings in the UI. Unit tests with sample manifest fixtures. |
+| **Test / demo** | Instance with manifest in `samples/` or test fixture → packages table shows manifest entries → instance without manifest → filesystem scan unchanged. `dotnet test --filter Manifest` → pass. |
+| **Depends on** | PKG-001 |
+
+### PKG-003
+
+| Field | Detail |
+|-------|--------|
+| **ID** | PKG-003 |
+| **Title** | Resolve deployment package by build number for instance view |
+| **Status** | Open |
+| **Description** | When viewing packages for a deployed application instance, use **`ApplicationInstance.BuildNumber`** to retrieve the deployment package artefact where possible (remote API, build storage, or manifest keyed by build). Display which build the package list corresponds to; when build-based resolution succeeds, prefer package contents from that artefact over a blind directory scan. When build number is missing or lookup fails, fall back to `PhysicalPath` scan with a clear UI message. Coordinate with ENV-016 deployment/build details and PKG-002 manifest support. |
+| **Test / demo** | Instance with known build number → packages view shows build label and resolved package list → instance without build number → scan fallback with explanatory text. |
+| **Depends on** | PKG-001, ENV-016 |
+
+### PKG-004
+
+| Field | Detail |
+|-------|--------|
+| **ID** | PKG-004 |
+| **Title** | Compare DLL versions between two instances of same app |
+| **Status** | Open |
+| **Description** | Add a **compare** workflow: user picks a **DeployableApplication**, then two **ApplicationInstance** rows (typically different environments). Show a table of DLL / assembly name with version columns for Instance A and Instance B; highlight rows where versions differ or a DLL exists on only one side. Reuse package resolution from PKG-001 (and PKG-002/003 when available). Entry point: Packages hub or deployable application context. |
+| **Test / demo** | Pick same app in UAT-01 and Integration → compare → mismatched DLL versions highlighted → identical versions shown neutrally. |
+| **Depends on** | PKG-001 |
+
+### PKG-005
+
+| Field | Detail |
+|-------|--------|
+| **ID** | PKG-005 |
+| **Title** | Compare DLL versions between two apps in same environment |
+| **Status** | Open |
+| **Description** | Add a **compare** workflow: user picks an **environment**, then two **DeployableApplication** instances deployed in that environment. Show DLL / assembly name with version columns for App A and App B; highlight differences. Useful for verifying shared dependencies (e.g. two web apps on the same server should run the same `Common.dll` version). Reuse package resolution and comparison grid from PKG-004 where possible. |
+| **Test / demo** | Pick two apps in UAT-01 → compare → shared DLLs with same version align → version skew highlighted. |
+| **Depends on** | PKG-001 |
