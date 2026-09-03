@@ -1,3 +1,26 @@
+@if (ScanResult is not null && ScanResult.IsSuccess)
+{
+    @if (ScanResult.Source == DeployedPackageSource.Manifest && !string.IsNullOrWhiteSpace(ScanResult.ManifestFileName))
+    {
+        <p class="text-muted small mb-2">
+            Package list from <code>@ScanResult.ManifestFileName</code> in the deployment root folder.
+        </p>
+    }
+
+    @if (ScanResult.Warnings.Count > 0)
+    {
+        <div class="alert alert-warning" role="status">
+            <p class="mb-2 fw-semibold">Manifest warnings</p>
+            <ul class="mb-0">
+                @foreach (var warning in ScanResult.Warnings)
+                {
+                    <li>@warning</li>
+                }
+            </ul>
+        </div>
+    }
+}
+
 @if (!string.IsNullOrWhiteSpace(ScanResult?.ErrorMessage))
 {
     <div class="alert alert-warning" role="alert">@ScanResult.ErrorMessage</div>
@@ -5,7 +28,7 @@
 else if (ScanResult?.Packages.Count == 0)
 {
     <div class="alert alert-light border text-center py-4" role="status">
-        <p class="mb-0 text-muted">No DLL files were found in the deployment folder.</p>
+        <p class="mb-0 text-muted">No packages were found for this deployment.</p>
     </div>
 }
 else if (ScanResult is not null)
@@ -23,7 +46,9 @@ else if (ScanResult is not null)
                 @foreach (var package in ScanResult.Packages)
                 {
                     <tr>
-                        <td><code>@package.FileName</code></td>
+                        <td>
+                            <code title="@package.RepresentativePath">@package.FileName</code>
+                        </td>
                         <td>
                             @if (string.IsNullOrWhiteSpace(package.FileVersion))
                             {

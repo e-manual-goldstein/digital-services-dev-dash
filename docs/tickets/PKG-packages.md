@@ -20,7 +20,7 @@
 | ID | Status | Title | Depends on |
 |----|--------|-------|------------|
 | [PKG-001](#pkg-001) | Done | Packages as first-class domain (nav and routes) | ENV-006 |
-| [PKG-002](#pkg-002) | Open | Consume deployment manifest file when present | PKG-001 |
+| [PKG-002](#pkg-002) | Done | Consume deployment manifest file when present | PKG-001 |
 | [PKG-003](#pkg-003) | Open | Resolve deployment package by build number for instance view | PKG-001, ENV-016 |
 | [PKG-004](#pkg-004) | Open | Compare DLL versions between two instances of same app | PKG-001 |
 | [PKG-005](#pkg-005) | Open | Compare DLL versions between two apps in same environment | PKG-001 |
@@ -39,7 +39,7 @@ Packages hub at `/packages` with environment → instance picker. Instance view 
 |---------|--------|
 | **Packages hub** | Top-level nav entry **Packages** (like Log Viewer and Configuration) |
 | **Instance packages** | Deep link from environment details preserved; canonical route may move to `/packages/{instanceId}` with redirect from old path |
-| **Manifest** | When a deployment manifest file exists in the package / physical path (format TBD — investigate team standard), prefer manifest entries over raw directory scan where possible |
+| **Manifest** | `manifest.csv` in the deployment root (`PhysicalPath`): quoted CSV `[representative file path],[version]`; header row skipped (PKG-002). Falls back to recursive `*.dll` scan when absent or unusable. |
 | **Build artefact** | For a given `ApplicationInstance`, `BuildNumber` may identify the deployment package used to deploy that build — integrate with remote/build APIs where available (ENV-016 / build version details) |
 | **Compare** | Side-by-side diff of DLL name → version across two selected targets |
 
@@ -84,10 +84,11 @@ Packages hub at `/packages` with environment → instance picker. Instance view 
 |-------|--------|
 | **ID** | PKG-002 |
 | **Title** | Consume deployment manifest file when present |
-| **Status** | Open |
-| **Description** | When inspecting packages for an `ApplicationInstance`, detect and parse a **deployment manifest** file in the physical path or associated build artefact location (investigate team convention — e.g. `manifest.json`, `deployment.manifest`, or build output metadata). **Behaviour:** if a valid manifest is found, use it as the authoritative package list (assembly name, version, path); fall back to recursive `*.dll` filesystem scan (current ENV-006 behaviour) when manifest is absent or unreadable. Surface manifest file name and parse warnings in the UI. Unit tests with sample manifest fixtures. |
-| **Test / demo** | Instance with manifest in `samples/` or test fixture → packages table shows manifest entries → instance without manifest → filesystem scan unchanged. `dotnet test --filter Manifest` → pass. |
+| **Status** | Done |
+| **Description** | When inspecting packages for an `ApplicationInstance`, detect and parse **`manifest.csv`** in the deployment root (`PhysicalPath`). Format: quoted CSV columns `[representative file path],[version]`; skip the first (header) line. **Behaviour:** if a valid manifest is found with at least one entry, use it as the authoritative package list; fall back to recursive `*.dll` filesystem scan when manifest is absent, unreadable, or empty. Surface manifest file name and parse warnings in the UI. |
+| **Test / demo** | Instance with `manifest.csv` in deploy root → packages table shows manifest entries → instance without manifest → filesystem scan unchanged. `dotnet test --filter Manifest` → pass. |
 | **Depends on** | PKG-001 |
+| **Implementation** | `DeploymentManifestParser` reads `manifest.csv`; `DeployedPackageScanResult` includes `Source`, `ManifestFileName`, and `Warnings`; packages view shows manifest source and warnings. |
 
 ### PKG-003
 

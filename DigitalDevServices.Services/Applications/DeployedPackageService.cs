@@ -46,6 +46,49 @@ public sealed class DeployedPackageService : IDeployedPackageService
             };
         }
 
+        var manifestPath = Path.Combine(physicalPath, DeploymentManifestParser.ManifestFileName);
+        if (File.Exists(manifestPath))
+        {
+            var manifestResult = DeploymentManifestParser.ParseFile(manifestPath);
+            if (manifestResult.CouldReadFile && manifestResult.Packages.Count > 0)
+            {
+                return new DeployedPackageScanResult
+                {
+                    Source = DeployedPackageSource.Manifest,
+                    ManifestFileName = DeploymentManifestParser.ManifestFileName,
+                    Packages = manifestResult.Packages,
+                    Warnings = manifestResult.Warnings
+                };
+            }
+
+            var filesystemResult = ScanFilesystem(physicalPath, cancellationToken);
+            var warnings = manifestResult.Warnings.ToList();
+
+            if (!manifestResult.CouldReadFile)
+            {
+                warnings.Add($"Fell back to filesystem scan because {DeploymentManifestParser.ManifestFileName} could not be read.");
+            }
+            else if (manifestResult.Packages.Count == 0)
+            {
+                warnings.Add($"Fell back to filesystem scan because {DeploymentManifestParser.ManifestFileName} contained no package entries.");
+            }
+
+            return new DeployedPackageScanResult
+            {
+                Source = filesystemResult.Source,
+                Packages = filesystemResult.Packages,
+                Warnings = warnings,
+                ErrorMessage = filesystemResult.ErrorMessage
+            };
+        }
+
+        return ScanFilesystem(physicalPath, cancellationToken);
+    }
+
+    private static DeployedPackageScanResult ScanFilesystem(
+        string physicalPath,
+        CancellationToken cancellationToken)
+    {
         var packages = new List<DeployedPackageInfo>();
 
         try
@@ -66,6 +109,7 @@ public sealed class DeployedPackageService : IDeployedPackageService
 
         return new DeployedPackageScanResult
         {
+            Source = DeployedPackageSource.FilesystemScan,
             Packages = packages
                 .OrderBy(package => package.FileName, StringComparer.OrdinalIgnoreCase)
                 .ToList()

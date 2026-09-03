@@ -86,6 +86,89 @@ public sealed class DeployedPackageServiceTests
         StringAssert.Contains(result.ErrorMessage!, "not found");
     }
 
+    [TestMethod]
+    public async Task ScanAsync_UsesManifestWhenPresent()
+    {
+        await using var fixture = await DeployedPackageServiceFixture.CreateAsync();
+        var packageDirectory = await fixture.CreatePackageDirectoryAsync();
+        await fixture.WriteManifestAsync(
+            packageDirectory,
+            """
+            "Path","Version"
+            "DigitalDevServices.Model.dll","9.9.9.9"
+            "Other.Library.dll","1.0.0.0"
+            """);
+
+        var application = await fixture.DeployableApplicationService.CreateAsync("Manifest App");
+        var environment = await fixture.CreateTrackedEnvironmentAsync(4);
+        var instance = await fixture.ApplicationInstanceService.UpsertAsync(new ApplicationInstanceUpsert
+        {
+            DeployableApplicationId = application.Id,
+            EnvironmentId = environment.Id,
+            BuildVersionNumber = "1.0.0",
+            PhysicalPath = packageDirectory
+        });
+
+        var result = await fixture.Service.ScanAsync(instance.Id);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(DeployedPackageSource.Manifest, result.Source);
+        Assert.AreEqual(DeploymentManifestParser.ManifestFileName, result.ManifestFileName);
+        Assert.HasCount(2, result.Packages);
+        Assert.AreEqual("9.9.9.9", result.Packages.Single(package => package.FileName == "DigitalDevServices.Model.dll").AssemblyVersion);
+    }
+
+    [TestMethod]
+    public async Task ScanAsync_FallsBackToFilesystemScanWhenManifestMissing()
+    {
+        await using var fixture = await DeployedPackageServiceFixture.CreateAsync();
+        var packageDirectory = await fixture.CreatePackageDirectoryAsync();
+        var application = await fixture.DeployableApplicationService.CreateAsync("Filesystem App");
+        var environment = await fixture.CreateTrackedEnvironmentAsync(5);
+        var instance = await fixture.ApplicationInstanceService.UpsertAsync(new ApplicationInstanceUpsert
+        {
+            DeployableApplicationId = application.Id,
+            EnvironmentId = environment.Id,
+            BuildVersionNumber = "1.0.0",
+            PhysicalPath = packageDirectory
+        });
+
+        var result = await fixture.Service.ScanAsync(instance.Id);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(DeployedPackageSource.FilesystemScan, result.Source);
+        Assert.HasCount(1, result.Packages);
+    }
+
+    [TestMethod]
+    public async Task ScanAsync_FallsBackToFilesystemScanWhenManifestHasNoEntries()
+    {
+        await using var fixture = await DeployedPackageServiceFixture.CreateAsync();
+        var packageDirectory = await fixture.CreatePackageDirectoryAsync();
+        await fixture.WriteManifestAsync(
+            packageDirectory,
+            """
+            "Path","Version"
+            """);
+
+        var application = await fixture.DeployableApplicationService.CreateAsync("Empty Manifest App");
+        var environment = await fixture.CreateTrackedEnvironmentAsync(6);
+        var instance = await fixture.ApplicationInstanceService.UpsertAsync(new ApplicationInstanceUpsert
+        {
+            DeployableApplicationId = application.Id,
+            EnvironmentId = environment.Id,
+            BuildVersionNumber = "1.0.0",
+            PhysicalPath = packageDirectory
+        });
+
+        var result = await fixture.Service.ScanAsync(instance.Id);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(DeployedPackageSource.FilesystemScan, result.Source);
+        Assert.HasCount(1, result.Packages);
+        Assert.IsTrue(result.Warnings.Any(warning => warning.Contains("Fell back to filesystem scan", StringComparison.Ordinal)));
+    }
+
     private sealed class DeployedPackageServiceFixture : IAsyncDisposable
     {
         private readonly ServiceProvider _serviceProvider;
@@ -150,6 +233,13 @@ public sealed class DeployedPackageServiceTests
             File.Copy(sourceAssembly, targetPath, overwrite: true);
 
             return Task.FromResult(packageDirectory);
+        }
+
+        public Task WriteManifestAsync(string packageDirectory, string contents)
+        {
+            var manifestPath = Path.Combine(packageDirectory, DeploymentManifestParser.ManifestFileName);
+            File.WriteAllText(manifestPath, contents);
+            return Task.CompletedTask;
         }
 
         public async Task<TrackedEnvironment> CreateTrackedEnvironmentAsync(int remoteId)
