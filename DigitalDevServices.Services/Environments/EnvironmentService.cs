@@ -14,17 +14,23 @@ public sealed class EnvironmentService : IEnvironmentService
 
     private readonly DevDashDbContext _db;
     private readonly IRemoteEnvironmentApiClient _apiClient;
+    private readonly IBuildVersionDetailsService _buildVersionDetailsService;
+    private readonly IEnvironmentInstanceSnapshotSyncService _snapshotSyncService;
     private readonly IMemoryCache _memoryCache;
     private readonly EnvironmentCacheOptions _cacheOptions;
 
     public EnvironmentService(
         DevDashDbContext db,
         IRemoteEnvironmentApiClient apiClient,
+        IBuildVersionDetailsService buildVersionDetailsService,
+        IEnvironmentInstanceSnapshotSyncService snapshotSyncService,
         IMemoryCache memoryCache,
         IOptions<EnvironmentCacheOptions> cacheOptions)
     {
         _db = db;
         _apiClient = apiClient;
+        _buildVersionDetailsService = buildVersionDetailsService;
+        _snapshotSyncService = snapshotSyncService;
         _memoryCache = memoryCache;
         _cacheOptions = cacheOptions.Value;
     }
@@ -49,7 +55,7 @@ public sealed class EnvironmentService : IEnvironmentService
         foreach (var details in remoteEnvironments.OrderBy(environment => environment.Name, StringComparer.OrdinalIgnoreCase))
         {
             var tracked = await EnsureTrackedAsync(details.Id, updatedAt, cancellationToken).ConfigureAwait(false);
-            var cachedEnvironment = ToCachedEnvironment(tracked, details, deploymentDetails: null, updatedAt, isFromCache: false);
+            var cachedEnvironment = BuildCatalogCachedEnvironment(tracked, details, updatedAt);
             _memoryCache.Set(GetCacheKey(tracked.Id), cachedEnvironment, _cacheOptions.CacheLifetime);
             results.Add(cachedEnvironment);
         }
@@ -86,7 +92,23 @@ public sealed class EnvironmentService : IEnvironmentService
 
         var updatedAt = DateTimeOffset.UtcNow;
         var tracked = await EnsureTrackedAsync(details.Id, updatedAt, cancellationToken).ConfigureAwait(false);
-        var result = ToCachedEnvironment(tracked, details, deploymentDetails, updatedAt, isFromCache: false);
+        var instances = await LoadInstancesForEnvironmentAsync(tracked.Id, cancellationToken).ConfigureAwait(false);
+        var buildVersionDetails = await LoadBuildVersionDetailsAsync(
+            deploymentDetails,
+            instances,
+            cancellationToken).ConfigureAwait(false);
+
+        var snapshot = EnvironmentRefreshSnapshotCollector.Create(
+            details,
+            deploymentDetails,
+            buildVersionDetails,
+            updatedAt);
+
+        await _snapshotSyncService
+            .SyncInstancesAsync(tracked.Id, snapshot, cancellationToken)
+            .ConfigureAwait(false);
+
+        var result = ToCachedEnvironment(tracked, snapshot, isFromCache: false);
         _memoryCache.Set(GetCacheKey(tracked.Id), result, _cacheOptions.CacheLifetime);
         return result;
     }
@@ -127,6 +149,29 @@ public sealed class EnvironmentService : IEnvironmentService
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         _memoryCache.Remove(GetCacheKey(localId));
         _memoryCache.Remove(CatalogCacheKey);
+    }
+
+    private CachedEnvironment BuildCatalogCachedEnvironment(
+        TrackedEnvironment tracked,
+        RemoteEnvironmentDetails listDetails,
+        DateTimeOffset updatedAt)
+    {
+        if (_memoryCache.TryGetValue(GetCacheKey(tracked.Id), out CachedEnvironment? existing)
+            && existing?.RefreshSnapshot is { } snapshot)
+        {
+            return ToCachedEnvironment(tracked, snapshot, isFromCache: false) with
+            {
+                IsFavourite = tracked.IsFavourite
+            };
+        }
+
+        return ToCachedEnvironment(
+            tracked,
+            listDetails,
+            deploymentDetails: null,
+            updatedAt,
+            refreshSnapshot: null,
+            isFromCache: false);
     }
 
     private async Task<string> ResolveEnvironmentCodeAsync(int remoteId, CancellationToken cancellationToken)
@@ -200,30 +245,87 @@ public sealed class EnvironmentService : IEnvironmentService
 
         if (!forceRefresh && _memoryCache.TryGetValue(cacheKey, out CachedEnvironment? cached) && cached is not null)
         {
-            return cached with { IsFromCache = true };
+            return cached with
+            {
+                IsFavourite = tracked.IsFavourite,
+                IsFromCache = true
+            };
         }
 
         return await RefreshEnvironmentAsync(tracked.RemoteId, cancellationToken).ConfigureAwait(false);
     }
+
+    private async Task<IReadOnlyList<ApplicationInstance>> LoadInstancesForEnvironmentAsync(
+        Guid environmentLocalId,
+        CancellationToken cancellationToken) =>
+        await _db.ApplicationInstances
+            .AsNoTracking()
+            .Include(instance => instance.DeployableApplication)
+            .Where(instance => instance.EnvironmentId == environmentLocalId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+    private async Task<IReadOnlyDictionary<string, RemoteBuildVersionDetails>> LoadBuildVersionDetailsAsync(
+        RemoteEnvironmentDeploymentDetails? deploymentDetails,
+        IReadOnlyList<ApplicationInstance> instances,
+        CancellationToken cancellationToken)
+    {
+        var buildNumbers = EnvironmentRefreshSnapshotCollector.CollectPipelineBuildNumbers(
+            deploymentDetails,
+            instances);
+
+        if (buildNumbers.Count == 0)
+        {
+            return new Dictionary<string, RemoteBuildVersionDetails>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        var results = new Dictionary<string, RemoteBuildVersionDetails>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var buildNumber in buildNumbers)
+        {
+            var details = await _buildVersionDetailsService
+                .GetBuildVersionDetailsAsync(buildNumber, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (details is not null)
+            {
+                results[buildNumber] = details;
+            }
+        }
+
+        return results;
+    }
+
+    private static CachedEnvironment ToCachedEnvironment(
+        TrackedEnvironment tracked,
+        EnvironmentRefreshSnapshot snapshot,
+        bool isFromCache) =>
+        ToCachedEnvironment(
+            tracked,
+            snapshot.Details,
+            snapshot.DeploymentDetails,
+            snapshot.DateLastRefreshed,
+            snapshot,
+            isFromCache);
 
     private static CachedEnvironment ToCachedEnvironment(
         TrackedEnvironment tracked,
         RemoteEnvironmentDetails details,
         RemoteEnvironmentDeploymentDetails? deploymentDetails,
         DateTimeOffset updatedAt,
-        bool isFromCache)
-    {
-        return new CachedEnvironment
+        EnvironmentRefreshSnapshot? refreshSnapshot,
+        bool isFromCache) =>
+        new()
         {
             LocalId = tracked.Id,
             RemoteId = tracked.RemoteId,
             IsFavourite = tracked.IsFavourite,
             Details = details,
             DeploymentDetails = deploymentDetails,
+            RefreshSnapshot = refreshSnapshot,
             DateLastUpdated = updatedAt,
             IsFromCache = isFromCache
         };
-    }
 
     private void UpdateCachedFavourite(Guid localId, bool isFavourite)
     {

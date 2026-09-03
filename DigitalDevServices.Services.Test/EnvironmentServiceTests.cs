@@ -128,6 +128,114 @@ public sealed class EnvironmentServiceTests
         Assert.IsNotNull(refreshed.DeploymentDetails);
         Assert.AreEqual(42, refreshed.DeploymentDetails!.GetPrimaryBuild()!.EnvironmentPipelineBuildNumber);
         Assert.AreEqual("feature/qa", refreshed.DeploymentDetails.GetPrimaryWipBranch());
+        Assert.IsNotNull(refreshed.RefreshSnapshot);
+        Assert.AreEqual("QA", refreshed.RefreshSnapshot.Details.Code);
+        Assert.AreEqual("feature/qa", refreshed.RefreshSnapshot.DeploymentDetails!.GetPrimaryWipBranch());
+        Assert.AreEqual(refreshed.DateLastRefreshed, refreshed.RefreshSnapshot.DateLastRefreshed);
+    }
+
+    [TestMethod]
+    public async Task GetEnvironmentsAsync_PreservesRefreshSnapshotAfterCatalogRefresh()
+    {
+        var fakeApi = new FakeRemoteEnvironmentApiClient
+        {
+            Environments =
+            {
+                [99] = new RemoteEnvironmentDetails
+                {
+                    Id = 99,
+                    Code = "QA",
+                    Name = "QA",
+                    EnvironmentType = "QA"
+                }
+            },
+            DeploymentDetailsByCode =
+            {
+                ["QA"] = new RemoteEnvironmentDeploymentDetails
+                {
+                    BuildsSuccessful =
+                    [
+                        new EnvironmentBuild
+                        {
+                            EnvironmentPipelineBuildNumber = 42,
+                            Name = "QA build",
+                            Parameters =
+                            [
+                                new EnvironmentBuildParameter
+                                {
+                                    Name = "WipBranch",
+                                    Value = "feature/qa"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        };
+
+        await using var fixture = await EnvironmentServiceFixture.CreateAsync(fakeApi);
+        await fixture.Service.GetEnvironmentsAsync();
+        var refreshed = await fixture.Service.RefreshEnvironmentAsync(99);
+        Assert.IsNotNull(refreshed.RefreshSnapshot);
+
+        fakeApi.Environments[99] = new RemoteEnvironmentDetails
+        {
+            Id = 99,
+            Code = "QA",
+            Name = "QA renamed in catalog",
+            EnvironmentType = "QA"
+        };
+        var catalog = await fixture.Service.GetEnvironmentsAsync(forceRefresh: true);
+        var fromCatalog = catalog.Single(environment => environment.RemoteId == 99);
+
+        Assert.IsNotNull(fromCatalog.RefreshSnapshot);
+        Assert.AreEqual("feature/qa", fromCatalog.DeploymentDetails!.GetPrimaryWipBranch());
+        Assert.AreEqual("QA", fromCatalog.Details.Name);
+    }
+
+    [TestMethod]
+    public async Task GetTrackedEnvironmentAsync_ReturnsCachedSnapshotWithoutRefetching()
+    {
+        var fakeApi = new FakeRemoteEnvironmentApiClient
+        {
+            Environments =
+            {
+                [99] = new RemoteEnvironmentDetails
+                {
+                    Id = 99,
+                    Code = "QA",
+                    Name = "QA",
+                    EnvironmentType = "QA"
+                }
+            },
+            DeploymentDetailsByCode =
+            {
+                ["QA"] = new RemoteEnvironmentDeploymentDetails
+                {
+                    BuildsSuccessful =
+                    [
+                        new EnvironmentBuild
+                        {
+                            EnvironmentPipelineBuildNumber = 42,
+                            Name = "QA build"
+                        }
+                    ]
+                }
+            }
+        };
+
+        await using var fixture = await EnvironmentServiceFixture.CreateAsync(fakeApi);
+        var refreshed = await fixture.Service.RefreshEnvironmentAsync(99);
+        fakeApi.GetCallCount = 0;
+        fakeApi.DeploymentDetailsCallCount = 0;
+
+        var cached = await fixture.Service.GetTrackedEnvironmentAsync(refreshed.LocalId);
+
+        Assert.IsNotNull(cached);
+        Assert.IsTrue(cached!.IsFromCache);
+        Assert.IsNotNull(cached.RefreshSnapshot);
+        Assert.AreEqual(0, fakeApi.GetCallCount);
+        Assert.AreEqual(0, fakeApi.DeploymentDetailsCallCount);
     }
 
     [TestMethod]
@@ -242,6 +350,8 @@ public sealed class EnvironmentServiceTests
             services.AddMemoryCache();
             services.AddSingleton<IRemoteEnvironmentApiClient>(apiClient);
             services.Configure<EnvironmentCacheOptions>(options => options.CacheLifetime = TimeSpan.FromHours(24));
+            services.AddScoped<IBuildVersionDetailsService, BuildVersionDetailsService>();
+            services.AddScoped<IEnvironmentInstanceSnapshotSyncService, EnvironmentInstanceSnapshotSyncService>();
             services.AddScoped<IEnvironmentService, EnvironmentService>();
 
             var serviceProvider = services.BuildServiceProvider();

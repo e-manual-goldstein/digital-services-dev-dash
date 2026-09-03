@@ -35,6 +35,7 @@ public static class EnvironmentServiceCollectionExtensions
         }
 
         services.AddScoped<IEnvironmentService, EnvironmentService>();
+        services.AddScoped<IEnvironmentInstanceSnapshotSyncService, EnvironmentInstanceSnapshotSyncService>();
         services.AddScoped<IRemoteEnvironmentRegistrationService, RemoteEnvironmentRegistrationService>();
         services.AddScoped<IRemoteEnvironmentRegistrationMapper, RemoteEnvironmentRegistrationMapper>();
         services.AddScoped<IRegistrationPrefillState, RegistrationPrefillState>();

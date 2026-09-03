@@ -45,7 +45,7 @@ else
         <div class="alert alert-danger" role="alert">@_errorMessage</div>
     }
 
-    @if (_environment.IsFromCache)
+    @if (_environment.IsFromCache && !_environment.HasRefreshSnapshot)
     {
         <p class="text-muted small mb-3">Showing cached data. Use Refresh to fetch the latest from the API.</p>
     }
@@ -53,6 +53,18 @@ else
     <div class="card">
         <div class="card-body">
             <dl class="row mb-0">
+                <dt class="col-sm-3">Last refreshed</dt>
+                <dd class="col-sm-9">
+                    @if (_environment.HasRefreshSnapshot)
+                    {
+                        <span>@_environment.DateLastRefreshed.ToLocalTime().ToString("g")</span>
+                    }
+                    else
+                    {
+                        <span class="text-muted">Not refreshed yet — use Refresh to load deployment details.</span>
+                    }
+                </dd>
+
                 <dt class="col-sm-3">Last updated</dt>
                 <dd class="col-sm-9">@_environment.DateLastUpdated.ToLocalTime().ToString("g")</dd>
 
@@ -934,12 +946,13 @@ else
         try
         {
             _environment = await EnvironmentService.RefreshEnvironmentAsync(_environment.RemoteId);
+            await LoadDeploymentDataAsync();
 
             NotificationService.Notify(new NotificationMessage
             {
                 Severity = NotificationSeverity.Success,
                 Summary = "Environment refreshed",
-                Detail = $"{_environment.Details.Name} updated at {_environment.DateLastUpdated.ToLocalTime():g}",
+                Detail = $"{_environment.Details.Name} refreshed at {_environment.DateLastRefreshed.ToLocalTime():g}",
                 Duration = 4000
             });
         }

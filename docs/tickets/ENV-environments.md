@@ -39,7 +39,7 @@
 | [ENV-016](#env-016) | Done | Fetch deployment/build details on environment refresh | ENV-004, ENV-007 |
 | [ENV-017](#env-017) | Done | `GetBuildVersionDetails` — version control metadata for a build | ENV-016 |
 | [ENV-018](#env-018) | Open | Deployed applications table — action buttons in dedicated columns | ENV-005 |
-| [ENV-019](#env-019) | Open | In-memory environment refresh snapshot for details sections | ENV-016, ENV-017 |
+| [ENV-019](#env-019) | Done | In-memory environment refresh snapshot for details sections | ENV-016, ENV-017 |
 | [ENV-020](#env-020) | Open | Environment picker — favourites, code label, display order | ENV-008, LOG-003, CFG-003 |
 
 ---
@@ -605,10 +605,11 @@ Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-
 |-------|--------|
 | **ID** | ENV-019 |
 | **Title** | In-memory environment refresh snapshot for details sections |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | When the user clicks **Refresh** on an environment (details page or list), store the full set of details retrieved from external APIs in an **in-memory snapshot** on `CachedEnvironment` (or a dedicated snapshot object hung off it). **Snapshot contents:** latest `RemoteEnvironmentDetails`, `RemoteEnvironmentDeploymentDetails`, and any per-build fetches needed for the current view — keyed by environment local id; include **`DateLastRefreshed`** (date and time of last successful refresh). **UI behaviour:** collapsible sections that today populate only after refresh (build collections, `Servers`, `EnvironmentUrls`, `WebSites`, `WindowsServices`, additional properties, etc.) must read from the snapshot when available — no partial empty state after navigation if snapshot exists. **Deployed application summary fields** derived from the snapshot on refresh (and written to or surfaced on `ApplicationInstance` where appropriate): **Build Version Number**, **Source Branch**, **Deployed Date**, **SQL Server Instance** — coordinated with APP-006/APP-007. Snapshot is session/memory scoped (same lifetime as environment memory cache); document whether it survives app restart (it should not — refresh repopulates). **Out of scope:** persisting snapshot to SQLite; background scheduled refresh. |
 | **Test / demo** | Refresh UAT-01 → navigate away and back → collapsible sections still show last-refreshed data without re-fetch → snapshot timestamp visible → registered instances show updated build/branch/deployed/SQL fields. `dotnet test` covers snapshot assembly from mock API responses. |
 | **Depends on** | ENV-016, ENV-017 |
+| **Implementation** | `EnvironmentRefreshSnapshot` on `CachedEnvironment`; `EnvironmentRefreshSnapshotCollector`; `EnvironmentInstanceSnapshotSyncService` syncs instance build/branch/deployed/SQL on refresh; `EnvironmentService` fetches build version details into snapshot; catalog refresh preserves existing snapshots; detail page shows **Last refreshed**. |
 
 ### ENV-020
 
