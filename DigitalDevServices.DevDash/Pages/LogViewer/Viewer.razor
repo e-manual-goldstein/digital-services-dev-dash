@@ -41,12 +41,6 @@ else
             <p class="text-muted mb-0">
                 @(_environment?.Details.Name ?? "Environment") &middot; @_instance.DeployableApplication.Name
             </p>
-            @if (!string.IsNullOrWhiteSpace(_logFilePath))
-            {
-                <p class="text-muted small mb-0 mt-1">
-                    Source: <code>@_logFilePath</code>
-                </p>
-            }
             @if (!string.IsNullOrWhiteSpace(_instance.LogPath) && _instance.LogPath != _logFilePath)
             {
                 <p class="text-muted small mb-0 mt-1">
@@ -85,31 +79,28 @@ else
         </div>
     </div>
 
-    @if (_showLogFilePicker)
-    {
-        <div class="card mb-3">
-            <div class="card-body py-3">
-                <label class="form-label mb-1" for="log-file">Log file</label>
-                <InputSelect id="log-file"
-                             class="form-select"
-                             TValue="string"
-                             Value="_selectedLogFilePath"
-                             ValueChanged="OnLogFileChangedAsync"
-                             ValueExpression="() => _selectedLogFilePath"
-                             disabled="@_isBusy">
-                    @foreach (var file in _availableLogFiles)
-                    {
-                        <option value="@file.FilePath">@LogFileDisplay.FormatOptionLabel(file)</option>
-                    }
-                </InputSelect>
-            </div>
-        </div>
-    }
-
     <div class="card mb-3">
         <div class="card-body py-3">
             <div class="row g-3 align-items-end">
-                <div class="col-12 col-lg-6">
+                @if (_showLogFilePicker)
+                {
+                    <div class="col-12 col-lg-6">
+                        <label class="form-label mb-1" for="log-file">Log file</label>
+                        <InputSelect id="log-file"
+                                     class="form-select"
+                                     TValue="string"
+                                     Value="_selectedLogFilePath"
+                                     ValueChanged="OnLogFileChangedAsync"
+                                     ValueExpression="() => _selectedLogFilePath"
+                                     disabled="@_isBusy">
+                            @foreach (var file in _availableLogFiles)
+                            {
+                                <option value="@file.FilePath">@LogFileDisplay.FormatOptionLabel(file)</option>
+                            }
+                        </InputSelect>
+                    </div>
+                }
+                <div class="col-12 @(_showLogFilePicker ? "col-lg-6" : "col-lg-8")">
                     <label class="form-label mb-1" for="log-parse-format">Parse as</label>
                     <InputSelect id="log-parse-format"
                                  class="form-select"
@@ -128,7 +119,7 @@ else
                         }
                     </InputSelect>
                 </div>
-                <div class="col-12 col-lg-6">
+                <div class="col-12 @(_showLogFilePicker ? "col-lg-12" : "col-lg-4")">
                     <p class="text-muted small mb-0">
                         Configured:
                         @if (!string.IsNullOrWhiteSpace(_configuredFormatName))

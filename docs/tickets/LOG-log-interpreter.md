@@ -31,7 +31,7 @@
 | [LOG-010](#log-010) | Done | Structured exception detail modal for error rows | LOG-003, LOG-009 |
 | [LOG-011](#log-011) | Done | Raw / JSON / XML format toggle for text viewers | LOG-006, LOG-009 |
 | [LOG-012](#log-012) | Done | Live tail with file watch and auto-scroll | LOG-003, LOG-005 |
-| [LOG-013](#log-013) | Open | Toolbar layout — Log file and Parse as side by side | LOG-005, LOG-007 |
+| [LOG-013](#log-013) | Done | Toolbar layout — Log file and Parse as side by side | LOG-005, LOG-007 |
 | [LOG-014](#log-014) | Open | Raw log content modal (replace collapsible panel) | LOG-006, LOG-009 |
 | [LOG-015](#log-015) | Open | Table header filter dropdowns (level and search) | LOG-004 |
 | [LOG-016](#log-016) | Open | Viewport-filling scrollable log table | LOG-012, LOG-015 |
@@ -304,7 +304,7 @@ Built-in parsers (`PlainText`, `NLogMultiline`, `Log4NetPattern`, etc.) all redu
 |-------|--------|
 | **ID** | LOG-013 |
 | **Title** | Toolbar layout — Log file and Parse as side by side |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | On `/log-viewer/{instanceId}`, place the **Log file** picker (when path is a directory, LOG-005) and **Parse as** dropdown **side by side** in one toolbar row (responsive: stack on narrow viewports). Remove the redundant **Source:** line at the top of the page showing the resolved log file path — keep **Log path:** when it differs from the instance's configured template path. Consolidate cards/sections so controls are not spread across multiple full-width cards when a single toolbar row suffices. |
 | **Test / demo** | Open viewer on directory log path → Log file + Parse as appear on one row → Source line absent → Log path still shown when applicable. |
 | **Depends on** | LOG-005, LOG-007 |
