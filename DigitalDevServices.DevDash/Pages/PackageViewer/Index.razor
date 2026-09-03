@@ -1,0 +1,139 @@
+@page "/package-viewer"
+@inject IEnvironmentService EnvironmentService
+@inject IApplicationInstanceService InstanceService
+@inject NavigationManager Navigation
+
+<PageTitle>Package viewer</PageTitle>
+
+<h1 class="mb-1">Package viewer</h1>
+<p class="text-muted mb-4">Inspect DLL versions deployed to an application instance.</p>
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="alert alert-danger" role="alert">@_errorMessage</div>
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-12 col-lg-5">
+                <label class="form-label" for="package-viewer-environment">Environment</label>
+                <EnvironmentPickerSelect id="package-viewer-environment"
+                                         @bind-Value="_selectedEnvironmentId"
+                                         OnAfterChange="OnEnvironmentChangedAsync"
+                                         Environments="_environments"
+                                         Disabled="_isLoading" />
+            </div>
+            <div class="col-12 col-lg-5">
+                <label class="form-label" for="package-viewer-instance">Application instance</label>
+                <InputSelect id="package-viewer-instance"
+                             class="form-select"
+                             @bind-Value="_selectedInstanceId"
+                             disabled="@(_isLoading || _instances.Count == 0 || _selectedEnvironmentId is null)">
+                    <option value="">Select application…</option>
+                    @foreach (var instance in _instances)
+                    {
+                        <option value="@instance.Id">@instance.DeployableApplication.Name</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="col-12 col-lg-2">
+                <button type="button"
+                        class="btn btn-primary w-100"
+                        disabled="@(_isLoading || _selectedInstanceId is null)"
+                        @onclick="ViewSelectedInstance">
+                    View packages
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (_isLoading)
+{
+    <p class="text-muted">Loading environments…</p>
+}
+else if (_environments.Count == 0)
+{
+    <div class="alert alert-light border" role="status">
+        No tracked environments yet. Open <a href="/environments">Environments</a> and refresh the catalog first.
+    </div>
+}
+else if (_selectedEnvironmentId is not null && _instances.Count == 0 && !_isLoadingInstances)
+{
+    <div class="alert alert-light border" role="status">
+        No application instances are deployed in this environment yet.
+    </div>
+}
+
+@code {
+    private IReadOnlyList<CachedEnvironment> _environments = [];
+    private IReadOnlyList<ApplicationInstance> _instances = [];
+    private Guid? _selectedEnvironmentId;
+    private Guid? _selectedInstanceId;
+    private bool _isLoading = true;
+    private bool _isLoadingInstances;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEnvironmentsAsync();
+    }
+
+    private async Task LoadEnvironmentsAsync()
+    {
+        _errorMessage = null;
+        _isLoading = true;
+
+        try
+        {
+            _environments = await EnvironmentService.GetEnvironmentsAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Could not load environments: {ex.Message}";
+            _environments = [];
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OnEnvironmentChangedAsync()
+    {
+        _selectedInstanceId = null;
+        _instances = [];
+
+        if (_selectedEnvironmentId is null)
+        {
+            return;
+        }
+
+        _isLoadingInstances = true;
+
+        try
+        {
+            _instances = await InstanceService.GetByEnvironmentIdAsync(_selectedEnvironmentId.Value);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Could not load application instances: {ex.Message}";
+            _instances = [];
+        }
+        finally
+        {
+            _isLoadingInstances = false;
+        }
+    }
+
+    private void ViewSelectedInstance()
+    {
+        if (_selectedInstanceId is null)
+        {
+            return;
+        }
+
+        Navigation.NavigateTo($"/package-viewer/{_selectedInstanceId.Value}");
+    }
+}

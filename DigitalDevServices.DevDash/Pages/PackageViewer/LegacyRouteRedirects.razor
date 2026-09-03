@@ -1,3 +1,5 @@
+@page "/packages"
+@page "/packages/{InstanceId:guid}"
 @page "/environments/{LocalId:guid}/instances/{InstanceId:guid}/packages"
 @inject NavigationManager Navigation
 
@@ -10,6 +12,12 @@
 
     protected override void OnInitialized()
     {
-        Navigation.NavigateTo($"/packages/{InstanceId}", replace: true);
+        if (InstanceId == Guid.Empty)
+        {
+            Navigation.NavigateTo("/package-viewer", replace: true);
+            return;
+        }
+
+        Navigation.NavigateTo($"/package-viewer/{InstanceId}", replace: true);
     }
 }

@@ -31,14 +31,14 @@
 
 ### Current state (PKG-001)
 
-Packages hub at `/packages` with environment → instance picker. Instance view at `/packages/{instanceId}` — filesystem scan of `ApplicationInstance.PhysicalPath` for `*.dll` (recursive), showing file name, file version, and assembly version. Linked from nav, home, and environment details. Legacy `/environments/{localId}/instances/{instanceId}/packages` redirects to the canonical route.
+Package viewer hub at `/package-viewer` with environment → instance picker. Instance view at `/package-viewer/{instanceId}` — filesystem scan of `ApplicationInstance.PhysicalPath` for `*.dll` (recursive), showing file name, file version, and assembly version. Linked from nav, home, and environment details. Legacy `/packages` and `/environments/.../packages` routes redirect to the canonical paths.
 
 ### Target domain
 
 | Concept | Notes |
 |---------|--------|
-| **Packages hub** | Top-level nav entry **Packages** (like Log Viewer and Configuration) |
-| **Instance packages** | Deep link from environment details preserved; canonical route may move to `/packages/{instanceId}` with redirect from old path |
+| **Packages hub** | Top-level nav entry **Package viewer** (like Log Viewer and Configuration) |
+| **Instance packages** | Deep link from environment details preserved; canonical route `/package-viewer/{instanceId}` with redirect from legacy paths |
 | **Manifest** | `manifest.csv` in the deployment root (`PhysicalPath`): quoted CSV `[representative file path],[version]`; header row skipped (PKG-002). Falls back to recursive `*.dll` scan when absent or unusable. |
 | **Build artefact** | For a given `ApplicationInstance`, `BuildNumber` may identify the deployment package used to deploy that build — integrate with remote/build APIs where available (ENV-016 / build version details) |
 | **Compare** | Side-by-side diff of DLL name → version across two selected targets |
@@ -76,7 +76,7 @@ Packages hub at `/packages` with environment → instance picker. Instance view 
 | **Description** | Promote **Packages** from an Environments sub-route to its own domain alongside Log Viewer and Configuration. **Nav:** add top-level **Packages** link in `NavMenu` and a home card on the landing page. **Routes:** introduce a packages hub (environment → instance picker, mirroring Log Viewer / Configuration patterns) and an instance packages view at a domain-centric URL (e.g. `/packages` and `/packages/{instanceId}`). Keep backward compatibility: existing `/environments/{localId}/instances/{instanceId}/packages` should redirect or remain as an alias. Reuse existing `IDeployedPackageService` scan logic from ENV-006. **Out of scope:** manifest, build resolution, compare views. |
 | **Test / demo** | Sidebar **Packages** → pick environment and instance → DLL table loads → environment details **Packages** button still works → deep link bookmarkable. |
 | **Depends on** | ENV-006 |
-| **Implementation** | Hub at `/packages`; instance view at `/packages/{instanceId}`; `DeployedPackagesContent` shared component; legacy environment route redirects with `replace: true`; nav and home card added. |
+| **Implementation** | Hub at `/package-viewer`; instance view at `/package-viewer/{instanceId}`; `PackageViewerContent` shared component; legacy routes redirect with `replace: true`; nav and home card added. Pages live under `Pages/PackageViewer/` (not `Packages/`, which is gitignored). |
 
 ### PKG-002
 

@@ -1,0 +1,82 @@
+@page "/package-viewer/{InstanceId:guid}"
+@inject IEnvironmentService EnvironmentService
+@inject IApplicationInstanceService InstanceService
+@inject IDeployedPackageService PackageService
+
+<PageTitle>@_pageTitle</PageTitle>
+
+<div class="mb-3">
+    @if (_environment is not null)
+    {
+        <a href="@($"/environments/{_environment.LocalId}")" class="text-decoration-none">&larr; Back to @_environment.Details.Name</a>
+    }
+    else
+    {
+        <a href="/package-viewer" class="text-decoration-none">&larr; Back to package viewer</a>
+    }
+</div>
+
+@if (_isLoading)
+{
+    <p class="text-muted">Loading packages…</p>
+}
+else if (_instance is null)
+{
+    <div class="alert alert-warning" role="alert">
+        Application instance not found.
+    </div>
+}
+else
+{
+    <div class="mb-3">
+        <h1 class="mb-1">Package viewer</h1>
+        <p class="text-muted mb-0">
+            @(_environment?.Details.Name ?? "Environment") &middot; @_instance.DeployableApplication.Name
+        </p>
+    </div>
+
+    <PackageViewerContent ScanResult="_scanResult" />
+}
+
+@code {
+    [Parameter]
+    public Guid InstanceId { get; set; }
+
+    private CachedEnvironment? _environment;
+    private ApplicationInstance? _instance;
+    private DeployedPackageScanResult? _scanResult;
+    private bool _isLoading = true;
+    private string _pageTitle = "Package viewer";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _environment = null;
+        _instance = null;
+        _scanResult = null;
+
+        try
+        {
+            _instance = await InstanceService.GetByIdAsync(InstanceId);
+
+            if (_instance is null)
+            {
+                _pageTitle = "Package viewer";
+                return;
+            }
+
+            _environment = await EnvironmentService.GetTrackedEnvironmentAsync(_instance.EnvironmentId);
+            _pageTitle = $"Package viewer — {_instance.DeployableApplication.Name}";
+            _scanResult = await PackageService.ScanAsync(InstanceId);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

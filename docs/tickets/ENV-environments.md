@@ -378,7 +378,7 @@ Route: `/environments/{localId}` (`CachedEnvironment.LocalId`).
 | Logs | Navigate to `/logs/{instanceId}` — **LOG-003** resolves `LogPath` if needed (lazy `RefreshEnvironmentAsync` when template tokens missing from cache), then reads logs using stored path + deployable app `LogFormatProfile` |
 | Homepage | If the deployable app `IsWebApp` and the instance has `HomepageUrl`, show an external hyperlink (new tab). Otherwise omit |
 | Configuration | Navigate to `/configuration/{instanceId}` — settings browser for that instance (CFG-003) |
-| Packages | Navigate to `/packages/{instanceId}` (PKG-001; legacy `/environments/.../packages` redirects) |
+| Packages | Navigate to `/package-viewer/{instanceId}` (PKG-001; legacy `/packages` and `/environments/.../packages` redirect) |
 
 Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-005 still wires the buttons to those routes.
 
