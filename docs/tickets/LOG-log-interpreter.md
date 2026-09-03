@@ -32,7 +32,7 @@
 | [LOG-011](#log-011) | Done | Raw / JSON / XML format toggle for text viewers | LOG-006, LOG-009 |
 | [LOG-012](#log-012) | Done | Live tail with file watch and auto-scroll | LOG-003, LOG-005 |
 | [LOG-013](#log-013) | Done | Toolbar layout — Log file and Parse as side by side | LOG-005, LOG-007 |
-| [LOG-014](#log-014) | Open | Raw log content modal (replace collapsible panel) | LOG-006, LOG-009 |
+| [LOG-014](#log-014) | Done | Raw log content modal (replace collapsible panel) | LOG-006, LOG-009 |
 | [LOG-015](#log-015) | Open | Table header filter dropdowns (level and search) | LOG-004 |
 | [LOG-016](#log-016) | Open | Viewport-filling scrollable log table | LOG-012, LOG-015 |
 
@@ -315,7 +315,7 @@ Built-in parsers (`PlainText`, `NLogMultiline`, `Log4NetPattern`, etc.) all redu
 |-------|--------|
 | **ID** | LOG-014 |
 | **Title** | Raw log content modal (replace collapsible panel) |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | Remove the **Raw log content** collapsible section (LOG-006) from the main page body. Add a **View raw log** (or similar) button beside **Parse as** that opens the full current tail raw text in a modal dialog — reuse `TextDetailModal` or extend it. Modal shows the same `_rawContent` string as today (monospace, scrollable). LOG-011 formatted JSON/XML toggle may apply inside this modal when that ticket ships; until then, raw text only. |
 | **Test / demo** | Open log viewer → no inline raw panel → click **View raw log** beside Parse as → modal shows tail content → Close dismisses. |
 | **Depends on** | LOG-006, LOG-009 |

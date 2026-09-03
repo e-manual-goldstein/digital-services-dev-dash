@@ -102,22 +102,30 @@ else
                 }
                 <div class="col-12 @(_showLogFilePicker ? "col-lg-6" : "col-lg-8")">
                     <label class="form-label mb-1" for="log-parse-format">Parse as</label>
-                    <InputSelect id="log-parse-format"
-                                 class="form-select"
-                                 TValue="string"
-                                 Value="_selectedParseFormat"
-                                 ValueChanged="OnParseFormatChangedAsync"
-                                 ValueExpression="() => _selectedParseFormat"
-                                 disabled="@(_isBusy || string.IsNullOrWhiteSpace(_rawContent))">
-                        @if (string.IsNullOrWhiteSpace(_configuredFormatName))
-                        {
-                            <option value="">Select format…</option>
-                        }
-                        @foreach (var formatName in _supportedParseFormats)
-                        {
-                            <option value="@formatName">@LogFormatNames.GetDisplayName(formatName)</option>
-                        }
-                    </InputSelect>
+                    <div class="d-flex flex-wrap gap-2">
+                        <InputSelect id="log-parse-format"
+                                     class="form-select flex-grow-1"
+                                     TValue="string"
+                                     Value="_selectedParseFormat"
+                                     ValueChanged="OnParseFormatChangedAsync"
+                                     ValueExpression="() => _selectedParseFormat"
+                                     disabled="@(_isBusy || string.IsNullOrWhiteSpace(_rawContent))">
+                            @if (string.IsNullOrWhiteSpace(_configuredFormatName))
+                            {
+                                <option value="">Select format…</option>
+                            }
+                            @foreach (var formatName in _supportedParseFormats)
+                            {
+                                <option value="@formatName">@LogFormatNames.GetDisplayName(formatName)</option>
+                            }
+                        </InputSelect>
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                disabled="@string.IsNullOrWhiteSpace(_rawContent)"
+                                @onclick="ShowRawLogModal">
+                            View raw log
+                        </button>
+                    </div>
                 </div>
                 <div class="col-12 @(_showLogFilePicker ? "col-lg-12" : "col-lg-4")">
                     <p class="text-muted small mb-0">
@@ -176,17 +184,6 @@ else
     @if (!string.IsNullOrWhiteSpace(_errorMessage))
     {
         <div class="alert alert-danger" role="alert">@_errorMessage</div>
-    }
-
-    @if (!string.IsNullOrWhiteSpace(_rawContent))
-    {
-        <div class="card mb-3">
-            <div class="card-body py-3">
-                <CollapsibleSection Title="Raw log content">
-                    <FormattedTextViewer Text="@_rawContent" />
-                </CollapsibleSection>
-            </div>
-        </div>
     }
 
     @if (_allEntries.Count == 0 && string.IsNullOrWhiteSpace(_errorMessage))
@@ -269,6 +266,11 @@ else
     }
 }
 
+<TextDetailModal IsOpen="_isRawLogModalOpen"
+                 Title="Raw log content"
+                 Body="@(_rawContent ?? string.Empty)"
+                 OnClose="CloseRawLogModal" />
+
 <TextDetailModal IsOpen="_rawEntryModalEntry is not null"
                  Title="@(_rawEntryModalEntry is null ? string.Empty : LogEntryDisplay.FormatModalTitle(_rawEntryModalEntry))"
                  Body="@(_rawEntryModalEntry?.RawText ?? string.Empty)"
@@ -294,6 +296,7 @@ else
     private IReadOnlyList<ParsedLogEntry> _allEntries = [];
     private ParsedLogEntry? _rawEntryModalEntry;
     private ParsedLogEntry? _exceptionModalEntry;
+    private bool _isRawLogModalOpen;
     private IReadOnlyList<AvailableLogFile> _availableLogFiles = [];
     private string? _selectedLogFilePath;
     private string? _logFilePath;
@@ -347,6 +350,7 @@ else
         _allEntries = [];
         _rawEntryModalEntry = null;
         _exceptionModalEntry = null;
+        _isRawLogModalOpen = false;
         _logFilePath = null;
         _rawContent = null;
         _configuredFormatName = null;
@@ -672,6 +676,10 @@ else
         _minimumLevel = LogEntryFilter.MinimumLevelAll;
         _searchText = string.Empty;
     }
+
+    private void ShowRawLogModal() => _isRawLogModalOpen = true;
+
+    private void CloseRawLogModal() => _isRawLogModalOpen = false;
 
     private void ShowRawEntry(ParsedLogEntry entry) => _rawEntryModalEntry = entry;
 
