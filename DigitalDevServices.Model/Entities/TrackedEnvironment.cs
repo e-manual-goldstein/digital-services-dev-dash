@@ -12,5 +12,7 @@ public class TrackedEnvironment
 
     public bool IsFavourite { get; set; }
 
+    public int DisplayOrder { get; set; }
+
     public DateTimeOffset DateLastUpdated { get; set; }
 }

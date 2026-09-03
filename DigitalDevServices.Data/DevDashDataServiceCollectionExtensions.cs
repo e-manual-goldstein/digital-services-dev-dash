@@ -32,6 +32,7 @@ public static class DevDashDataServiceCollectionExtensions
         EnsureLogFormatProfilesTableExists(db);
         EnsureConfigurationSettingsTableExists(db);
         EnsureTrackedEnvironmentsIsFavouriteColumnExists(db);
+        EnsureTrackedEnvironmentsDisplayOrderColumnExists(db);
         EnsureDeployableApplicationsPathToLogFilesColumnExists(db);
         EnsureDeployableApplicationsPathToPhysicalPathColumnExists(db);
     }
@@ -183,6 +184,15 @@ public static class DevDashDataServiceCollectionExtensions
             "TrackedEnvironments",
             "IsFavourite",
             "ALTER TABLE \"TrackedEnvironments\" ADD COLUMN \"IsFavourite\" INTEGER NOT NULL DEFAULT 0");
+    }
+
+    private static void EnsureTrackedEnvironmentsDisplayOrderColumnExists(DevDashDbContext db)
+    {
+        EnsureColumnExists(
+            db,
+            "TrackedEnvironments",
+            "DisplayOrder",
+            "ALTER TABLE \"TrackedEnvironments\" ADD COLUMN \"DisplayOrder\" INTEGER NOT NULL DEFAULT 0");
     }
 
     private static void EnsureColumnExists(

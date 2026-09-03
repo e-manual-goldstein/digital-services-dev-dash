@@ -1,0 +1,54 @@
+<InputSelect id="@Id"
+             class="@CssClass"
+             @bind-Value="Value"
+             @bind-Value:after="NotifyChangeAsync"
+             disabled="@Disabled">
+    <option value="">@Placeholder</option>
+    @foreach (var environment in _orderedEnvironments)
+    {
+        <option value="@environment.LocalId">@EnvironmentPickerDisplay.FormatOptionLabel(environment)</option>
+    }
+</InputSelect>
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = "environment-picker";
+
+    [Parameter]
+    public string CssClass { get; set; } = "form-select";
+
+    [Parameter]
+    public string Placeholder { get; set; } = "Select environment…";
+
+    [Parameter]
+    public IReadOnlyList<CachedEnvironment> Environments { get; set; } = [];
+
+    [Parameter]
+    public Guid? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid?> ValueChanged { get; set; }
+
+    [Parameter]
+    public EventCallback OnAfterChange { get; set; }
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    private IReadOnlyList<CachedEnvironment> _orderedEnvironments = [];
+
+    protected override void OnParametersSet()
+    {
+        _orderedEnvironments = EnvironmentPickerDisplay.OrderForPicker(Environments);
+    }
+
+    private async Task NotifyChangeAsync()
+    {
+        await ValueChanged.InvokeAsync(Value);
+
+        if (OnAfterChange.HasDelegate)
+        {
+            await OnAfterChange.InvokeAsync();
+        }
+    }
+}

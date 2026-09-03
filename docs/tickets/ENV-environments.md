@@ -40,7 +40,7 @@
 | [ENV-017](#env-017) | Done | `GetBuildVersionDetails` — version control metadata for a build | ENV-016 |
 | [ENV-018](#env-018) | Done | Deployed applications table — action buttons in dedicated columns | ENV-005 |
 | [ENV-019](#env-019) | Done | In-memory environment refresh snapshot for details sections | ENV-016, ENV-017 |
-| [ENV-020](#env-020) | Open | Environment picker — favourites, code label, display order | ENV-008, LOG-003, CFG-003 |
+| [ENV-020](#env-020) | Done | Environment picker — favourites, code label, display order | ENV-008, LOG-003, CFG-003 |
 
 ---
 
@@ -55,6 +55,7 @@ Persisted in SQLite — **no** name or SQL Server instance stored locally.
 | `Id` | `Guid` | Local DevDash PK |
 | `RemoteId` | `int` | External team's environment id — unique |
 | `IsFavourite` | `bool` | DevDash-only flag (ENV-008); default `false` |
+| `DisplayOrder` | `int` | DevDash-only sort order for pickers (ENV-020); default `0` |
 | `DateLastUpdated` | `DateTimeOffset` | UTC — last successful API fetch for this record |
 
 ### Remote DTO (`RemoteEnvironmentDetails`)
@@ -259,6 +260,7 @@ What consumers (UI, other services) use:
 | `LocalId` | `Guid` | From `TrackedEnvironment.Id` |
 | `RemoteId` | `int` | From `Details.Id` |
 | `IsFavourite` | `bool` | From `TrackedEnvironment` (local only) |
+| `DisplayOrder` | `int` | From `TrackedEnvironment` (local only; ENV-020) |
 | `Details` | `RemoteEnvironmentDetails` | From API (`GetEnvironment`) |
 | `DeploymentDetails` | `RemoteEnvironmentDeploymentDetails?` | From API (`GetDeploymentDetailsForEnvironment`) on refresh; null when not yet fetched |
 | `DateLastUpdated` | `DateTimeOffset` | From local record |
@@ -617,8 +619,9 @@ Logs and configuration destinations are implemented in LOG-003 and CFG-003. ENV-
 |-------|--------|
 | **ID** | ENV-020 |
 | **Title** | Environment picker — favourites, code label, display order |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | Improve the **Environment** dropdown on the Log Viewer and Configuration hub pages (`/log-viewer`, `/configuration`) and any shared environment picker component extracted for reuse. **Ordering:** favourite environments (`TrackedEnvironment.IsFavourite`) appear **at the top** of the list, then non-favourites; within each group, order by **`DisplayOrder`** ascending (add `DisplayOrder` `int` to `TrackedEnvironment` with schema upgrade, default `0`; tie-break by name). **Labels:** option text must include the **environment code** (from `RemoteEnvironmentDetails.Code`) — e.g. `UAT-01 — UAT-01 (UAT)` or `CODE — Name` — document chosen format. Apply the same ordering/label rules anywhere both pickers are duplicated unless a shared `EnvironmentPicker` component is introduced. **Out of scope:** drag-and-drop reorder UI for display order (manual DB or future admin ticket). |
 | **Test / demo** | Favourite two environments, set display order → Log Viewer dropdown shows favourites first with code in label → Configuration dropdown matches → non-favourites follow in display order. |
 | **Depends on** | ENV-008, LOG-003, CFG-003 |
+| **Implementation** | `DisplayOrder` on `TrackedEnvironment` (SQLite schema upgrade). `EnvironmentPickerDisplay` (`CODE — Name` labels; favourites → display order → name). Shared `EnvironmentPickerSelect` component on `/log-viewer` and `/configuration`. |
 

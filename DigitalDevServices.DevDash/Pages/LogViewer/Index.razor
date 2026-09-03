@@ -18,17 +18,11 @@
         <div class="row g-3 align-items-end">
             <div class="col-12 col-lg-5">
                 <label class="form-label" for="log-environment">Environment</label>
-                <InputSelect id="log-environment"
-                             class="form-select"
-                             @bind-Value="_selectedEnvironmentId"
-                             @bind-Value:after="OnEnvironmentChangedAsync"
-                             disabled="@_isLoading">
-                    <option value="">Select environment…</option>
-                    @foreach (var environment in _environments)
-                    {
-                        <option value="@environment.LocalId">@environment.Details.Name</option>
-                    }
-                </InputSelect>
+                <EnvironmentPickerSelect id="log-environment"
+                                         @bind-Value="_selectedEnvironmentId"
+                                         OnAfterChange="OnEnvironmentChangedAsync"
+                                         Environments="_environments"
+                                         Disabled="_isLoading" />
             </div>
             <div class="col-12 col-lg-5">
                 <label class="form-label" for="log-instance">Application instance</label>
@@ -94,9 +88,6 @@ else if (_selectedEnvironmentId is not null && _instances.Count == 0 && !_isLoad
         try
         {
             _environments = await EnvironmentService.GetEnvironmentsAsync();
-            _environments = _environments
-                .OrderBy(environment => environment.Details.Name, StringComparer.OrdinalIgnoreCase)
-                .ToList();
         }
         catch (Exception ex)
         {

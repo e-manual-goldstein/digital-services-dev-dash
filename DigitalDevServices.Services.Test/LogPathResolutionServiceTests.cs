@@ -206,6 +206,7 @@ public sealed class LogPathResolutionServiceTests
                 LocalId = environment.Id,
                 RemoteId = remoteId,
                 IsFavourite = false,
+                DisplayOrder = 0,
                 Details = CreateEnvironmentDetails(remoteId, machineName, windowsServices),
                 DateLastUpdated = DateTimeOffset.UtcNow,
                 IsFromCache = true

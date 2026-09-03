@@ -248,6 +248,7 @@ public sealed class EnvironmentService : IEnvironmentService
             return cached with
             {
                 IsFavourite = tracked.IsFavourite,
+                DisplayOrder = tracked.DisplayOrder,
                 IsFromCache = true
             };
         }
@@ -320,6 +321,7 @@ public sealed class EnvironmentService : IEnvironmentService
             LocalId = tracked.Id,
             RemoteId = tracked.RemoteId,
             IsFavourite = tracked.IsFavourite,
+            DisplayOrder = tracked.DisplayOrder,
             Details = details,
             DeploymentDetails = deploymentDetails,
             RefreshSnapshot = refreshSnapshot,

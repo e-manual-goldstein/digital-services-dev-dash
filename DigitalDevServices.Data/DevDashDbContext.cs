@@ -31,6 +31,7 @@ public class DevDashDbContext : DbContext
             entity.Property(e => e.RemoteId).IsRequired();
             entity.HasIndex(e => e.RemoteId).IsUnique();
             entity.Property(e => e.IsFavourite).IsRequired();
+            entity.Property(e => e.DisplayOrder).IsRequired();
             entity.Property(e => e.DateLastUpdated).IsRequired();
         });
 

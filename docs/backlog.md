@@ -10,13 +10,12 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~ENV-018~~ | [ENV](tickets/ENV-environments.md) | **Deployed apps table** — action buttons in own columns |
+| ~~ENV-020~~ | [ENV](tickets/ENV-environments.md) | **Environment picker** — favourites, code, display order |
 
 ## Active (recommended order)
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ENV-020 | [ENV](tickets/ENV-environments.md) | **Environment picker** — favourites, code, display order |
 | PKG-001 | [PKG](tickets/PKG-packages.md) | **Packages** first-class domain (nav and routes) |
 | PKG-002 | [PKG](tickets/PKG-packages.md) | Consume deployment **manifest** file |
 | PKG-003 | [PKG](tickets/PKG-packages.md) | Resolve package by **build number** |
@@ -36,7 +35,6 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 | Epic | Description | Tickets Completed | Tickets Shelved | Total Tickets | Progress |
 |------|-------------|-------------------|-----------------|---------------|----------|
 | [Theme (THM)](tickets/THM-theme.md) | Global colour scheme | 0 | 0 | 1 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
-| [Environments (ENV)](tickets/ENV-environments.md) | Remote API + environment details hub | 19 | 0 | 20 | 🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜ 95% |
 | [Applications (APP)](tickets/APP-applications.md) | Deployable app vs instance | 5 | 0 | 7 | 🟩🟩🟩🟩🟩🟩🟩⬜⬜⬜ 71% |
 | [Packages (PKG)](tickets/PKG-packages.md) | DLL inspection and comparison | 0 | 0 | 5 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
 | [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 3 | 2 | 7 | 🟩🟩🟩🟩🟩⬜⬜⬜⬜⬜ 43% |
@@ -73,9 +71,10 @@ Unprioritized — not in the active queue. See [IDE-ideas.md](tickets/IDE-ideas.
 | Epic | Description | Completed |
 |------|-------------|-----------|
 | [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | LOG-001 – LOG-016 |
+| [Environments (ENV)](tickets/ENV-environments.md) | Remote API + environment details hub | ENV-001 – ENV-020 |
 | [Foundation (FND)](tickets/FND-foundation.md) | Blazor skeleton and layout | FND-001 – FND-002 |
 
-*ENV and APP epics reopened — see [Epic progress](#epic-progress). LOG epic complete — see [Completed epics](#completed-epics-100).*
+*APP epic reopened — see [Epic progress](#epic-progress). LOG and ENV epics complete — see [Completed epics](#completed-epics-100).*
 
 ## Domain model (overview)
 

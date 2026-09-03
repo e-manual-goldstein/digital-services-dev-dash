@@ -11,6 +11,8 @@ public record CachedEnvironment
 
     public required bool IsFavourite { get; init; }
 
+    public required int DisplayOrder { get; init; }
+
     public required RemoteEnvironmentDetails Details { get; init; }
 
     public RemoteEnvironmentDeploymentDetails? DeploymentDetails { get; init; }
