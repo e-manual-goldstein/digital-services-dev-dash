@@ -10,13 +10,12 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~ENV-020~~ | [ENV](tickets/ENV-environments.md) | **Environment picker** — favourites, code, display order |
+| ~~PKG-001~~ | [PKG](tickets/PKG-packages.md) | **Packages** first-class domain (nav and routes) |
 
 ## Active (recommended order)
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| PKG-001 | [PKG](tickets/PKG-packages.md) | **Packages** first-class domain (nav and routes) |
 | PKG-002 | [PKG](tickets/PKG-packages.md) | Consume deployment **manifest** file |
 | PKG-003 | [PKG](tickets/PKG-packages.md) | Resolve package by **build number** |
 | PKG-004 | [PKG](tickets/PKG-packages.md) | **Compare DLLs** — two instances of same app |
@@ -36,7 +35,7 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 |------|-------------|-------------------|-----------------|---------------|----------|
 | [Theme (THM)](tickets/THM-theme.md) | Global colour scheme | 0 | 0 | 1 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
 | [Applications (APP)](tickets/APP-applications.md) | Deployable app vs instance | 5 | 0 | 7 | 🟩🟩🟩🟩🟩🟩🟩⬜⬜⬜ 71% |
-| [Packages (PKG)](tickets/PKG-packages.md) | DLL inspection and comparison | 0 | 0 | 5 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
+| [Packages (PKG)](tickets/PKG-packages.md) | DLL inspection and comparison | 1 | 0 | 5 | 🟩🟩⬜⬜⬜⬜⬜⬜⬜⬜ 20% |
 | [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 3 | 2 | 7 | 🟩🟩🟩🟩🟩⬜⬜⬜⬜⬜ 43% |
 | [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Named pipeline feeds | 2 | 1 | 4 | 🟩🟩🟩🟩🟩⬜⬜⬜⬜⬜ 50% |
 

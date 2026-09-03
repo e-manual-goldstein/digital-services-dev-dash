@@ -1,0 +1,57 @@
+@if (!string.IsNullOrWhiteSpace(ScanResult?.ErrorMessage))
+{
+    <div class="alert alert-warning" role="alert">@ScanResult.ErrorMessage</div>
+}
+else if (ScanResult?.Packages.Count == 0)
+{
+    <div class="alert alert-light border text-center py-4" role="status">
+        <p class="mb-0 text-muted">No DLL files were found in the deployment folder.</p>
+    </div>
+}
+else if (ScanResult is not null)
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>File name</th>
+                    <th>File version</th>
+                    <th>Assembly version</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var package in ScanResult.Packages)
+                {
+                    <tr>
+                        <td><code>@package.FileName</code></td>
+                        <td>
+                            @if (string.IsNullOrWhiteSpace(package.FileVersion))
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                            else
+                            {
+                                @package.FileVersion
+                            }
+                        </td>
+                        <td>
+                            @if (string.IsNullOrWhiteSpace(package.AssemblyVersion))
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                            else
+                            {
+                                @package.AssemblyVersion
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public DeployedPackageScanResult? ScanResult { get; set; }
+}

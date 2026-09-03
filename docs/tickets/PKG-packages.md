@@ -19,7 +19,7 @@
 
 | ID | Status | Title | Depends on |
 |----|--------|-------|------------|
-| [PKG-001](#pkg-001) | Open | Packages as first-class domain (nav and routes) | ENV-006 |
+| [PKG-001](#pkg-001) | Done | Packages as first-class domain (nav and routes) | ENV-006 |
 | [PKG-002](#pkg-002) | Open | Consume deployment manifest file when present | PKG-001 |
 | [PKG-003](#pkg-003) | Open | Resolve deployment package by build number for instance view | PKG-001, ENV-016 |
 | [PKG-004](#pkg-004) | Open | Compare DLL versions between two instances of same app | PKG-001 |
@@ -29,9 +29,9 @@
 
 ## Design notes
 
-### Current state (ENV-006)
+### Current state (PKG-001)
 
-Packages today live at `/environments/{localId}/instances/{instanceId}/packages` — a filesystem scan of `ApplicationInstance.PhysicalPath` for `*.dll` (recursive), showing file name, file version, and assembly version. Linked from environment details only.
+Packages hub at `/packages` with environment → instance picker. Instance view at `/packages/{instanceId}` — filesystem scan of `ApplicationInstance.PhysicalPath` for `*.dll` (recursive), showing file name, file version, and assembly version. Linked from nav, home, and environment details. Legacy `/environments/{localId}/instances/{instanceId}/packages` redirects to the canonical route.
 
 ### Target domain
 
@@ -72,10 +72,11 @@ Packages today live at `/environments/{localId}/instances/{instanceId}/packages`
 |-------|--------|
 | **ID** | PKG-001 |
 | **Title** | Packages as first-class domain (nav and routes) |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | Promote **Packages** from an Environments sub-route to its own domain alongside Log Viewer and Configuration. **Nav:** add top-level **Packages** link in `NavMenu` and a home card on the landing page. **Routes:** introduce a packages hub (environment → instance picker, mirroring Log Viewer / Configuration patterns) and an instance packages view at a domain-centric URL (e.g. `/packages` and `/packages/{instanceId}`). Keep backward compatibility: existing `/environments/{localId}/instances/{instanceId}/packages` should redirect or remain as an alias. Reuse existing `IDeployedPackageService` scan logic from ENV-006. **Out of scope:** manifest, build resolution, compare views. |
 | **Test / demo** | Sidebar **Packages** → pick environment and instance → DLL table loads → environment details **Packages** button still works → deep link bookmarkable. |
 | **Depends on** | ENV-006 |
+| **Implementation** | Hub at `/packages`; instance view at `/packages/{instanceId}`; `DeployedPackagesContent` shared component; legacy environment route redirects with `replace: true`; nav and home card added. |
 
 ### PKG-002
 
