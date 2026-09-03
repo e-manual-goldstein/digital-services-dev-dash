@@ -29,7 +29,7 @@
 | [LOG-008](#log-008) | Done | Custom regex log parser (Entry / EntryStart) | LOG-001, LOG-007 |
 | [LOG-009](#log-009) | Done | Per-entry raw log modal on viewer table | LOG-003 |
 | [LOG-010](#log-010) | Done | Structured exception detail modal for error rows | LOG-003, LOG-009 |
-| [LOG-011](#log-011) | Open | Raw / JSON / XML format toggle for text viewers | LOG-006, LOG-009 |
+| [LOG-011](#log-011) | Done | Raw / JSON / XML format toggle for text viewers | LOG-006, LOG-009 |
 | [LOG-012](#log-012) | Done | Live tail with file watch and auto-scroll | LOG-003, LOG-005 |
 | [LOG-013](#log-013) | Open | Toolbar layout — Log file and Parse as side by side | LOG-005, LOG-007 |
 | [LOG-014](#log-014) | Open | Raw log content modal (replace collapsible panel) | LOG-006, LOG-009 |
@@ -281,10 +281,11 @@ Built-in parsers (`PlainText`, `NLogMultiline`, `Log4NetPattern`, etc.) all redu
 |-------|--------|
 | **ID** | LOG-011 |
 | **Title** | Raw / JSON / XML format toggle for text viewers |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | Several UI surfaces show unformatted text that is often JSON (single object, NDJSON lines) or XML. Add a reusable **FormattedTextViewer** (or similar) shared component with a **Raw** / **JSON** / **XML** radio-button group above the content area. **Raw** shows the source string unchanged (current behaviour). **JSON** attempts to parse and pretty-print (indented); **XML** attempts to parse and pretty-print with declaration/indentation. When the selected format cannot be parsed, show the raw text and a short inline hint (e.g. “Not valid JSON”) rather than failing silently. For multi-line content where each line is a separate JSON object (common in log tails), pretty-print line-by-line; leave non-JSON lines as-is or prefix unchanged. Default selection: **Raw**, or auto-select JSON/XML when the entire body parses successfully on first render (optional nice-to-have). Preserve existing monospace / scroll styling (reuse `.log-entry-raw` / `.log-exception-stack` patterns). Selection is per-component instance (session-only; not persisted). **Adopt in:** log viewer **Raw log content** panel (LOG-006), **View raw entry** modal (`TextDetailModal` / LOG-009). **Out of scope for v1:** exception stack traces (`ExceptionDetailModal` — not JSON/XML), configuration value cells, server-side re-fetch. **Implementation:** extract formatting into a small service or static helper (`IFormattedTextService` / `FormattedTextFormatter`) with unit tests for JSON/XML success, invalid input, and NDJSON tails; component lives under `Shared/Components`. |
 | **Test / demo** | Open log viewer on Serilog JSON tail → **Raw log content** → switch to **JSON** → indented structure → switch to **XML** on XML sample → shows formatted tree → invalid JSON shows hint and raw text. **View raw entry** on a single JSON line → same radio group in modal. `dotnet test --filter FormattedText` → pass. |
 | **Depends on** | LOG-006, LOG-009 |
+| **Implementation** | `IFormattedTextService` / `FormattedTextService`; shared `FormattedTextViewer` component (Raw/JSON/XML radio group, auto-detect on load). Adopted in log viewer **Raw log content** panel and `TextDetailModal`. Tests in `FormattedTextServiceTests`. |
 
 ### LOG-012
 

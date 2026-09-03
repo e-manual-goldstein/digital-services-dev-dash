@@ -1,0 +1,74 @@
+@using DigitalDevServices.Model.TextFormatting
+@inject IFormattedTextService FormattedTextService
+
+@if (!string.IsNullOrEmpty(Text))
+{
+    <div class="formatted-text-viewer">
+        <div class="btn-group btn-group-sm mb-2" role="group" aria-label="Text format">
+            @foreach (var option in _formatOptions)
+            {
+                <input type="radio"
+                       class="btn-check"
+                       name="@_groupName"
+                       id="@($"{_groupName}-{option.Value}")"
+                       checked="@(_selectedFormat == option.Value)"
+                       @onchange="() => SelectFormatAsync(option.Value)" />
+                <label class="btn btn-outline-secondary"
+                       for="@($"{_groupName}-{option.Value}")">
+                    @option.Label
+                </label>
+            }
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_hint))
+        {
+            <p class="text-muted small mb-2" role="status">@_hint</p>
+        }
+
+        <div class="log-entry-raw">@_displayText</div>
+    </div>
+}
+
+@code {
+    private static readonly (FormattedTextDisplayFormat Value, string Label)[] _formatOptions =
+    [
+        (FormattedTextDisplayFormat.Raw, "Raw"),
+        (FormattedTextDisplayFormat.Json, "JSON"),
+        (FormattedTextDisplayFormat.Xml, "XML")
+    ];
+
+    private readonly string _groupName = $"formatted-text-{Guid.NewGuid():N}";
+    private string? _lastText;
+    private FormattedTextDisplayFormat _selectedFormat = FormattedTextDisplayFormat.Raw;
+    private string _displayText = string.Empty;
+    private string? _hint;
+
+    [Parameter]
+    public string? Text { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (string.Equals(_lastText, Text, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _lastText = Text;
+        _selectedFormat = FormattedTextService.DetectAutoFormat(Text) ?? FormattedTextDisplayFormat.Raw;
+        ApplySelectedFormat();
+    }
+
+    private Task SelectFormatAsync(FormattedTextDisplayFormat format)
+    {
+        _selectedFormat = format;
+        ApplySelectedFormat();
+        return Task.CompletedTask;
+    }
+
+    private void ApplySelectedFormat()
+    {
+        var result = FormattedTextService.Format(Text, _selectedFormat);
+        _displayText = result.DisplayText;
+        _hint = result.Hint;
+    }
+}
