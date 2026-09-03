@@ -22,7 +22,7 @@
 | [PKG-001](#pkg-001) | Done | Packages as first-class domain (nav and routes) | ENV-006 |
 | [PKG-002](#pkg-002) | Done | Consume deployment manifest file when present | PKG-001 |
 | [PKG-003](#pkg-003) | Open | Resolve deployment package by build number for instance view | PKG-001, ENV-016 |
-| [PKG-004](#pkg-004) | Open | Compare DLL versions between two instances of same app | PKG-001 |
+| [PKG-004](#pkg-004) | Done | Compare DLL versions between two instances of same app | PKG-001 |
 | [PKG-005](#pkg-005) | Open | Compare DLL versions between two apps in same environment | PKG-001 |
 
 ---
@@ -107,10 +107,11 @@ Package viewer hub at `/package-viewer` with environment → instance picker. In
 |-------|--------|
 | **ID** | PKG-004 |
 | **Title** | Compare DLL versions between two instances of same app |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | Add a **compare** workflow: user picks a **DeployableApplication**, then two **ApplicationInstance** rows (typically different environments). Show a table of DLL / assembly name with version columns for Instance A and Instance B; highlight rows where versions differ or a DLL exists on only one side. Reuse package resolution from PKG-001 (and PKG-002/003 when available). Entry point: Packages hub or deployable application context. |
 | **Test / demo** | Pick same app in UAT-01 and Integration → compare → mismatched DLL versions highlighted → identical versions shown neutrally. |
 | **Depends on** | PKG-001 |
+| **Implementation** | `/package-viewer/compare` picker and `/package-viewer/compare/{leftId}/{rightId}` results; `DeployedPackageComparer`, `CompareInstancesAsync`, `PackageViewerComparisonContent`; hub link on package viewer index. |
 
 ### PKG-005
 

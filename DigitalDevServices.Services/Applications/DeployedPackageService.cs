@@ -85,6 +85,85 @@ public sealed class DeployedPackageService : IDeployedPackageService
         return ScanFilesystem(physicalPath, cancellationToken);
     }
 
+    public async Task<DeployedPackageComparisonResult> CompareInstancesAsync(
+        Guid leftInstanceId,
+        Guid rightInstanceId,
+        CancellationToken cancellationToken = default)
+    {
+        if (leftInstanceId == rightInstanceId)
+        {
+            return new DeployedPackageComparisonResult
+            {
+                LeftInstanceId = leftInstanceId,
+                RightInstanceId = rightInstanceId,
+                ErrorMessage = "Choose two different application instances to compare."
+            };
+        }
+
+        var leftInstance = await _applicationInstanceService
+            .GetByIdAsync(leftInstanceId, cancellationToken)
+            .ConfigureAwait(false);
+        var rightInstance = await _applicationInstanceService
+            .GetByIdAsync(rightInstanceId, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (leftInstance is null || rightInstance is null)
+        {
+            return new DeployedPackageComparisonResult
+            {
+                LeftInstanceId = leftInstanceId,
+                RightInstanceId = rightInstanceId,
+                ErrorMessage = "One or both application instances were not found."
+            };
+        }
+
+        if (leftInstance.DeployableApplicationId != rightInstance.DeployableApplicationId)
+        {
+            return new DeployedPackageComparisonResult
+            {
+                LeftInstanceId = leftInstanceId,
+                RightInstanceId = rightInstanceId,
+                ErrorMessage = "Both instances must belong to the same deployable application."
+            };
+        }
+
+        var leftScan = await ScanAsync(leftInstanceId, cancellationToken).ConfigureAwait(false);
+        var rightScan = await ScanAsync(rightInstanceId, cancellationToken).ConfigureAwait(false);
+
+        if (!leftScan.IsSuccess)
+        {
+            return new DeployedPackageComparisonResult
+            {
+                LeftInstanceId = leftInstanceId,
+                RightInstanceId = rightInstanceId,
+                LeftScan = leftScan,
+                RightScan = rightScan,
+                ErrorMessage = $"Instance A: {leftScan.ErrorMessage}"
+            };
+        }
+
+        if (!rightScan.IsSuccess)
+        {
+            return new DeployedPackageComparisonResult
+            {
+                LeftInstanceId = leftInstanceId,
+                RightInstanceId = rightInstanceId,
+                LeftScan = leftScan,
+                RightScan = rightScan,
+                ErrorMessage = $"Instance B: {rightScan.ErrorMessage}"
+            };
+        }
+
+        return new DeployedPackageComparisonResult
+        {
+            LeftInstanceId = leftInstanceId,
+            RightInstanceId = rightInstanceId,
+            LeftScan = leftScan,
+            RightScan = rightScan,
+            Rows = DeployedPackageComparer.Compare(leftScan, rightScan)
+        };
+    }
+
     private static DeployedPackageScanResult ScanFilesystem(
         string physicalPath,
         CancellationToken cancellationToken)

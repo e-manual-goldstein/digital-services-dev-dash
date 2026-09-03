@@ -236,3 +236,12 @@ code {
 .table-deployed-apps__delete-confirm .btn {
     width: 100%;
 }
+
+.package-comparison-table__mismatch > td {
+    background-color: #fff3cd;
+}
+
+.package-comparison-table__left-only > td,
+.package-comparison-table__right-only > td {
+    background-color: #f8d7da;
+}

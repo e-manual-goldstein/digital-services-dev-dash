@@ -169,6 +169,84 @@ public sealed class DeployedPackageServiceTests
         Assert.IsTrue(result.Warnings.Any(warning => warning.Contains("Fell back to filesystem scan", StringComparison.Ordinal)));
     }
 
+    [TestMethod]
+    public async Task CompareInstancesAsync_ReturnsComparisonRowsForSameApplication()
+    {
+        await using var fixture = await DeployedPackageServiceFixture.CreateAsync();
+        var leftDirectory = await fixture.CreatePackageDirectoryAsync();
+        var rightDirectory = await fixture.CreatePackageDirectoryAsync();
+        await fixture.WriteManifestAsync(
+            leftDirectory,
+            """
+            "Path","Version"
+            "Shared.dll","1.0.0.0"
+            "LeftOnly.dll","1.0.0.0"
+            """);
+        await fixture.WriteManifestAsync(
+            rightDirectory,
+            """
+            "Path","Version"
+            "Shared.dll","2.0.0.0"
+            "RightOnly.dll","3.0.0.0"
+            """);
+
+        var application = await fixture.DeployableApplicationService.CreateAsync("Compare App");
+        var leftEnvironment = await fixture.CreateTrackedEnvironmentAsync(10);
+        var rightEnvironment = await fixture.CreateTrackedEnvironmentAsync(11);
+        var leftInstance = await fixture.ApplicationInstanceService.UpsertAsync(new ApplicationInstanceUpsert
+        {
+            DeployableApplicationId = application.Id,
+            EnvironmentId = leftEnvironment.Id,
+            BuildVersionNumber = "100",
+            PhysicalPath = leftDirectory
+        });
+        var rightInstance = await fixture.ApplicationInstanceService.UpsertAsync(new ApplicationInstanceUpsert
+        {
+            DeployableApplicationId = application.Id,
+            EnvironmentId = rightEnvironment.Id,
+            BuildVersionNumber = "200",
+            PhysicalPath = rightDirectory
+        });
+
+        var result = await fixture.Service.CompareInstancesAsync(leftInstance.Id, rightInstance.Id);
+
+        Assert.IsTrue(result.IsSuccess);
+        var rows = result.Rows.ToDictionary(row => row.FileName);
+        Assert.AreEqual(DeployedPackageComparisonStatus.Mismatch, rows["Shared.dll"].Status);
+        Assert.AreEqual(DeployedPackageComparisonStatus.LeftOnly, rows["LeftOnly.dll"].Status);
+        Assert.AreEqual(DeployedPackageComparisonStatus.RightOnly, rows["RightOnly.dll"].Status);
+    }
+
+    [TestMethod]
+    public async Task CompareInstancesAsync_RejectsDifferentApplications()
+    {
+        await using var fixture = await DeployedPackageServiceFixture.CreateAsync();
+        var directory = await fixture.CreatePackageDirectoryAsync();
+        var applicationA = await fixture.DeployableApplicationService.CreateAsync("App A");
+        var applicationB = await fixture.DeployableApplicationService.CreateAsync("App B");
+        var environmentA = await fixture.CreateTrackedEnvironmentAsync(12);
+        var environmentB = await fixture.CreateTrackedEnvironmentAsync(13);
+        var instanceA = await fixture.ApplicationInstanceService.UpsertAsync(new ApplicationInstanceUpsert
+        {
+            DeployableApplicationId = applicationA.Id,
+            EnvironmentId = environmentA.Id,
+            BuildVersionNumber = "1.0.0",
+            PhysicalPath = directory
+        });
+        var instanceB = await fixture.ApplicationInstanceService.UpsertAsync(new ApplicationInstanceUpsert
+        {
+            DeployableApplicationId = applicationB.Id,
+            EnvironmentId = environmentB.Id,
+            BuildVersionNumber = "1.0.0",
+            PhysicalPath = directory
+        });
+
+        var result = await fixture.Service.CompareInstancesAsync(instanceA.Id, instanceB.Id);
+
+        Assert.IsFalse(result.IsSuccess);
+        StringAssert.Contains(result.ErrorMessage!, "same deployable application");
+    }
+
     private sealed class DeployedPackageServiceFixture : IAsyncDisposable
     {
         private readonly ServiceProvider _serviceProvider;

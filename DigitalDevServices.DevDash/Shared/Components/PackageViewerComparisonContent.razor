@@ -1,0 +1,79 @@
+@if (!string.IsNullOrWhiteSpace(Result?.ErrorMessage))
+{
+    <div class="alert alert-warning" role="alert">@Result.ErrorMessage</div>
+}
+else if (Result is not null)
+{
+    @if (Result.LeftScan?.Warnings.Count > 0 || Result.RightScan?.Warnings.Count > 0)
+    {
+        <div class="alert alert-warning" role="status">
+            <p class="mb-2 fw-semibold">Package scan warnings</p>
+            <ul class="mb-0">
+                @if (Result.LeftScan?.Warnings.Count > 0)
+                {
+                    <li><strong>@LeftColumnLabel:</strong> @string.Join(" ", Result.LeftScan.Warnings)</li>
+                }
+                @if (Result.RightScan?.Warnings.Count > 0)
+                {
+                    <li><strong>@RightColumnLabel:</strong> @string.Join(" ", Result.RightScan.Warnings)</li>
+                }
+            </ul>
+        </div>
+    }
+
+    @if (Result.Rows.Count == 0)
+    {
+        <div class="alert alert-light border text-center py-4" role="status">
+            <p class="mb-0 text-muted">No packages were found to compare.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle package-comparison-table">
+                <thead class="table-light">
+                    <tr>
+                        <th>File name</th>
+                        <th>@LeftColumnLabel</th>
+                        <th>@RightColumnLabel</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Result.Rows)
+                    {
+                        <tr class="@GetRowClass(row.Status)">
+                            <td><code>@row.FileName</code></td>
+                            <td>@RenderVersion(row.LeftVersion)</td>
+                            <td>@RenderVersion(row.RightVersion)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+@code {
+    [Parameter]
+    public DeployedPackageComparisonResult? Result { get; set; }
+
+    [Parameter]
+    public string LeftColumnLabel { get; set; } = "Instance A";
+
+    [Parameter]
+    public string RightColumnLabel { get; set; } = "Instance B";
+
+    private static string GetRowClass(DeployedPackageComparisonStatus status) =>
+        status switch
+        {
+            DeployedPackageComparisonStatus.Mismatch => "package-comparison-table__mismatch",
+            DeployedPackageComparisonStatus.LeftOnly => "package-comparison-table__left-only",
+            DeployedPackageComparisonStatus.RightOnly => "package-comparison-table__right-only",
+            _ => string.Empty
+        };
+
+    private static MarkupString RenderVersion(string? version) =>
+        string.IsNullOrWhiteSpace(version)
+            ? new MarkupString("<span class=\"text-muted\">—</span>")
+            : new MarkupString(version);
+}

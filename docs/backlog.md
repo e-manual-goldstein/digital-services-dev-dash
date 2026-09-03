@@ -10,14 +10,12 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~PKG-002~~ | [PKG](tickets/PKG-packages.md) | Consume deployment **manifest** file |
+| ~~PKG-004~~ | [PKG](tickets/PKG-packages.md) | **Compare DLLs** — two instances of same app |
 
 ## Active (recommended order)
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| PKG-003 | [PKG](tickets/PKG-packages.md) | Resolve package by **build number** |
-| PKG-004 | [PKG](tickets/PKG-packages.md) | **Compare DLLs** — two instances of same app |
 | PKG-005 | [PKG](tickets/PKG-packages.md) | **Compare DLLs** — two apps in same environment |
 | APP-006 | [APP](tickets/APP-applications.md) | **Wire Source Branch** on deployed applications |
 | APP-007 | [APP](tickets/APP-applications.md) | **Wire Homepage URL** on deployed applications |
@@ -25,6 +23,7 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 | CFG-007 | [CFG](tickets/CFG-configuration.md) | Import **web.config**, **app.config**, **exe.config** |
 | PIP-004 | [PIP](tickets/PIP-pipeline-feeds.md) | **Pipeline feeds** derived from deployments and build branch |
 | THM-001 | [THM](tickets/THM-theme.md) | **Global colour scheme** — non-blue buttons, landing page |
+| PKG-003 | [PKG](tickets/PKG-packages.md) | Resolve package by **build number** |
 
 ## Epic progress
 
@@ -34,7 +33,7 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 |------|-------------|-------------------|-----------------|---------------|----------|
 | [Theme (THM)](tickets/THM-theme.md) | Global colour scheme | 0 | 0 | 1 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
 | [Applications (APP)](tickets/APP-applications.md) | Deployable app vs instance | 5 | 0 | 7 | 🟩🟩🟩🟩🟩🟩🟩⬜⬜⬜ 71% |
-| [Packages (PKG)](tickets/PKG-packages.md) | DLL inspection and comparison | 2 | 0 | 5 | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 40% |
+| [Packages (PKG)](tickets/PKG-packages.md) | DLL inspection and comparison | 3 | 0 | 5 | 🟩🟩🟩🟩🟩🟩⬜⬜⬜⬜ 60% |
 | [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 3 | 2 | 7 | 🟩🟩🟩🟩🟩⬜⬜⬜⬜⬜ 43% |
 | [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Named pipeline feeds | 2 | 1 | 4 | 🟩🟩🟩🟩🟩⬜⬜⬜⬜⬜ 50% |
 
