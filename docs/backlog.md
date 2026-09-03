@@ -16,25 +16,25 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| THM-001 | [THM](tickets/THM-theme.md) | **Global colour scheme** — non-blue buttons, landing page |
 | ENV-019 | [ENV](tickets/ENV-environments.md) | **Refresh snapshot** — in-memory API details on environment refresh |
-| APP-006 | [APP](tickets/APP-applications.md) | **Wire Source Branch** on deployed applications |
-| APP-007 | [APP](tickets/APP-applications.md) | **Wire Homepage URL** on deployed applications |
-| ENV-018 | [ENV](tickets/ENV-environments.md) | **Deployed apps table** — action buttons in own columns |
-| ENV-020 | [ENV](tickets/ENV-environments.md) | **Environment picker** — favourites, code, display order |
 | LOG-011 | [LOG](tickets/LOG-log-interpreter.md) | **Raw / JSON / XML** format toggle for text viewers |
 | LOG-013 | [LOG](tickets/LOG-log-interpreter.md) | **Log viewer toolbar** — Log file + Parse as side by side |
 | LOG-014 | [LOG](tickets/LOG-log-interpreter.md) | **Raw log modal** — replace collapsible panel |
 | LOG-015 | [LOG](tickets/LOG-log-interpreter.md) | **Table header filters** — level and search in grid header |
 | LOG-016 | [LOG](tickets/LOG-log-interpreter.md) | **Viewport-filling table** — page does not scroll |
-| CFG-006 | [CFG](tickets/CFG-configuration.md) | Rename to **Configuration Viewer** |
-| CFG-007 | [CFG](tickets/CFG-configuration.md) | Import **web.config**, **app.config**, **exe.config** |
+| ENV-018 | [ENV](tickets/ENV-environments.md) | **Deployed apps table** — action buttons in own columns |
+| ENV-020 | [ENV](tickets/ENV-environments.md) | **Environment picker** — favourites, code, display order |
 | PKG-001 | [PKG](tickets/PKG-packages.md) | **Packages** first-class domain (nav and routes) |
 | PKG-002 | [PKG](tickets/PKG-packages.md) | Consume deployment **manifest** file |
 | PKG-003 | [PKG](tickets/PKG-packages.md) | Resolve package by **build number** |
 | PKG-004 | [PKG](tickets/PKG-packages.md) | **Compare DLLs** — two instances of same app |
 | PKG-005 | [PKG](tickets/PKG-packages.md) | **Compare DLLs** — two apps in same environment |
+| APP-006 | [APP](tickets/APP-applications.md) | **Wire Source Branch** on deployed applications |
+| APP-007 | [APP](tickets/APP-applications.md) | **Wire Homepage URL** on deployed applications |
+| CFG-006 | [CFG](tickets/CFG-configuration.md) | Rename to **Configuration Viewer** |
+| CFG-007 | [CFG](tickets/CFG-configuration.md) | Import **web.config**, **app.config**, **exe.config** |
 | PIP-004 | [PIP](tickets/PIP-pipeline-feeds.md) | **Pipeline feeds** derived from deployments and build branch |
+| THM-001 | [THM](tickets/THM-theme.md) | **Global colour scheme** — non-blue buttons, landing page |
 
 ## Epic progress
 
