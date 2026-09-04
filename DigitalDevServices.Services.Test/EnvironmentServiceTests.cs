@@ -1,4 +1,5 @@
 using DigitalDevServices.Data;
+using DigitalDevServices.Model.Entities;
 using DigitalDevServices.Model.Environments;
 using DigitalDevServices.Services.Environments;
 using Microsoft.EntityFrameworkCore;
@@ -239,6 +240,84 @@ public sealed class EnvironmentServiceTests
     }
 
     [TestMethod]
+    public async Task RefreshEnvironmentAsync_SyncsSourceBranchToRegisteredInstance()
+    {
+        var fakeApi = new FakeRemoteEnvironmentApiClient
+        {
+            Environments =
+            {
+                [99] = new RemoteEnvironmentDetails
+                {
+                    Id = 99,
+                    Code = "UAT-01",
+                    Name = "UAT-01",
+                    EnvironmentType = "UAT"
+                }
+            },
+            DeploymentDetailsByCode =
+            {
+                ["UAT-01"] = new RemoteEnvironmentDeploymentDetails
+                {
+                    BuildsSuccessful =
+                    [
+                        new EnvironmentBuild
+                        {
+                            EnvironmentPipelineBuildNumber = 123456,
+                            Name = "Customer Portal",
+                            Parameters =
+                            [
+                                new EnvironmentBuildParameter
+                                {
+                                    Name = "WipBranch",
+                                    Value = "feature/123456-portal"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            BuildVersionDetailsByBuildNumber =
+            {
+                ["123456"] = new RemoteBuildVersionDetails
+                {
+                    BuildNumber = "123456",
+                    SourceBranch = "feature/123456-customer-portal"
+                }
+            }
+        };
+
+        await using var fixture = await EnvironmentServiceFixture.CreateAsync(fakeApi);
+        var environments = await fixture.Service.GetEnvironmentsAsync();
+        var environment = environments.Single(item => item.RemoteId == 99);
+
+        var application = new DeployableApplication
+        {
+            Id = Guid.NewGuid(),
+            Name = "Customer Portal",
+            IsWebApp = true,
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+        fixture.Db.DeployableApplications.Add(application);
+        fixture.Db.ApplicationInstances.Add(new ApplicationInstance
+        {
+            Id = Guid.NewGuid(),
+            DeployableApplicationId = application.Id,
+            EnvironmentId = environment.LocalId,
+            BuildVersionNumber = "123456",
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+        await fixture.Db.SaveChangesAsync();
+
+        await fixture.Service.RefreshEnvironmentAsync(99);
+
+        var instance = await fixture.Db.ApplicationInstances
+            .AsNoTracking()
+            .SingleAsync(item => item.EnvironmentId == environment.LocalId);
+
+        Assert.AreEqual("feature/123456-customer-portal", instance.SourceBranch);
+    }
+
+    [TestMethod]
     public async Task RefreshEnvironmentAsync_RefreshesSingleEnvironmentFromRemoteApi()
     {
         var fakeApi = new FakeRemoteEnvironmentApiClient
@@ -384,6 +463,9 @@ public sealed class EnvironmentServiceTests
         public Dictionary<string, RemoteEnvironmentDeploymentDetails> DeploymentDetailsByCode { get; } =
             new(StringComparer.OrdinalIgnoreCase);
 
+        public Dictionary<string, RemoteBuildVersionDetails> BuildVersionDetailsByBuildNumber { get; } =
+            new(StringComparer.OrdinalIgnoreCase);
+
         public Task<RemoteEnvironmentDeploymentDetails?> GetDeploymentDetailsForEnvironmentAsync(
             string environmentCode,
             CancellationToken cancellationToken = default)
@@ -396,8 +478,11 @@ public sealed class EnvironmentServiceTests
 
         public Task<RemoteBuildVersionDetails?> GetBuildVersionDetailsAsync(
             string environmentPipelineBuildNumber,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult<RemoteBuildVersionDetails?>(null);
+            CancellationToken cancellationToken = default)
+        {
+            BuildVersionDetailsByBuildNumber.TryGetValue(environmentPipelineBuildNumber, out var details);
+            return Task.FromResult(details);
+        }
 
         public Task<RemoteEnvironmentDetails?> GetEnvironmentAsync(
             string environmentCode,

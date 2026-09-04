@@ -26,6 +26,7 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
         RemoteEnvironmentDetails environmentDetails,
         EnvironmentUrl environmentUrl,
         RemoteEnvironmentDeploymentDetails? deploymentDetails = null,
+        IReadOnlyDictionary<string, RemoteBuildVersionDetails>? buildVersionDetailsByBuildNumber = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(environmentUrl);
@@ -70,7 +71,8 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
             homepageUrl: homepageUrl,
             userPhysicalPathOverride: null,
             remotePhysicalPath: remoteMatch.WebApplication?.PhysicalPath?.Trim() ?? existingInstance?.PhysicalPath,
-            machineName: remoteMatch.GetMachineName(environmentDetails));
+            machineName: remoteMatch.GetMachineName(environmentDetails),
+            buildVersionDetailsByBuildNumber: buildVersionDetailsByBuildNumber);
 
         return new RemoteRegistrationPrefill
         {
@@ -87,6 +89,7 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
         EnvironmentWebSite webSite,
         EnvironmentWebApplication webApplication,
         RemoteEnvironmentDeploymentDetails? deploymentDetails = null,
+        IReadOnlyDictionary<string, RemoteBuildVersionDetails>? buildVersionDetailsByBuildNumber = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(webSite);
@@ -123,7 +126,8 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
             homepageUrl: existingInstance?.HomepageUrl,
             userPhysicalPathOverride: null,
             remotePhysicalPath: webApplication.PhysicalPath?.Trim() ?? existingInstance?.PhysicalPath,
-            machineName: webSite.MachineName);
+            machineName: webSite.MachineName,
+            buildVersionDetailsByBuildNumber: buildVersionDetailsByBuildNumber);
 
         return new RemoteRegistrationPrefill
         {
@@ -139,6 +143,7 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
         RemoteEnvironmentDetails environmentDetails,
         EnvironmentWindowsService windowsService,
         RemoteEnvironmentDeploymentDetails? deploymentDetails = null,
+        IReadOnlyDictionary<string, RemoteBuildVersionDetails>? buildVersionDetailsByBuildNumber = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(windowsService);
@@ -177,7 +182,8 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
             windowsService,
             deploymentDetails,
             applicationName,
-            binaryPath);
+            binaryPath,
+            buildVersionDetailsByBuildNumber);
 
         return new RemoteRegistrationPrefill
         {
@@ -192,7 +198,8 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
         RemoteEnvironmentDetails environmentDetails,
         DeployableApplication deployableApplication,
         RemoteEnvironmentDeploymentDetails? deploymentDetails = null,
-        string? physicalPath = null)
+        string? physicalPath = null,
+        IReadOnlyDictionary<string, RemoteBuildVersionDetails>? buildVersionDetailsByBuildNumber = null)
     {
         ArgumentNullException.ThrowIfNull(environmentDetails);
         ArgumentNullException.ThrowIfNull(deployableApplication);
@@ -212,7 +219,8 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
             userPhysicalPathOverride: userPhysicalPathOverride,
             remotePhysicalPath: remoteMatch.WebApplication?.PhysicalPath?.Trim()
                 ?? remoteMatch.WindowsService?.BinaryPathName?.Trim(),
-            machineName: remoteMatch.GetMachineName(environmentDetails));
+            machineName: remoteMatch.GetMachineName(environmentDetails),
+            buildVersionDetailsByBuildNumber: buildVersionDetailsByBuildNumber);
     }
 
     private async Task<ApplicationInstance?> FindExistingInstanceAsync(
@@ -243,7 +251,8 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
         string? homepageUrl,
         string? userPhysicalPathOverride,
         string? remotePhysicalPath,
-        string? machineName = null)
+        string? machineName = null,
+        IReadOnlyDictionary<string, RemoteBuildVersionDetails>? buildVersionDetailsByBuildNumber = null)
     {
         var templateContext = BuildTemplateContext(
             deployableApplication,
@@ -275,10 +284,14 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
             ExistingInstanceId = existingInstance?.Id,
             DeployableApplicationId = deployableApplication?.Id,
             BuildVersionNumber = existingInstance?.BuildVersionNumber
-                ?? GetSuggestedBuildNumber(deploymentDetails, applicationName),
+                ?? EnvironmentBuildMetadataResolver.SuggestBuildVersionNumber(deploymentDetails, applicationName ?? string.Empty)
+                ?? RemoteEnvironmentRegistrationDefaults.BuildNumber,
             PipelineFeedId = existingInstance?.PipelineFeedId,
             SourceBranch = existingInstance?.SourceBranch
-                ?? GetSuggestedSourceBranch(deploymentDetails, applicationName),
+                ?? EnvironmentBuildMetadataResolver.SuggestSourceBranch(
+                    deploymentDetails,
+                    applicationName ?? string.Empty,
+                    buildVersionDetailsByBuildNumber),
             DeployedAt = existingInstance?.DeployedAt,
             PhysicalPath = resolvedPhysicalPath,
             LogPath = resolvedLogPath ?? existingInstance?.LogPath,
@@ -295,7 +308,8 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
         EnvironmentWindowsService windowsService,
         RemoteEnvironmentDeploymentDetails? deploymentDetails,
         string applicationName,
-        string binaryPath)
+        string binaryPath,
+        IReadOnlyDictionary<string, RemoteBuildVersionDetails>? buildVersionDetailsByBuildNumber = null)
     {
         var templateContext = BuildWindowsServiceTemplateContext(
             deployableApplication,
@@ -321,10 +335,14 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
             ExistingInstanceId = existingInstance?.Id,
             DeployableApplicationId = deployableApplication?.Id,
             BuildVersionNumber = existingInstance?.BuildVersionNumber
-                ?? GetSuggestedBuildNumber(deploymentDetails, applicationName),
+                ?? EnvironmentBuildMetadataResolver.SuggestBuildVersionNumber(deploymentDetails, applicationName ?? string.Empty)
+                ?? RemoteEnvironmentRegistrationDefaults.BuildNumber,
             PipelineFeedId = existingInstance?.PipelineFeedId,
             SourceBranch = existingInstance?.SourceBranch
-                ?? GetSuggestedSourceBranch(deploymentDetails, applicationName),
+                ?? EnvironmentBuildMetadataResolver.SuggestSourceBranch(
+                    deploymentDetails,
+                    applicationName ?? string.Empty,
+                    buildVersionDetailsByBuildNumber),
             DeployedAt = existingInstance?.DeployedAt,
             PhysicalPath = resolvedPhysicalPath,
             LogPath = resolvedLogPath ?? existingInstance?.LogPath,
@@ -348,24 +366,6 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
             MachineName = windowsService.MachineName,
             PhysicalPath = physicalPath
         };
-
-    private static string GetSuggestedBuildNumber(
-        RemoteEnvironmentDeploymentDetails? deploymentDetails,
-        string? applicationName) =>
-        deploymentDetails?.GetBuildNumberForApplication(applicationName ?? string.Empty)
-        ?? RemoteEnvironmentRegistrationDefaults.BuildNumber;
-
-    private static string? GetSuggestedSourceBranch(
-        RemoteEnvironmentDeploymentDetails? deploymentDetails,
-        string? applicationName)
-    {
-        if (deploymentDetails is null || string.IsNullOrWhiteSpace(applicationName))
-        {
-            return deploymentDetails?.GetPrimaryWipBranch();
-        }
-
-        return deploymentDetails.GetWipBranchForApplication(applicationName);
-    }
 
     private static LogPathTemplateContext BuildTemplateContext(
         DeployableApplication? deployableApplication,

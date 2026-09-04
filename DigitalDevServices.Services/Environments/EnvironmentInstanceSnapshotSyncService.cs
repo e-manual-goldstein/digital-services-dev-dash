@@ -62,11 +62,11 @@ public sealed class EnvironmentInstanceSnapshotSyncService : IEnvironmentInstanc
         string? environmentSqlServerInstance)
     {
         var applicationName = instance.DeployableApplication.Name;
-        var build = snapshot.DeploymentDetails?.GetBuildForApplication(applicationName);
-        var pipelineBuildNumber = build?.EnvironmentPipelineBuildNumber.ToString();
-        snapshot.BuildVersionDetailsByBuildNumber.TryGetValue(
-            pipelineBuildNumber ?? string.Empty,
-            out var buildVersionDetails);
+        var build = EnvironmentBuildMetadataResolver.GetBuild(snapshot.DeploymentDetails, applicationName);
+        var buildVersionDetails = EnvironmentBuildMetadataResolver.GetBuildVersionDetails(
+            snapshot.DeploymentDetails,
+            applicationName,
+            snapshot.BuildVersionDetailsByBuildNumber);
 
         var changed = false;
 
@@ -79,9 +79,10 @@ public sealed class EnvironmentInstanceSnapshotSyncService : IEnvironmentInstanc
             changed = true;
         }
 
-        var sourceBranch = buildVersionDetails?.SourceBranch
-            ?? snapshot.DeploymentDetails?.GetWipBranchForApplication(applicationName)
-            ?? snapshot.DeploymentDetails?.GetPrimaryWipBranch();
+        var sourceBranch = EnvironmentBuildMetadataResolver.SuggestSourceBranch(
+            snapshot.DeploymentDetails,
+            applicationName,
+            snapshot.BuildVersionDetailsByBuildNumber);
         if (!string.IsNullOrWhiteSpace(sourceBranch)
             && !string.Equals(instance.SourceBranch, sourceBranch, StringComparison.OrdinalIgnoreCase))
         {

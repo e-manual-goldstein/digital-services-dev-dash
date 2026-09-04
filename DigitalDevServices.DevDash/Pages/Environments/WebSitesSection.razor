@@ -79,6 +79,9 @@
     [Parameter]
     public RemoteEnvironmentDeploymentDetails? DeploymentDetails { get; set; }
 
+    [Parameter]
+    public IReadOnlyDictionary<string, RemoteBuildVersionDetails>? BuildVersionDetailsByBuildNumber { get; set; }
+
     [Parameter, EditorRequired]
     public EventCallback<RemoteRegistrationPrefill> OnRegistrationRequested { get; set; }
 
@@ -109,7 +112,8 @@
             EnvironmentDetails,
             webSite,
             webApplication,
-            DeploymentDetails);
+            DeploymentDetails,
+            BuildVersionDetailsByBuildNumber);
 
         if (prefill.RequiresApplicationCreate)
         {

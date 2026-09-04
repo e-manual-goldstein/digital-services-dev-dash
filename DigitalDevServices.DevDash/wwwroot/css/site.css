@@ -185,11 +185,11 @@ code {
 .table-deployed-apps {
     table-layout: fixed;
     width: 100%;
-    min-width: 52rem;
+    min-width: 58rem;
 }
 
 .table-deployed-apps__app {
-    width: 22%;
+    width: 20%;
     max-width: 12rem;
 }
 
@@ -197,8 +197,13 @@ code {
     width: 6.5rem;
 }
 
+.table-deployed-apps__branch {
+    width: 16%;
+    max-width: 10rem;
+}
+
 .table-deployed-apps__homepage {
-    width: 18%;
+    width: 16%;
     max-width: 11rem;
 }
 

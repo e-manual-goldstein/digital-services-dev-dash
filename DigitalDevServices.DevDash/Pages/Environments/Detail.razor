@@ -158,6 +158,7 @@ else
     <EnvironmentUrlsSection EnvironmentUrls="_environment.Details.EnvironmentUrls"
                             EnvironmentDetails="_environment.Details"
                             DeploymentDetails="_environment.DeploymentDetails"
+                            BuildVersionDetailsByBuildNumber="_environment.RefreshSnapshot?.BuildVersionDetailsByBuildNumber"
                             EnvironmentId="LocalId"
                             Instances="_instances"
                             IsBusy="@(_isBusy || _isSavingDeployment)"
@@ -166,6 +167,7 @@ else
     <WebSitesSection WebSites="_environment.Details.WebSites"
                      EnvironmentDetails="_environment.Details"
                      DeploymentDetails="_environment.DeploymentDetails"
+                     BuildVersionDetailsByBuildNumber="_environment.RefreshSnapshot?.BuildVersionDetailsByBuildNumber"
                      EnvironmentId="LocalId"
                      Instances="_instances"
                      IsBusy="@(_isBusy || _isSavingDeployment)"
@@ -174,6 +176,7 @@ else
     <WindowsServicesSection WindowsServices="_environment.Details.WindowsServices"
                             EnvironmentDetails="_environment.Details"
                             DeploymentDetails="_environment.DeploymentDetails"
+                            BuildVersionDetailsByBuildNumber="_environment.RefreshSnapshot?.BuildVersionDetailsByBuildNumber"
                             EnvironmentId="LocalId"
                             Instances="_instances"
                             IsBusy="@(_isBusy || _isSavingDeployment)"
@@ -250,6 +253,12 @@ else
                                            class="form-control"
                                            @bind-Value="_deploymentForm.SourceBranch"
                                            disabled="@_isBusy" />
+                                @if (_environment.DeploymentDetails is null && _editingInstanceId is null)
+                                {
+                                    <div class="form-text text-muted">
+                                        Refresh this environment to load the source branch from deployment details.
+                                    </div>
+                                }
                             </div>
                             <div class="col-12 col-md-6">
                                 <label class="form-label" for="deployment-deployed-at">Deployed at</label>
@@ -369,6 +378,7 @@ else
                         <tr>
                             <th class="table-deployed-apps__app">Application</th>
                             <th class="table-deployed-apps__build">Build</th>
+                            <th class="table-deployed-apps__branch">Branch</th>
                             <th class="table-deployed-apps__homepage">Homepage</th>
                             <th class="table-deployed-apps__action">Logs</th>
                             <th class="table-deployed-apps__action">Configuration</th>
@@ -391,6 +401,16 @@ else
                                 </td>
                                 <td class="table-deployed-apps__build">
                                     <code class="table-deployed-apps__build-code">@instance.BuildVersionNumber</code>
+                                </td>
+                                <td class="table-deployed-apps__branch">
+                                    @if (!string.IsNullOrWhiteSpace(instance.SourceBranch))
+                                    {
+                                        <code class="table-deployed-apps__truncate" title="@instance.SourceBranch">@instance.SourceBranch</code>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
                                 </td>
                                 <td class="table-deployed-apps__homepage">
                                     @if (hasHomepage)
@@ -623,7 +643,8 @@ else
             _environment.Details,
             application,
             _environment.DeploymentDetails,
-            NormalizeOptional(_deploymentForm.PhysicalPath));
+            NormalizeOptional(_deploymentForm.PhysicalPath),
+            _environment.RefreshSnapshot?.BuildVersionDetailsByBuildNumber);
 
         if (!physicalPathOnly)
         {

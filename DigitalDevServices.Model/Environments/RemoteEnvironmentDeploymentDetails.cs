@@ -46,7 +46,15 @@ public class RemoteEnvironmentDeploymentDetails
     public string? GetBuildNumberForApplication(string applicationName)
     {
         var build = GetBuildForApplication(applicationName);
-        return build is null ? null : build.BuildVersionNumber;
+        if (build is null)
+        {
+            return null;
+        }
+
+        return build.BuildVersionNumber
+            ?? (build.EnvironmentPipelineBuildNumber > 0
+                ? build.EnvironmentPipelineBuildNumber.ToString()
+                : null);
     }
 
     private static EnvironmentBuild? FirstMatching(EnvironmentBuild[] builds, string applicationName) =>

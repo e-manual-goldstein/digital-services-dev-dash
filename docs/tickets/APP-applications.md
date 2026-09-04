@@ -24,7 +24,7 @@
 | [APP-003](#app-003) | Done | DeployableApplication admin UI | APP-001 |
 | [APP-004](#app-004) | Done | ApplicationInstance admin UI | APP-002, ENV-004, ENV-005 |
 | [APP-005](#app-005) | Done | `PathToLogFiles` template on DeployableApplication | APP-001, APP-003 |
-| [APP-006](#app-006) | Open | Wire Source Branch on deployed applications | ENV-017, ENV-019 |
+| [APP-006](#app-006) | Done | Wire Source Branch on deployed applications | ENV-017, ENV-019 |
 | [APP-007](#app-007) | Open | Wire Homepage URL on deployed applications | ENV-012, ENV-019 |
 
 ---
@@ -175,8 +175,8 @@ Unknown `{tokens}` are left unchanged. Resolved value is stored on `ApplicationI
 |-------|--------|
 | **ID** | APP-006 |
 | **Title** | Wire Source Branch on deployed applications |
-| **Status** | Open |
-| **Description** | **Source Branch** on deployed application instances is not fully wired for display and persistence. Populate `ApplicationInstance.SourceBranch` from authoritative remote data when an environment is refreshed — primarily **`GetBuildVersionDetails`** (`RemoteBuildVersionDetails.SourceBranch`) for the instance's build number, and/or deployment details parameters (e.g. `WipBranch`) from ENV-016 snapshot (ENV-019). Show source branch on the environment details deployed-applications table and in the add/edit deployment form (read-only or pre-filled on refresh). On environment refresh, update existing registered instances automatically when snapshot data provides a branch (user is not required to click **Edit** per row). Registration prefill (`RemoteEnvironmentRegistrationMapper`) should prefer snapshot/build API branch over empty placeholder. |
+| **Status** | Done |
+| **Description** | **Source Branch** on deployed application instances is wired for display and persistence. Populate `ApplicationInstance.SourceBranch` from authoritative remote data when an environment is refreshed — primarily **`GetBuildVersionDetails`** (`RemoteBuildVersionDetails.SourceBranch`) for the instance's build number, and/or deployment details parameters (e.g. `WipBranch`) from ENV-016 snapshot (ENV-019). Show source branch on the environment details deployed-applications table and in the add/edit deployment form (pre-filled on refresh). On environment refresh, update existing registered instances automatically when snapshot data provides a branch. Registration prefill (`RemoteEnvironmentRegistrationMapper`) prefers build-version API branch, then WipBranch. Shared resolution in `EnvironmentBuildMetadataResolver`. |
 | **Test / demo** | Register app with build `123456` → refresh environment → source branch appears on row and in edit form → matches mock `GetBuildVersionDetails` branch. New registration prefill includes branch when build known. |
 | **Depends on** | ENV-017, ENV-019 |
 

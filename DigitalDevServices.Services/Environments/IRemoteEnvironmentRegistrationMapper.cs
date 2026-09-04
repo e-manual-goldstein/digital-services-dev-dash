@@ -10,6 +10,7 @@ public interface IRemoteEnvironmentRegistrationMapper
         RemoteEnvironmentDetails environmentDetails,
         EnvironmentUrl environmentUrl,
         RemoteEnvironmentDeploymentDetails? deploymentDetails = null,
+        IReadOnlyDictionary<string, RemoteBuildVersionDetails>? buildVersionDetailsByBuildNumber = null,
         CancellationToken cancellationToken = default);
 
     Task<RemoteRegistrationPrefill> BuildFromWebApplicationAsync(
@@ -18,6 +19,7 @@ public interface IRemoteEnvironmentRegistrationMapper
         EnvironmentWebSite webSite,
         EnvironmentWebApplication webApplication,
         RemoteEnvironmentDeploymentDetails? deploymentDetails = null,
+        IReadOnlyDictionary<string, RemoteBuildVersionDetails>? buildVersionDetailsByBuildNumber = null,
         CancellationToken cancellationToken = default);
 
     Task<RemoteRegistrationPrefill> BuildFromWindowsServiceAsync(
@@ -25,11 +27,13 @@ public interface IRemoteEnvironmentRegistrationMapper
         RemoteEnvironmentDetails environmentDetails,
         EnvironmentWindowsService windowsService,
         RemoteEnvironmentDeploymentDetails? deploymentDetails = null,
+        IReadOnlyDictionary<string, RemoteBuildVersionDetails>? buildVersionDetailsByBuildNumber = null,
         CancellationToken cancellationToken = default);
 
     ApplicationInstanceRegistrationPrefill BuildManualDeploymentPrefill(
         RemoteEnvironmentDetails environmentDetails,
         DeployableApplication deployableApplication,
         RemoteEnvironmentDeploymentDetails? deploymentDetails = null,
-        string? physicalPath = null);
+        string? physicalPath = null,
+        IReadOnlyDictionary<string, RemoteBuildVersionDetails>? buildVersionDetailsByBuildNumber = null);
 }
