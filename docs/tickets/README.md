@@ -37,6 +37,7 @@ Ticket-driven development for a personal/work Blazor dashboard. Workflow: see [`
 | **LOG** | [LOG-log-interpreter.md](LOG-log-interpreter.md) | Adaptable log viewer per application |
 | **THM** | [THM-theme.md](THM-theme.md) | Global colour scheme and visual design |
 | **PKG** | [PKG-packages.md](PKG-packages.md) | Deployed package inspection and comparison |
+| **GTH** | [GTH-git-history.md](GTH-git-history.md) | Azure DevOps repository migration history |
 | **IDE** | [IDE-ideas.md](IDE-ideas.md) | Unprioritized feature ideas |
 
 ## Ticket ID format

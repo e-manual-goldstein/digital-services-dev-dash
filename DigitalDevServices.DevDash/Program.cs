@@ -18,6 +18,7 @@ builder.Services.AddDeployableApplicationServices();
 builder.Services.AddLogServices();
 builder.Services.AddTextFormattingServices();
 builder.Services.AddConfigurationServices();
+builder.Services.AddGitHistoryServices();
 
 var app = builder.Build();
 

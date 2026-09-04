@@ -22,6 +22,10 @@ public class DevDashDbContext : DbContext
 
     public DbSet<ConfigurationSetting> ConfigurationSettings => Set<ConfigurationSetting>();
 
+    public DbSet<GitRepository> GitRepositories => Set<GitRepository>();
+
+    public DbSet<HistoricGitRepoRecord> HistoricGitRepoRecords => Set<HistoricGitRepoRecord>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<TrackedEnvironment>(entity =>
@@ -117,6 +121,31 @@ public class DevDashDbContext : DbContext
             entity.HasOne(e => e.ApplicationInstance)
                 .WithMany()
                 .HasForeignKey(e => e.ApplicationInstanceId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<GitRepository>(entity =>
+        {
+            entity.ToTable("GitRepositories");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.HasIndex(e => e.Name).IsUnique();
+            entity.Property(e => e.DateMigrated).IsRequired();
+            entity.Property(e => e.CurrentLocationUrl).IsRequired().HasMaxLength(2000);
+            entity.Property(e => e.CreatedAt).IsRequired();
+        });
+
+        modelBuilder.Entity<HistoricGitRepoRecord>(entity =>
+        {
+            entity.ToTable("HistoricGitRepoRecords");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.LastLocationUrl).IsRequired().HasMaxLength(2000);
+            entity.Property(e => e.DateMigrated).IsRequired();
+
+            entity.HasOne(e => e.GitRepository)
+                .WithMany(repository => repository.PreviousLocations)
+                .HasForeignKey(e => e.GitRepositoryId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

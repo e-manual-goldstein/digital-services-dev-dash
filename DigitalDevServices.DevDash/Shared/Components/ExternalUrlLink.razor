@@ -1,0 +1,19 @@
+@if (string.IsNullOrWhiteSpace(Url))
+{
+    <span class="text-muted">—</span>
+}
+else
+{
+    <a href="@Url" target="_blank" rel="noopener noreferrer">@GetDisplayText()</a>
+}
+
+@code {
+    [Parameter]
+    public string? Url { get; set; }
+
+    [Parameter]
+    public string? Text { get; set; }
+
+    private string GetDisplayText() =>
+        string.IsNullOrWhiteSpace(Text) ? Url!.Trim() : Text.Trim();
+}

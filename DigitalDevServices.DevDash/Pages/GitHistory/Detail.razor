@@ -1,0 +1,480 @@
+@page "/git-history/{RepositoryId:guid}"
+@inject IGitRepositoryService GitRepositoryService
+@inject NotificationService NotificationService
+
+<PageTitle>@_pageTitle</PageTitle>
+
+<div class="mb-3">
+    <a href="/git-history" class="text-decoration-none">&larr; Back to git history</a>
+</div>
+
+@if (_isLoading)
+{
+    <p class="text-muted">Loading repository…</p>
+}
+else if (_repository is null)
+{
+    <div class="alert alert-warning" role="alert">
+        Git repository not found.
+    </div>
+}
+else
+{
+    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+        <div>
+            <h1 class="mb-1">@_repository.Name</h1>
+            <p class="text-muted mb-0">Migrated @(_repository.DateMigrated.ToLocalTime().ToString("d"))</p>
+        </div>
+        @if (!_isRepositoryFormVisible && !_isHistoricFormVisible)
+        {
+            <button type="button"
+                    class="btn btn-outline-secondary"
+                    disabled="@_isBusy"
+                    @onclick="ShowEditRepositoryForm">
+                Edit repository
+            </button>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+    {
+        <div class="alert alert-danger" role="alert">@_errorMessage</div>
+    }
+
+    @if (_isRepositoryFormVisible)
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Edit repository</h2>
+                <EditForm Model="_repositoryFormModel" OnValidSubmit="SaveRepositoryAsync">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger mb-3" />
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="detail-repo-name">Name</label>
+                            <InputText id="detail-repo-name"
+                                       class="form-control"
+                                       @bind-Value="_repositoryFormModel.Name"
+                                       disabled="@_isBusy" />
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="detail-repo-migrated">Date migrated</label>
+                            <InputDate id="detail-repo-migrated"
+                                       class="form-control"
+                                       @bind-Value="_repositoryFormModel.DateMigrated"
+                                       disabled="@_isBusy" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="detail-repo-current-url">Current location (URL)</label>
+                            <InputText id="detail-repo-current-url"
+                                       class="form-control"
+                                       @bind-Value="_repositoryFormModel.CurrentLocationUrl"
+                                       disabled="@_isBusy" />
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary" disabled="@_isBusy">
+                            @(_isSaving ? "Saving…" : "Save")
+                        </button>
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                disabled="@_isBusy"
+                                @onclick="CancelRepositoryForm">
+                            Cancel
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-3">Current location</dt>
+                    <dd class="col-sm-9"><ExternalUrlLink Url="@_repository.CurrentLocationUrl" /></dd>
+                    <dt class="col-sm-3">Last location</dt>
+                    <dd class="col-sm-9"><ExternalUrlLink Url="@GitRepositoryDisplay.GetLastLocationUrl(_repository)" /></dd>
+                </dl>
+            </div>
+        </div>
+    }
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+        <h2 class="h4 mb-0">Previous locations</h2>
+        @if (!_isHistoricFormVisible && !_isRepositoryFormVisible)
+        {
+            <button type="button"
+                    class="btn btn-primary"
+                    disabled="@_isBusy"
+                    @onclick="ShowCreateHistoricForm">
+                Add previous location
+            </button>
+        }
+    </div>
+
+    @if (_isHistoricFormVisible)
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3 class="h5 mb-3">@(_editingHistoricId is null ? "Add previous location" : "Edit previous location")</h3>
+                <EditForm Model="_historicFormModel" OnValidSubmit="SaveHistoricRecordAsync">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger mb-3" />
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="historic-name">Name</label>
+                            <InputText id="historic-name"
+                                       class="form-control"
+                                       @bind-Value="_historicFormModel.Name"
+                                       disabled="@_isBusy" />
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="historic-migrated">Date migrated</label>
+                            <InputDate id="historic-migrated"
+                                       class="form-control"
+                                       @bind-Value="_historicFormModel.DateMigrated"
+                                       disabled="@_isBusy" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="historic-url">Last location (URL)</label>
+                            <InputText id="historic-url"
+                                       class="form-control"
+                                       @bind-Value="_historicFormModel.LastLocationUrl"
+                                       disabled="@_isBusy" />
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary" disabled="@_isBusy">
+                            @(_isSaving ? "Saving…" : "Save")
+                        </button>
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                disabled="@_isBusy"
+                                @onclick="CancelHistoricForm">
+                            Cancel
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    }
+
+    @if (_orderedHistoricRecords.Count == 0)
+    {
+        <div class="alert alert-light border text-center py-4" role="status">
+            <p class="mb-0 text-muted">No previous locations recorded yet.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Date migrated</th>
+                        <th>Last location</th>
+                        <th style="width: 9rem;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var record in _orderedHistoricRecords)
+                    {
+                        var isDeleting = _deletingHistoricId == record.Id;
+                        <tr>
+                            <td>@record.Name</td>
+                            <td>@record.DateMigrated.ToLocalTime().ToString("d")</td>
+                            <td><ExternalUrlLink Url="@record.LastLocationUrl" /></td>
+                            <td>
+                                <div class="d-flex flex-wrap gap-1">
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-secondary"
+                                            disabled="@_isBusy"
+                                            @onclick="() => ShowEditHistoricForm(record)">
+                                        Edit
+                                    </button>
+                                    @if (isDeleting)
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm btn-danger"
+                                                disabled="@_isBusy"
+                                                @onclick="() => ConfirmDeleteHistoricAsync(record.Id)">
+                                            Confirm
+                                        </button>
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-secondary"
+                                                disabled="@_isBusy"
+                                                @onclick="CancelDeleteHistoric">
+                                            Cancel
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger"
+                                                disabled="@_isBusy"
+                                                @onclick="() => PromptDeleteHistoric(record.Id)">
+                                            Delete
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+@code {
+    [Parameter]
+    public Guid RepositoryId { get; set; }
+
+    private GitRepository? _repository;
+    private IReadOnlyList<HistoricGitRepoRecord> _orderedHistoricRecords = [];
+    private bool _isLoading = true;
+    private bool _isBusy;
+    private bool _isSaving;
+    private bool _isRepositoryFormVisible;
+    private bool _isHistoricFormVisible;
+    private Guid? _editingHistoricId;
+    private Guid? _deletingHistoricId;
+    private string? _errorMessage;
+    private string _pageTitle = "Git history";
+    private RepositoryFormModel _repositoryFormModel = new();
+    private HistoricFormModel _historicFormModel = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _repository = null;
+        _orderedHistoricRecords = [];
+        _errorMessage = null;
+
+        try
+        {
+            _repository = await GitRepositoryService.GetByIdAsync(RepositoryId);
+            if (_repository is not null)
+            {
+                _pageTitle = $"Git history — {_repository.Name}";
+                _orderedHistoricRecords = _repository.PreviousLocations
+                    .OrderByDescending(record => record.DateMigrated)
+                    .ThenBy(record => record.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void ShowEditRepositoryForm()
+    {
+        if (_repository is null)
+        {
+            return;
+        }
+
+        _repositoryFormModel = new RepositoryFormModel
+        {
+            Name = _repository.Name,
+            DateMigrated = _repository.DateMigrated.LocalDateTime.Date,
+            CurrentLocationUrl = _repository.CurrentLocationUrl
+        };
+        _isRepositoryFormVisible = true;
+    }
+
+    private void CancelRepositoryForm() => _isRepositoryFormVisible = false;
+
+    private async Task SaveRepositoryAsync()
+    {
+        if (_repository is null)
+        {
+            return;
+        }
+
+        _isBusy = true;
+        _isSaving = true;
+        _errorMessage = null;
+
+        try
+        {
+            await GitRepositoryService.UpdateAsync(
+                _repository.Id,
+                new GitRepositoryUpsert
+                {
+                    Name = _repositoryFormModel.Name,
+                    DateMigrated = ToDateTimeOffset(_repositoryFormModel.DateMigrated),
+                    CurrentLocationUrl = _repositoryFormModel.CurrentLocationUrl
+                });
+
+            _isRepositoryFormVisible = false;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isBusy = false;
+            _isSaving = false;
+        }
+    }
+
+    private void ShowCreateHistoricForm()
+    {
+        _editingHistoricId = null;
+        _historicFormModel = new HistoricFormModel
+        {
+            DateMigrated = DateTime.Today
+        };
+        _isHistoricFormVisible = true;
+    }
+
+    private void ShowEditHistoricForm(HistoricGitRepoRecord record)
+    {
+        _editingHistoricId = record.Id;
+        _historicFormModel = new HistoricFormModel
+        {
+            Name = record.Name,
+            LastLocationUrl = record.LastLocationUrl,
+            DateMigrated = record.DateMigrated.LocalDateTime.Date
+        };
+        _isHistoricFormVisible = true;
+    }
+
+    private void CancelHistoricForm()
+    {
+        _isHistoricFormVisible = false;
+        _editingHistoricId = null;
+        _historicFormModel = new HistoricFormModel();
+    }
+
+    private async Task SaveHistoricRecordAsync()
+    {
+        if (_repository is null)
+        {
+            return;
+        }
+
+        _isBusy = true;
+        _isSaving = true;
+        _errorMessage = null;
+
+        try
+        {
+            var upsert = new HistoricGitRepoRecordUpsert
+            {
+                Name = _historicFormModel.Name,
+                LastLocationUrl = _historicFormModel.LastLocationUrl,
+                DateMigrated = ToDateTimeOffset(_historicFormModel.DateMigrated)
+            };
+
+            if (_editingHistoricId is null)
+            {
+                await GitRepositoryService.AddHistoricRecordAsync(_repository.Id, upsert);
+            }
+            else
+            {
+                await GitRepositoryService.UpdateHistoricRecordAsync(_editingHistoricId.Value, upsert);
+            }
+
+            CancelHistoricForm();
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isBusy = false;
+            _isSaving = false;
+        }
+    }
+
+    private void PromptDeleteHistoric(Guid id) => _deletingHistoricId = id;
+
+    private void CancelDeleteHistoric() => _deletingHistoricId = null;
+
+    private async Task ConfirmDeleteHistoricAsync(Guid id)
+    {
+        _isBusy = true;
+        _errorMessage = null;
+
+        try
+        {
+            await GitRepositoryService.DeleteHistoricRecordAsync(id);
+            _deletingHistoricId = null;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private static DateTimeOffset ToDateTimeOffset(DateTime? date)
+    {
+        if (!date.HasValue)
+        {
+            throw new InvalidOperationException("Date migrated is required.");
+        }
+
+        return new DateTimeOffset(
+            date.Value,
+            TimeZoneInfo.Local.GetUtcOffset(date.Value));
+    }
+
+    private sealed class RepositoryFormModel
+    {
+        [Required]
+        [StringLength(200)]
+        public string Name { get; set; } = string.Empty;
+
+        [Required]
+        public DateTime? DateMigrated { get; set; }
+
+        [Required]
+        [Url]
+        [StringLength(2000)]
+        public string CurrentLocationUrl { get; set; } = string.Empty;
+    }
+
+    private sealed class HistoricFormModel
+    {
+        [Required]
+        [StringLength(200)]
+        public string Name { get; set; } = string.Empty;
+
+        [Required]
+        public DateTime? DateMigrated { get; set; }
+
+        [Required]
+        [Url]
+        [StringLength(2000)]
+        public string LastLocationUrl { get; set; } = string.Empty;
+    }
+}

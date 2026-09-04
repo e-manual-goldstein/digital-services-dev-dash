@@ -35,6 +35,8 @@ public static class DevDashDataServiceCollectionExtensions
         EnsureTrackedEnvironmentsDisplayOrderColumnExists(db);
         EnsureDeployableApplicationsPathToLogFilesColumnExists(db);
         EnsureDeployableApplicationsPathToPhysicalPathColumnExists(db);
+        EnsureGitRepositoriesTableExists(db);
+        EnsureHistoricGitRepoRecordsTableExists(db);
     }
 
     private static void EnsurePipelineFeedsTableExists(DevDashDbContext db)
@@ -193,6 +195,37 @@ public static class DevDashDataServiceCollectionExtensions
             "TrackedEnvironments",
             "DisplayOrder",
             "ALTER TABLE \"TrackedEnvironments\" ADD COLUMN \"DisplayOrder\" INTEGER NOT NULL DEFAULT 0");
+    }
+
+    private static void EnsureGitRepositoriesTableExists(DevDashDbContext db)
+    {
+        db.Database.ExecuteSqlRaw("""
+            CREATE TABLE IF NOT EXISTS "GitRepositories" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_GitRepositories" PRIMARY KEY,
+                "Name" TEXT NOT NULL,
+                "DateMigrated" TEXT NOT NULL,
+                "CurrentLocationUrl" TEXT NOT NULL,
+                "CreatedAt" TEXT NOT NULL
+            );
+            """);
+
+        db.Database.ExecuteSqlRaw("""
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_GitRepositories_Name" ON "GitRepositories" ("Name");
+            """);
+    }
+
+    private static void EnsureHistoricGitRepoRecordsTableExists(DevDashDbContext db)
+    {
+        db.Database.ExecuteSqlRaw("""
+            CREATE TABLE IF NOT EXISTS "HistoricGitRepoRecords" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_HistoricGitRepoRecords" PRIMARY KEY,
+                "GitRepositoryId" TEXT NOT NULL,
+                "Name" TEXT NOT NULL,
+                "LastLocationUrl" TEXT NOT NULL,
+                "DateMigrated" TEXT NOT NULL,
+                FOREIGN KEY("GitRepositoryId") REFERENCES "GitRepositories" ("Id") ON DELETE CASCADE
+            );
+            """);
     }
 
     private static void EnsureColumnExists(

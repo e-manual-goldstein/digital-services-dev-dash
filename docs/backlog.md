@@ -10,7 +10,7 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~PKG-005~~ | [PKG](tickets/PKG-packages.md) | **Compare DLLs** — two apps in same environment |
+| ~~GTH-001~~ | [GTH](tickets/GTH-git-history.md) | **Git History** domain — entities, list and detail UI |
 
 ## Active (recommended order)
 
@@ -69,8 +69,9 @@ Unprioritized — not in the active queue. See [IDE-ideas.md](tickets/IDE-ideas.
 | [Log Interpreter (LOG)](tickets/LOG-log-interpreter.md) | Adaptable log viewer | LOG-001 – LOG-016 |
 | [Environments (ENV)](tickets/ENV-environments.md) | Remote API + environment details hub | ENV-001 – ENV-020 |
 | [Foundation (FND)](tickets/FND-foundation.md) | Blazor skeleton and layout | FND-001 – FND-002 |
+| [Git History (GTH)](tickets/GTH-git-history.md) | Azure DevOps repository migration history | GTH-001 |
 
-*APP epic reopened — see [Epic progress](#epic-progress). LOG and ENV epics complete — see [Completed epics](#completed-epics-100).*
+*APP epic reopened — see [Epic progress](#epic-progress). LOG, ENV, and GTH epics complete — see [Completed epics](#completed-epics-100).*
 
 ## Domain model (overview)
 
@@ -81,6 +82,7 @@ erDiagram
     PipelineFeed ||--o{ ApplicationInstance : originates_from
     DeployableApplication ||--o| LogFormatProfile : log_format
     ApplicationInstance ||--o{ ConfigurationSetting : has
+    GitRepository ||--o{ HistoricGitRepoRecord : previous_locations
     TrackedEnvironment {
         Guid Id
         int RemoteId
@@ -96,6 +98,11 @@ erDiagram
         Guid Id
         string Name
     }
+    GitRepository {
+        Guid Id
+        string Name
+        string CurrentLocationUrl
+    }
 ```
 
 | Epic | Core entities |
@@ -106,4 +113,5 @@ erDiagram
 | PKG | `ApplicationInstance` (package scan target) |
 | CFG | `ConfigurationSetting` |
 | LOG | `LogFormatProfile` |
+| GTH | `GitRepository`, `HistoricGitRepoRecord` |
 | THM | — (presentation layer) |
