@@ -169,8 +169,17 @@ else
                                 </a>
                             </td>
                             <td>@component.DateMigrated.ToLocalTime().ToString("d")</td>
-                            <td><ExternalUrlLink Url="@component.CurrentLocationUrl" /></td>
-                            <td><ExternalUrlLink Url="@ArtifactComponentDisplay.GetLastLocationUrl(component)" /></td>
+                            <td>
+                                <ArtifactLocationButton Url="@component.CurrentLocationUrl"
+                                                        Label="@component.Name" />
+                            </td>
+                            <td>
+                                @{
+                                    var lastLocation = ArtifactComponentDisplay.GetLastLocationRecord(component);
+                                }
+                                <ArtifactLocationButton Url="@lastLocation?.LastLocationUrl"
+                                                        Label="@lastLocation?.Name" />
+                            </td>
                             <td>
                                 <div class="d-flex flex-wrap gap-1">
                                     <a class="btn btn-sm btn-outline-secondary"

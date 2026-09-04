@@ -97,9 +97,15 @@ else
             <div class="card-body">
                 <dl class="row mb-0">
                     <dt class="col-sm-3">Current location</dt>
-                    <dd class="col-sm-9"><ExternalUrlLink Url="@_component.CurrentLocationUrl" /></dd>
+                    <dd class="col-sm-9">
+                        <ArtifactLocationButton Url="@_component.CurrentLocationUrl"
+                                                Label="@_component.Name" />
+                    </dd>
                     <dt class="col-sm-3">Last location</dt>
-                    <dd class="col-sm-9"><ExternalUrlLink Url="@ArtifactComponentDisplay.GetLastLocationUrl(_component)" /></dd>
+                    <dd class="col-sm-9">
+                        <ArtifactLocationButton Url="@_lastLocationRecord?.LastLocationUrl"
+                                                Label="@_lastLocationRecord?.Name" />
+                    </dd>
                 </dl>
             </div>
         </div>
@@ -243,6 +249,7 @@ else
     public Guid ComponentId { get; set; }
 
     private ArtifactComponent? _component;
+    private HistoricGitRepoRecord? _lastLocationRecord;
     private string _repositoryName = "repository";
     private IReadOnlyList<HistoricGitRepoRecord> _orderedHistoricRecords = [];
     private bool _isLoading = true;
@@ -266,6 +273,7 @@ else
     {
         _isLoading = true;
         _component = null;
+        _lastLocationRecord = null;
         _orderedHistoricRecords = [];
         _errorMessage = null;
 
@@ -282,6 +290,7 @@ else
             if (_component is not null)
             {
                 _pageTitle = $"Git history — {_component.Name}";
+                _lastLocationRecord = ArtifactComponentDisplay.GetLastLocationRecord(_component);
                 _orderedHistoricRecords = _component.PreviousLocations
                     .OrderByDescending(record => record.DateMigrated)
                     .ThenBy(record => record.Name, StringComparer.OrdinalIgnoreCase)

@@ -1,0 +1,22 @@
+@if (string.IsNullOrWhiteSpace(Url))
+{
+    <span class="text-muted">—</span>
+}
+else
+{
+    <a class="btn btn-outline-secondary btn-sm"
+       href="@Url"
+       target="_blank"
+       rel="noopener noreferrer"
+       title="@Url">
+        @(string.IsNullOrWhiteSpace(Label) ? Url.Trim() : Label)
+    </a>
+}
+
+@code {
+    [Parameter]
+    public string? Url { get; set; }
+
+    [Parameter]
+    public string? Label { get; set; }
+}

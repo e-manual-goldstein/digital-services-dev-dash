@@ -4,11 +4,16 @@ namespace DigitalDevServices.Model.GitHistory;
 
 public static class ArtifactComponentDisplay
 {
-    public static string? GetLastLocationUrl(ArtifactComponent component)
+    public static HistoricGitRepoRecord? GetLastLocationRecord(ArtifactComponent component)
     {
         return component.PreviousLocations
             .OrderByDescending(record => record.DateMigrated)
-            .Select(record => record.LastLocationUrl)
-            .FirstOrDefault(url => !string.IsNullOrWhiteSpace(url));
+            .ThenBy(record => record.Name, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault(record => !string.IsNullOrWhiteSpace(record.LastLocationUrl));
+    }
+
+    public static string? GetLastLocationUrl(ArtifactComponent component)
+    {
+        return GetLastLocationRecord(component)?.LastLocationUrl;
     }
 }
