@@ -7,7 +7,7 @@
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
     <div>
         <h1 class="mb-1">Git history</h1>
-        <p class="text-muted mb-0">Track repository migrations and prior Azure DevOps locations.</p>
+        <p class="text-muted mb-0">Track repository migrations and prior Azure DevOps locations per component.</p>
     </div>
     @if (!_isFormVisible)
     {
@@ -40,20 +40,6 @@
                         <InputText id="git-repo-name"
                                    class="form-control"
                                    @bind-Value="_formModel.Name"
-                                   disabled="@_isBusy" />
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label class="form-label" for="git-repo-migrated">Date migrated</label>
-                        <InputDate id="git-repo-migrated"
-                                   class="form-control"
-                                   @bind-Value="_formModel.DateMigrated"
-                                   disabled="@_isBusy" />
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label" for="git-repo-current-url">Current location (URL)</label>
-                        <InputText id="git-repo-current-url"
-                                   class="form-control"
-                                   @bind-Value="_formModel.CurrentLocationUrl"
                                    disabled="@_isBusy" />
                     </div>
                 </div>
@@ -97,9 +83,7 @@ else
             <thead class="table-light">
                 <tr>
                     <th>Name</th>
-                    <th>Date migrated</th>
-                    <th>Current location</th>
-                    <th>Last location</th>
+                    <th>Components</th>
                     <th style="width: 11rem;"></th>
                 </tr>
             </thead>
@@ -113,9 +97,7 @@ else
                                 @repository.Name
                             </a>
                         </td>
-                        <td>@repository.DateMigrated.ToLocalTime().ToString("d")</td>
-                        <td><ExternalUrlLink Url="@repository.CurrentLocationUrl" /></td>
-                        <td><ExternalUrlLink Url="@GitRepositoryDisplay.GetLastLocationUrl(repository)" /></td>
+                        <td>@repository.ArtifactComponents.Count</td>
                         <td>
                             <div class="d-flex flex-wrap gap-1">
                                 <a class="btn btn-sm btn-outline-secondary"
@@ -200,10 +182,7 @@ else
     private void ShowCreateForm()
     {
         _editingId = null;
-        _formModel = new RepositoryFormModel
-        {
-            DateMigrated = DateTime.Today
-        };
+        _formModel = new RepositoryFormModel();
         _isFormVisible = true;
     }
 
@@ -212,9 +191,7 @@ else
         _editingId = repository.Id;
         _formModel = new RepositoryFormModel
         {
-            Name = repository.Name,
-            DateMigrated = repository.DateMigrated.LocalDateTime.Date,
-            CurrentLocationUrl = repository.CurrentLocationUrl
+            Name = repository.Name
         };
         _isFormVisible = true;
     }
@@ -236,9 +213,7 @@ else
         {
             var upsert = new GitRepositoryUpsert
             {
-                Name = _formModel.Name,
-                DateMigrated = ToDateTimeOffset(_formModel.DateMigrated),
-                CurrentLocationUrl = _formModel.CurrentLocationUrl
+                Name = _formModel.Name
             };
 
             if (_editingId is null)
@@ -303,30 +278,10 @@ else
         }
     }
 
-    private static DateTimeOffset ToDateTimeOffset(DateTime? date)
-    {
-        if (!date.HasValue)
-        {
-            throw new InvalidOperationException("Date migrated is required.");
-        }
-
-        return new DateTimeOffset(
-            date.Value,
-            TimeZoneInfo.Local.GetUtcOffset(date.Value));
-    }
-
     private sealed class RepositoryFormModel
     {
         [Required]
         [StringLength(200)]
         public string Name { get; set; } = string.Empty;
-
-        [Required]
-        public DateTime? DateMigrated { get; set; }
-
-        [Required]
-        [Url]
-        [StringLength(2000)]
-        public string CurrentLocationUrl { get; set; } = string.Empty;
     }
 }

@@ -16,7 +16,7 @@ public sealed class GitRepositoryService : IGitRepositoryService
 
     public async Task<IReadOnlyList<GitRepository>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await QueryWithIncludes()
+        return await QueryRepositoriesWithIncludes()
             .OrderBy(repository => repository.Name.ToLower())
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -24,7 +24,7 @@ public sealed class GitRepositoryService : IGitRepositoryService
 
     public async Task<GitRepository?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await QueryWithIncludes()
+        return await QueryRepositoriesWithIncludes()
             .SingleOrDefaultAsync(repository => repository.Id == id, cancellationToken)
             .ConfigureAwait(false);
     }
@@ -36,16 +36,13 @@ public sealed class GitRepositoryService : IGitRepositoryService
         ArgumentNullException.ThrowIfNull(upsert);
 
         var normalizedName = NormalizeRequiredText(upsert.Name, nameof(upsert.Name));
-        var currentLocationUrl = NormalizeRequiredUrl(upsert.CurrentLocationUrl, nameof(upsert.CurrentLocationUrl));
-
-        await EnsureNameIsUniqueAsync(normalizedName, excludeId: null, cancellationToken).ConfigureAwait(false);
+        await EnsureRepositoryNameIsUniqueAsync(normalizedName, excludeId: null, cancellationToken)
+            .ConfigureAwait(false);
 
         var repository = new GitRepository
         {
             Id = Guid.NewGuid(),
             Name = normalizedName,
-            DateMigrated = upsert.DateMigrated,
-            CurrentLocationUrl = currentLocationUrl,
             CreatedAt = DateTimeOffset.UtcNow
         };
 
@@ -68,14 +65,10 @@ public sealed class GitRepositoryService : IGitRepositoryService
             ?? throw new InvalidOperationException($"Git repository '{id}' was not found.");
 
         var normalizedName = NormalizeRequiredText(upsert.Name, nameof(upsert.Name));
-        var currentLocationUrl = NormalizeRequiredUrl(upsert.CurrentLocationUrl, nameof(upsert.CurrentLocationUrl));
-
-        await EnsureNameIsUniqueAsync(normalizedName, excludeId: id, cancellationToken).ConfigureAwait(false);
+        await EnsureRepositoryNameIsUniqueAsync(normalizedName, excludeId: id, cancellationToken)
+            .ConfigureAwait(false);
 
         repository.Name = normalizedName;
-        repository.DateMigrated = upsert.DateMigrated;
-        repository.CurrentLocationUrl = currentLocationUrl;
-
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         return (await GetByIdAsync(id, cancellationToken).ConfigureAwait(false))!;
@@ -84,7 +77,7 @@ public sealed class GitRepositoryService : IGitRepositoryService
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var repository = await _db.GitRepositories
-            .Include(item => item.PreviousLocations)
+            .Include(item => item.ArtifactComponents)
             .SingleOrDefaultAsync(item => item.Id == id, cancellationToken)
             .ConfigureAwait(false);
 
@@ -97,9 +90,18 @@ public sealed class GitRepositoryService : IGitRepositoryService
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<HistoricGitRepoRecord> AddHistoricRecordAsync(
+    public async Task<ArtifactComponent?> GetComponentByIdAsync(
+        Guid componentId,
+        CancellationToken cancellationToken = default)
+    {
+        return await QueryComponentsWithIncludes()
+            .SingleOrDefaultAsync(component => component.Id == componentId, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<ArtifactComponent> CreateComponentAsync(
         Guid repositoryId,
-        HistoricGitRepoRecordUpsert upsert,
+        ArtifactComponentUpsert upsert,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(upsert);
@@ -113,10 +115,95 @@ public sealed class GitRepositoryService : IGitRepositoryService
             throw new InvalidOperationException($"Git repository '{repositoryId}' was not found.");
         }
 
-        var record = new HistoricGitRepoRecord
+        var normalizedName = NormalizeRequiredText(upsert.Name, nameof(upsert.Name));
+        var currentLocationUrl = NormalizeRequiredUrl(upsert.CurrentLocationUrl, nameof(upsert.CurrentLocationUrl));
+
+        await EnsureComponentNameIsUniqueAsync(repositoryId, normalizedName, excludeId: null, cancellationToken)
+            .ConfigureAwait(false);
+
+        var component = new ArtifactComponent
         {
             Id = Guid.NewGuid(),
             GitRepositoryId = repositoryId,
+            Name = normalizedName,
+            DateMigrated = upsert.DateMigrated,
+            CurrentLocationUrl = currentLocationUrl,
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+
+        _db.ArtifactComponents.Add(component);
+        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        return (await GetComponentByIdAsync(component.Id, cancellationToken).ConfigureAwait(false))!;
+    }
+
+    public async Task<ArtifactComponent> UpdateComponentAsync(
+        Guid componentId,
+        ArtifactComponentUpsert upsert,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(upsert);
+
+        var component = await _db.ArtifactComponents
+            .SingleOrDefaultAsync(item => item.Id == componentId, cancellationToken)
+            .ConfigureAwait(false)
+            ?? throw new InvalidOperationException($"Artifact component '{componentId}' was not found.");
+
+        var normalizedName = NormalizeRequiredText(upsert.Name, nameof(upsert.Name));
+        var currentLocationUrl = NormalizeRequiredUrl(upsert.CurrentLocationUrl, nameof(upsert.CurrentLocationUrl));
+
+        await EnsureComponentNameIsUniqueAsync(
+                component.GitRepositoryId,
+                normalizedName,
+                excludeId: componentId,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        component.Name = normalizedName;
+        component.DateMigrated = upsert.DateMigrated;
+        component.CurrentLocationUrl = currentLocationUrl;
+
+        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        return (await GetComponentByIdAsync(componentId, cancellationToken).ConfigureAwait(false))!;
+    }
+
+    public async Task DeleteComponentAsync(Guid componentId, CancellationToken cancellationToken = default)
+    {
+        var component = await _db.ArtifactComponents
+            .Include(item => item.PreviousLocations)
+            .SingleOrDefaultAsync(item => item.Id == componentId, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (component is null)
+        {
+            return;
+        }
+
+        _db.ArtifactComponents.Remove(component);
+        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<HistoricGitRepoRecord> AddHistoricRecordAsync(
+        Guid componentId,
+        HistoricGitRepoRecordUpsert upsert,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(upsert);
+
+        var componentExists = await _db.ArtifactComponents
+            .AnyAsync(component => component.Id == componentId, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!componentExists)
+        {
+            throw new InvalidOperationException($"Artifact component '{componentId}' was not found.");
+        }
+
+        var record = new HistoricGitRepoRecord
+        {
+            Id = Guid.NewGuid(),
+            ArtifactComponentId = componentId,
             Name = NormalizeRequiredText(upsert.Name, nameof(upsert.Name)),
             LastLocationUrl = NormalizeRequiredUrl(upsert.LastLocationUrl, nameof(upsert.LastLocationUrl)),
             DateMigrated = upsert.DateMigrated
@@ -162,14 +249,23 @@ public sealed class GitRepositoryService : IGitRepositoryService
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private IQueryable<GitRepository> QueryWithIncludes()
+    private IQueryable<GitRepository> QueryRepositoriesWithIncludes()
     {
         return _db.GitRepositories
             .AsNoTracking()
-            .Include(repository => repository.PreviousLocations);
+            .Include(repository => repository.ArtifactComponents)
+                .ThenInclude(component => component.PreviousLocations);
     }
 
-    private async Task EnsureNameIsUniqueAsync(
+    private IQueryable<ArtifactComponent> QueryComponentsWithIncludes()
+    {
+        return _db.ArtifactComponents
+            .AsNoTracking()
+            .Include(component => component.GitRepository)
+            .Include(component => component.PreviousLocations);
+    }
+
+    private async Task EnsureRepositoryNameIsUniqueAsync(
         string normalizedName,
         Guid? excludeId,
         CancellationToken cancellationToken)
@@ -184,6 +280,27 @@ public sealed class GitRepositoryService : IGitRepositoryService
         if (duplicateExists)
         {
             throw new InvalidOperationException($"A git repository named '{normalizedName}' already exists.");
+        }
+    }
+
+    private async Task EnsureComponentNameIsUniqueAsync(
+        Guid repositoryId,
+        string normalizedName,
+        Guid? excludeId,
+        CancellationToken cancellationToken)
+    {
+        var duplicateExists = await _db.ArtifactComponents
+            .AnyAsync(
+                component => component.GitRepositoryId == repositoryId
+                    && component.Name.ToLower() == normalizedName.ToLower()
+                    && (excludeId == null || component.Id != excludeId),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (duplicateExists)
+        {
+            throw new InvalidOperationException(
+                $"A component named '{normalizedName}' already exists in this repository.");
         }
     }
 

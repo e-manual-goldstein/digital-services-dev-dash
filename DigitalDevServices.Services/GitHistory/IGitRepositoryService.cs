@@ -1,5 +1,7 @@
+using DigitalDevServices.Data;
 using DigitalDevServices.Model.Entities;
 using DigitalDevServices.Model.GitHistory;
+using Microsoft.EntityFrameworkCore;
 
 namespace DigitalDevServices.Services.GitHistory;
 
@@ -15,8 +17,22 @@ public interface IGitRepositoryService
 
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 
-    Task<HistoricGitRepoRecord> AddHistoricRecordAsync(
+    Task<ArtifactComponent?> GetComponentByIdAsync(Guid componentId, CancellationToken cancellationToken = default);
+
+    Task<ArtifactComponent> CreateComponentAsync(
         Guid repositoryId,
+        ArtifactComponentUpsert upsert,
+        CancellationToken cancellationToken = default);
+
+    Task<ArtifactComponent> UpdateComponentAsync(
+        Guid componentId,
+        ArtifactComponentUpsert upsert,
+        CancellationToken cancellationToken = default);
+
+    Task DeleteComponentAsync(Guid componentId, CancellationToken cancellationToken = default);
+
+    Task<HistoricGitRepoRecord> AddHistoricRecordAsync(
+        Guid componentId,
         HistoricGitRepoRecordUpsert upsert,
         CancellationToken cancellationToken = default);
 

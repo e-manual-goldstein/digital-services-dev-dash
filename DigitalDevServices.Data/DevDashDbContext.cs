@@ -24,6 +24,8 @@ public class DevDashDbContext : DbContext
 
     public DbSet<GitRepository> GitRepositories => Set<GitRepository>();
 
+    public DbSet<ArtifactComponent> ArtifactComponents => Set<ArtifactComponent>();
+
     public DbSet<HistoricGitRepoRecord> HistoricGitRepoRecords => Set<HistoricGitRepoRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -130,9 +132,23 @@ public class DevDashDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
             entity.HasIndex(e => e.Name).IsUnique();
+            entity.Property(e => e.CreatedAt).IsRequired();
+        });
+
+        modelBuilder.Entity<ArtifactComponent>(entity =>
+        {
+            entity.ToTable("ArtifactComponents");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.HasIndex(e => new { e.GitRepositoryId, e.Name }).IsUnique();
             entity.Property(e => e.DateMigrated).IsRequired();
             entity.Property(e => e.CurrentLocationUrl).IsRequired().HasMaxLength(2000);
             entity.Property(e => e.CreatedAt).IsRequired();
+
+            entity.HasOne(e => e.GitRepository)
+                .WithMany(repository => repository.ArtifactComponents)
+                .HasForeignKey(e => e.GitRepositoryId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<HistoricGitRepoRecord>(entity =>
@@ -143,9 +159,9 @@ public class DevDashDbContext : DbContext
             entity.Property(e => e.LastLocationUrl).IsRequired().HasMaxLength(2000);
             entity.Property(e => e.DateMigrated).IsRequired();
 
-            entity.HasOne(e => e.GitRepository)
-                .WithMany(repository => repository.PreviousLocations)
-                .HasForeignKey(e => e.GitRepositoryId)
+            entity.HasOne(e => e.ArtifactComponent)
+                .WithMany(component => component.PreviousLocations)
+                .HasForeignKey(e => e.ArtifactComponentId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

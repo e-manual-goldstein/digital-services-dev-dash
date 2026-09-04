@@ -1,7 +1,7 @@
 namespace DigitalDevServices.Model.Entities;
 
 /// <summary>
-/// A Git repository tracked for migration history across Azure DevOps repos.
+/// An Azure DevOps git repository that may contain multiple artifact components migrated at different times.
 /// </summary>
 public class GitRepository
 {
@@ -9,11 +9,7 @@ public class GitRepository
 
     public string Name { get; set; } = string.Empty;
 
-    public DateTimeOffset DateMigrated { get; set; }
-
-    public string CurrentLocationUrl { get; set; } = string.Empty;
-
     public DateTimeOffset CreatedAt { get; set; }
 
-    public ICollection<HistoricGitRepoRecord> PreviousLocations { get; set; } = [];
+    public ICollection<ArtifactComponent> ArtifactComponents { get; set; } = [];
 }

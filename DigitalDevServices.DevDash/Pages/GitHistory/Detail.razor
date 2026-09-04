@@ -23,9 +23,9 @@ else
     <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
         <div>
             <h1 class="mb-1">@_repository.Name</h1>
-            <p class="text-muted mb-0">Migrated @(_repository.DateMigrated.ToLocalTime().ToString("d"))</p>
+            <p class="text-muted mb-0">@_orderedComponents.Count component@(_orderedComponents.Count == 1 ? "" : "s")</p>
         </div>
-        @if (!_isRepositoryFormVisible && !_isHistoricFormVisible)
+        @if (!_isRepositoryFormVisible && !_isComponentFormVisible)
         {
             <button type="button"
                     class="btn btn-outline-secondary"
@@ -58,20 +58,6 @@ else
                                        @bind-Value="_repositoryFormModel.Name"
                                        disabled="@_isBusy" />
                         </div>
-                        <div class="col-12 col-md-6">
-                            <label class="form-label" for="detail-repo-migrated">Date migrated</label>
-                            <InputDate id="detail-repo-migrated"
-                                       class="form-control"
-                                       @bind-Value="_repositoryFormModel.DateMigrated"
-                                       disabled="@_isBusy" />
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label" for="detail-repo-current-url">Current location (URL)</label>
-                            <InputText id="detail-repo-current-url"
-                                       class="form-control"
-                                       @bind-Value="_repositoryFormModel.CurrentLocationUrl"
-                                       disabled="@_isBusy" />
-                        </div>
                     </div>
 
                     <div class="d-flex flex-wrap gap-2 mt-4">
@@ -89,62 +75,49 @@ else
             </div>
         </div>
     }
-    else
-    {
-        <div class="card mb-4">
-            <div class="card-body">
-                <dl class="row mb-0">
-                    <dt class="col-sm-3">Current location</dt>
-                    <dd class="col-sm-9"><ExternalUrlLink Url="@_repository.CurrentLocationUrl" /></dd>
-                    <dt class="col-sm-3">Last location</dt>
-                    <dd class="col-sm-9"><ExternalUrlLink Url="@GitRepositoryDisplay.GetLastLocationUrl(_repository)" /></dd>
-                </dl>
-            </div>
-        </div>
-    }
 
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-        <h2 class="h4 mb-0">Previous locations</h2>
-        @if (!_isHistoricFormVisible && !_isRepositoryFormVisible)
+        <h2 class="h4 mb-0">Components</h2>
+        @if (!_isComponentFormVisible && !_isRepositoryFormVisible)
         {
             <button type="button"
                     class="btn btn-primary"
                     disabled="@_isBusy"
-                    @onclick="ShowCreateHistoricForm">
-                Add previous location
+                    @onclick="ShowCreateComponentForm">
+                Add component
             </button>
         }
     </div>
 
-    @if (_isHistoricFormVisible)
+    @if (_isComponentFormVisible)
     {
         <div class="card mb-4">
             <div class="card-body">
-                <h3 class="h5 mb-3">@(_editingHistoricId is null ? "Add previous location" : "Edit previous location")</h3>
-                <EditForm Model="_historicFormModel" OnValidSubmit="SaveHistoricRecordAsync">
+                <h3 class="h5 mb-3">@(_editingComponentId is null ? "Add component" : "Edit component")</h3>
+                <EditForm Model="_componentFormModel" OnValidSubmit="SaveComponentAsync">
                     <DataAnnotationsValidator />
                     <ValidationSummary class="text-danger mb-3" />
 
                     <div class="row g-3">
                         <div class="col-12 col-md-6">
-                            <label class="form-label" for="historic-name">Name</label>
-                            <InputText id="historic-name"
+                            <label class="form-label" for="component-name">Name</label>
+                            <InputText id="component-name"
                                        class="form-control"
-                                       @bind-Value="_historicFormModel.Name"
+                                       @bind-Value="_componentFormModel.Name"
                                        disabled="@_isBusy" />
                         </div>
                         <div class="col-12 col-md-6">
-                            <label class="form-label" for="historic-migrated">Date migrated</label>
-                            <InputDate id="historic-migrated"
+                            <label class="form-label" for="component-migrated">Date migrated</label>
+                            <InputDate id="component-migrated"
                                        class="form-control"
-                                       @bind-Value="_historicFormModel.DateMigrated"
+                                       @bind-Value="_componentFormModel.DateMigrated"
                                        disabled="@_isBusy" />
                         </div>
                         <div class="col-12">
-                            <label class="form-label" for="historic-url">Last location (URL)</label>
-                            <InputText id="historic-url"
+                            <label class="form-label" for="component-current-url">Current location (URL)</label>
+                            <InputText id="component-current-url"
                                        class="form-control"
-                                       @bind-Value="_historicFormModel.LastLocationUrl"
+                                       @bind-Value="_componentFormModel.CurrentLocationUrl"
                                        disabled="@_isBusy" />
                         </div>
                     </div>
@@ -156,7 +129,7 @@ else
                         <button type="button"
                                 class="btn btn-outline-secondary"
                                 disabled="@_isBusy"
-                                @onclick="CancelHistoricForm">
+                                @onclick="CancelComponentForm">
                             Cancel
                         </button>
                     </div>
@@ -165,10 +138,10 @@ else
         </div>
     }
 
-    @if (_orderedHistoricRecords.Count == 0)
+    @if (_orderedComponents.Count == 0)
     {
         <div class="alert alert-light border text-center py-4" role="status">
-            <p class="mb-0 text-muted">No previous locations recorded yet.</p>
+            <p class="mb-0 text-muted">No components recorded yet. Add a component to track its migration history.</p>
         </div>
     }
     else
@@ -179,24 +152,35 @@ else
                     <tr>
                         <th>Name</th>
                         <th>Date migrated</th>
+                        <th>Current location</th>
                         <th>Last location</th>
-                        <th style="width: 9rem;"></th>
+                        <th style="width: 12rem;"></th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var record in _orderedHistoricRecords)
+                    @foreach (var component in _orderedComponents)
                     {
-                        var isDeleting = _deletingHistoricId == record.Id;
+                        var isDeleting = _deletingComponentId == component.Id;
                         <tr>
-                            <td>@record.Name</td>
-                            <td>@record.DateMigrated.ToLocalTime().ToString("d")</td>
-                            <td><ExternalUrlLink Url="@record.LastLocationUrl" /></td>
+                            <td>
+                                <a href="@($"/git-history/{RepositoryId}/components/{component.Id}")"
+                                   class="text-decoration-none fw-semibold">
+                                    @component.Name
+                                </a>
+                            </td>
+                            <td>@component.DateMigrated.ToLocalTime().ToString("d")</td>
+                            <td><ExternalUrlLink Url="@component.CurrentLocationUrl" /></td>
+                            <td><ExternalUrlLink Url="@ArtifactComponentDisplay.GetLastLocationUrl(component)" /></td>
                             <td>
                                 <div class="d-flex flex-wrap gap-1">
+                                    <a class="btn btn-sm btn-outline-secondary"
+                                       href="@($"/git-history/{RepositoryId}/components/{component.Id}")">
+                                        View
+                                    </a>
                                     <button type="button"
                                             class="btn btn-sm btn-outline-secondary"
                                             disabled="@_isBusy"
-                                            @onclick="() => ShowEditHistoricForm(record)">
+                                            @onclick="() => ShowEditComponentForm(component)">
                                         Edit
                                     </button>
                                     @if (isDeleting)
@@ -204,13 +188,13 @@ else
                                         <button type="button"
                                                 class="btn btn-sm btn-danger"
                                                 disabled="@_isBusy"
-                                                @onclick="() => ConfirmDeleteHistoricAsync(record.Id)">
+                                                @onclick="() => ConfirmDeleteComponentAsync(component.Id)">
                                             Confirm
                                         </button>
                                         <button type="button"
                                                 class="btn btn-sm btn-outline-secondary"
                                                 disabled="@_isBusy"
-                                                @onclick="CancelDeleteHistoric">
+                                                @onclick="CancelDeleteComponent">
                                             Cancel
                                         </button>
                                     }
@@ -219,7 +203,7 @@ else
                                         <button type="button"
                                                 class="btn btn-sm btn-outline-danger"
                                                 disabled="@_isBusy"
-                                                @onclick="() => PromptDeleteHistoric(record.Id)">
+                                                @onclick="() => PromptDeleteComponent(component.Id)">
                                             Delete
                                         </button>
                                     }
@@ -238,18 +222,18 @@ else
     public Guid RepositoryId { get; set; }
 
     private GitRepository? _repository;
-    private IReadOnlyList<HistoricGitRepoRecord> _orderedHistoricRecords = [];
+    private IReadOnlyList<ArtifactComponent> _orderedComponents = [];
     private bool _isLoading = true;
     private bool _isBusy;
     private bool _isSaving;
     private bool _isRepositoryFormVisible;
-    private bool _isHistoricFormVisible;
-    private Guid? _editingHistoricId;
-    private Guid? _deletingHistoricId;
+    private bool _isComponentFormVisible;
+    private Guid? _editingComponentId;
+    private Guid? _deletingComponentId;
     private string? _errorMessage;
     private string _pageTitle = "Git history";
     private RepositoryFormModel _repositoryFormModel = new();
-    private HistoricFormModel _historicFormModel = new();
+    private ComponentFormModel _componentFormModel = new();
 
     protected override async Task OnParametersSetAsync()
     {
@@ -260,7 +244,7 @@ else
     {
         _isLoading = true;
         _repository = null;
-        _orderedHistoricRecords = [];
+        _orderedComponents = [];
         _errorMessage = null;
 
         try
@@ -269,9 +253,8 @@ else
             if (_repository is not null)
             {
                 _pageTitle = $"Git history — {_repository.Name}";
-                _orderedHistoricRecords = _repository.PreviousLocations
-                    .OrderByDescending(record => record.DateMigrated)
-                    .ThenBy(record => record.Name, StringComparer.OrdinalIgnoreCase)
+                _orderedComponents = _repository.ArtifactComponents
+                    .OrderBy(component => component.Name, StringComparer.OrdinalIgnoreCase)
                     .ToList();
             }
         }
@@ -294,9 +277,7 @@ else
 
         _repositoryFormModel = new RepositoryFormModel
         {
-            Name = _repository.Name,
-            DateMigrated = _repository.DateMigrated.LocalDateTime.Date,
-            CurrentLocationUrl = _repository.CurrentLocationUrl
+            Name = _repository.Name
         };
         _isRepositoryFormVisible = true;
     }
@@ -320,9 +301,7 @@ else
                 _repository.Id,
                 new GitRepositoryUpsert
                 {
-                    Name = _repositoryFormModel.Name,
-                    DateMigrated = ToDateTimeOffset(_repositoryFormModel.DateMigrated),
-                    CurrentLocationUrl = _repositoryFormModel.CurrentLocationUrl
+                    Name = _repositoryFormModel.Name
                 });
 
             _isRepositoryFormVisible = false;
@@ -339,36 +318,36 @@ else
         }
     }
 
-    private void ShowCreateHistoricForm()
+    private void ShowCreateComponentForm()
     {
-        _editingHistoricId = null;
-        _historicFormModel = new HistoricFormModel
+        _editingComponentId = null;
+        _componentFormModel = new ComponentFormModel
         {
             DateMigrated = DateTime.Today
         };
-        _isHistoricFormVisible = true;
+        _isComponentFormVisible = true;
     }
 
-    private void ShowEditHistoricForm(HistoricGitRepoRecord record)
+    private void ShowEditComponentForm(ArtifactComponent component)
     {
-        _editingHistoricId = record.Id;
-        _historicFormModel = new HistoricFormModel
+        _editingComponentId = component.Id;
+        _componentFormModel = new ComponentFormModel
         {
-            Name = record.Name,
-            LastLocationUrl = record.LastLocationUrl,
-            DateMigrated = record.DateMigrated.LocalDateTime.Date
+            Name = component.Name,
+            DateMigrated = component.DateMigrated.LocalDateTime.Date,
+            CurrentLocationUrl = component.CurrentLocationUrl
         };
-        _isHistoricFormVisible = true;
+        _isComponentFormVisible = true;
     }
 
-    private void CancelHistoricForm()
+    private void CancelComponentForm()
     {
-        _isHistoricFormVisible = false;
-        _editingHistoricId = null;
-        _historicFormModel = new HistoricFormModel();
+        _isComponentFormVisible = false;
+        _editingComponentId = null;
+        _componentFormModel = new ComponentFormModel();
     }
 
-    private async Task SaveHistoricRecordAsync()
+    private async Task SaveComponentAsync()
     {
         if (_repository is null)
         {
@@ -381,23 +360,23 @@ else
 
         try
         {
-            var upsert = new HistoricGitRepoRecordUpsert
+            var upsert = new ArtifactComponentUpsert
             {
-                Name = _historicFormModel.Name,
-                LastLocationUrl = _historicFormModel.LastLocationUrl,
-                DateMigrated = ToDateTimeOffset(_historicFormModel.DateMigrated)
+                Name = _componentFormModel.Name,
+                DateMigrated = ToDateTimeOffset(_componentFormModel.DateMigrated),
+                CurrentLocationUrl = _componentFormModel.CurrentLocationUrl
             };
 
-            if (_editingHistoricId is null)
+            if (_editingComponentId is null)
             {
-                await GitRepositoryService.AddHistoricRecordAsync(_repository.Id, upsert);
+                await GitRepositoryService.CreateComponentAsync(_repository.Id, upsert);
             }
             else
             {
-                await GitRepositoryService.UpdateHistoricRecordAsync(_editingHistoricId.Value, upsert);
+                await GitRepositoryService.UpdateComponentAsync(_editingComponentId.Value, upsert);
             }
 
-            CancelHistoricForm();
+            CancelComponentForm();
             await LoadAsync();
         }
         catch (Exception ex)
@@ -411,19 +390,19 @@ else
         }
     }
 
-    private void PromptDeleteHistoric(Guid id) => _deletingHistoricId = id;
+    private void PromptDeleteComponent(Guid id) => _deletingComponentId = id;
 
-    private void CancelDeleteHistoric() => _deletingHistoricId = null;
+    private void CancelDeleteComponent() => _deletingComponentId = null;
 
-    private async Task ConfirmDeleteHistoricAsync(Guid id)
+    private async Task ConfirmDeleteComponentAsync(Guid id)
     {
         _isBusy = true;
         _errorMessage = null;
 
         try
         {
-            await GitRepositoryService.DeleteHistoricRecordAsync(id);
-            _deletingHistoricId = null;
+            await GitRepositoryService.DeleteComponentAsync(id);
+            _deletingComponentId = null;
             await LoadAsync();
         }
         catch (Exception ex)
@@ -453,17 +432,9 @@ else
         [Required]
         [StringLength(200)]
         public string Name { get; set; } = string.Empty;
-
-        [Required]
-        public DateTime? DateMigrated { get; set; }
-
-        [Required]
-        [Url]
-        [StringLength(2000)]
-        public string CurrentLocationUrl { get; set; } = string.Empty;
     }
 
-    private sealed class HistoricFormModel
+    private sealed class ComponentFormModel
     {
         [Required]
         [StringLength(200)]
@@ -475,6 +446,6 @@ else
         [Required]
         [Url]
         [StringLength(2000)]
-        public string LastLocationUrl { get; set; } = string.Empty;
+        public string CurrentLocationUrl { get; set; } = string.Empty;
     }
 }

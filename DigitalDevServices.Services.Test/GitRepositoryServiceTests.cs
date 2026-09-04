@@ -16,16 +16,14 @@ public sealed class GitRepositoryServiceTests
 
         var created = await fixture.Service.CreateAsync(new GitRepositoryUpsert
         {
-            Name = "Customer Portal",
-            DateMigrated = new DateTimeOffset(2024, 6, 1, 0, 0, 0, TimeSpan.Zero),
-            CurrentLocationUrl = "https://dev.azure.com/org/project/_git/customer-portal"
+            Name = "Customer Portal"
         });
 
         var loaded = await fixture.Service.GetByIdAsync(created.Id);
 
         Assert.IsNotNull(loaded);
         Assert.AreEqual("Customer Portal", loaded!.Name);
-        Assert.AreEqual("https://dev.azure.com/org/project/_git/customer-portal", loaded.CurrentLocationUrl);
+        Assert.HasCount(0, loaded.ArtifactComponents);
     }
 
     [TestMethod]
@@ -35,18 +33,39 @@ public sealed class GitRepositoryServiceTests
 
         await fixture.Service.CreateAsync(new GitRepositoryUpsert
         {
-            Name = "Shared Library",
-            DateMigrated = DateTimeOffset.UtcNow,
-            CurrentLocationUrl = "https://dev.azure.com/org/project/_git/shared-library"
+            Name = "Shared Library"
         });
 
         await Assert.ThrowsExactlyAsync<InvalidOperationException>(() =>
             fixture.Service.CreateAsync(new GitRepositoryUpsert
             {
-                Name = "shared library",
-                DateMigrated = DateTimeOffset.UtcNow,
-                CurrentLocationUrl = "https://dev.azure.com/org/project/_git/shared-library-2"
+                Name = "shared library"
             }));
+    }
+
+    [TestMethod]
+    public async Task CreateComponentAsync_PersistsComponent()
+    {
+        await using var fixture = await GitRepositoryServiceFixture.CreateAsync();
+
+        var repository = await fixture.Service.CreateAsync(new GitRepositoryUpsert
+        {
+            Name = "Payments Monorepo"
+        });
+
+        var component = await fixture.Service.CreateComponentAsync(repository.Id, new ArtifactComponentUpsert
+        {
+            Name = "Payments API",
+            DateMigrated = new DateTimeOffset(2025, 1, 15, 0, 0, 0, TimeSpan.Zero),
+            CurrentLocationUrl = "https://dev.azure.com/org/project/_git/payments-api"
+        });
+
+        var loaded = await fixture.Service.GetByIdAsync(repository.Id);
+
+        Assert.IsNotNull(loaded);
+        Assert.HasCount(1, loaded!.ArtifactComponents);
+        Assert.AreEqual(component.Id, loaded.ArtifactComponents.Single().Id);
+        Assert.AreEqual("https://dev.azure.com/org/project/_git/payments-api", loaded.ArtifactComponents.Single().CurrentLocationUrl);
     }
 
     [TestMethod]
@@ -56,45 +75,54 @@ public sealed class GitRepositoryServiceTests
 
         var repository = await fixture.Service.CreateAsync(new GitRepositoryUpsert
         {
+            Name = "Payments Monorepo"
+        });
+
+        var component = await fixture.Service.CreateComponentAsync(repository.Id, new ArtifactComponentUpsert
+        {
             Name = "Payments API",
             DateMigrated = new DateTimeOffset(2025, 1, 15, 0, 0, 0, TimeSpan.Zero),
             CurrentLocationUrl = "https://dev.azure.com/org/project/_git/payments-api"
         });
 
-        await fixture.Service.AddHistoricRecordAsync(repository.Id, new HistoricGitRepoRecordUpsert
+        await fixture.Service.AddHistoricRecordAsync(component.Id, new HistoricGitRepoRecordUpsert
         {
             Name = "Monolith",
             LastLocationUrl = "https://dev.azure.com/org/project/_git/monolith",
             DateMigrated = new DateTimeOffset(2020, 3, 1, 0, 0, 0, TimeSpan.Zero)
         });
-        await fixture.Service.AddHistoricRecordAsync(repository.Id, new HistoricGitRepoRecordUpsert
+        await fixture.Service.AddHistoricRecordAsync(component.Id, new HistoricGitRepoRecordUpsert
         {
             Name = "Payments Service",
             LastLocationUrl = "https://dev.azure.com/org/project/_git/payments-service",
             DateMigrated = new DateTimeOffset(2023, 8, 10, 0, 0, 0, TimeSpan.Zero)
         });
 
-        var loaded = await fixture.Service.GetByIdAsync(repository.Id);
+        var loaded = await fixture.Service.GetComponentByIdAsync(component.Id);
 
         Assert.IsNotNull(loaded);
         Assert.AreEqual(
             "https://dev.azure.com/org/project/_git/payments-service",
-            GitRepositoryDisplay.GetLastLocationUrl(loaded!));
+            ArtifactComponentDisplay.GetLastLocationUrl(loaded!));
         Assert.HasCount(2, loaded!.PreviousLocations);
     }
 
     [TestMethod]
-    public async Task DeleteAsync_RemovesRepositoryAndHistoricRecords()
+    public async Task DeleteAsync_RemovesRepositoryComponentsAndHistoricRecords()
     {
         await using var fixture = await GitRepositoryServiceFixture.CreateAsync();
 
         var repository = await fixture.Service.CreateAsync(new GitRepositoryUpsert
         {
-            Name = "Legacy Web",
+            Name = "Legacy Web"
+        });
+        var component = await fixture.Service.CreateComponentAsync(repository.Id, new ArtifactComponentUpsert
+        {
+            Name = "Web UI",
             DateMigrated = DateTimeOffset.UtcNow,
             CurrentLocationUrl = "https://dev.azure.com/org/project/_git/legacy-web"
         });
-        await fixture.Service.AddHistoricRecordAsync(repository.Id, new HistoricGitRepoRecordUpsert
+        await fixture.Service.AddHistoricRecordAsync(component.Id, new HistoricGitRepoRecordUpsert
         {
             Name = "Monolith",
             LastLocationUrl = "https://dev.azure.com/org/project/_git/monolith",
@@ -105,6 +133,7 @@ public sealed class GitRepositoryServiceTests
 
         Assert.IsNull(await fixture.Service.GetByIdAsync(repository.Id));
         Assert.AreEqual(0, await fixture.Db.HistoricGitRepoRecords.CountAsync());
+        Assert.AreEqual(0, await fixture.Db.ArtifactComponents.CountAsync());
     }
 
     private sealed class GitRepositoryServiceFixture : IAsyncDisposable

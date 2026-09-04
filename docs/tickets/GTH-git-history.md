@@ -11,7 +11,7 @@
 
 ## Primary user story
 
-> Code was extracted from a central monolithic repository into many Azure DevOps repos without preserving git history. I need to record where each repo lives today and where it lived before, so I can quickly open the right prior location when researching a file's history.
+> Code was extracted from a central monolithic repository into many Azure DevOps repos without preserving git history. Repositories often contain multiple components that were migrated at different times. I need to record where each component lives today and where it lived before, so I can quickly open the right prior location when researching a file's history.
 
 ---
 
@@ -20,6 +20,7 @@
 | ID | Status | Title | Depends on |
 |----|--------|-------|------------|
 | [GTH-001](#gth-001) | Done | Git History domain — entities, persistence, list and detail UI | FND-002 |
+| [GTH-002](#gth-002) | Done | Artifact components — per-component migration history | GTH-001 |
 
 ---
 
@@ -31,19 +32,29 @@
 |-------|------|--------|
 | `Id` | `Guid` | Local PK |
 | `Name` | `string` | Unique display name |
-| `DateMigrated` | `DateTimeOffset` | When the repo arrived at its current location |
-| `CurrentLocationUrl` | `string` | Absolute http/https URL to the current Azure DevOps repo |
+| `CreatedAt` | `DateTimeOffset` | UTC audit |
+| `ArtifactComponents` | `ICollection<ArtifactComponent>` | Logical components within the repo |
+
+### `ArtifactComponent`
+
+| Field | Type | Notes |
+|-------|------|--------|
+| `Id` | `Guid` | Local PK |
+| `GitRepositoryId` | `Guid` | FK |
+| `Name` | `string` | Unique per repository |
+| `DateMigrated` | `DateTimeOffset` | When the component arrived at its current location |
+| `CurrentLocationUrl` | `string` | Absolute http/https URL to the current Azure DevOps repo/path |
 | `CreatedAt` | `DateTimeOffset` | UTC audit |
 | `PreviousLocations` | `ICollection<HistoricGitRepoRecord>` | Prior homes, newest first in UI |
 
-**Derived:** `LastLocationUrl` — URL from the `PreviousLocations` entry with the latest `DateMigrated` (`GitRepositoryDisplay.GetLastLocationUrl`).
+**Derived:** `LastLocationUrl` — URL from the `PreviousLocations` entry with the latest `DateMigrated` (`ArtifactComponentDisplay.GetLastLocationUrl`).
 
 ### `HistoricGitRepoRecord`
 
 | Field | Type | Notes |
 |-------|------|--------|
 | `Id` | `Guid` | Local PK |
-| `GitRepositoryId` | `Guid` | FK |
+| `ArtifactComponentId` | `Guid` | FK |
 | `Name` | `string` | Label for the prior repo (e.g. monolith path or interim repo name) |
 | `LastLocationUrl` | `string` | Absolute http/https URL |
 | `DateMigrated` | `DateTimeOffset` | When code left this location |
@@ -52,10 +63,15 @@
 
 | Route | Purpose |
 |-------|---------|
-| `/git-history` | Table of repositories with clickable current/last location links |
-| `/git-history/{repositoryId}` | Repository summary + full previous locations table |
+| `/git-history` | Table of repositories with component count |
+| `/git-history/{repositoryId}` | Repository summary + components table |
+| `/git-history/{repositoryId}/components/{componentId}` | Component detail + previous locations table |
 
 Nav: **Git history** in sidebar and home card. URLs render via `ExternalUrlLink` (`target="_blank"`).
+
+### Data migration
+
+Existing repository-level migration data (from GTH-001) is migrated automatically on startup: one `ArtifactComponent` is created per repository from legacy `CurrentLocationUrl` / `DateMigrated` fields, and historic records are re-linked to that component.
 
 ### Out of scope (epic v1)
 
@@ -74,7 +90,17 @@ Nav: **Git history** in sidebar and home card. URLs render via `ExternalUrlLink`
 | **ID** | GTH-001 |
 | **Title** | Git History domain — entities, persistence, list and detail UI |
 | **Status** | Done |
-| **Description** | Introduce **Git History** as a first-class domain. **Entities:** `GitRepository` and `HistoricGitRepoRecord` in SQLite with cascade delete on previous locations. **Service:** `IGitRepositoryService` for repository CRUD and historic-record CRUD; validate unique repository names and http/https URLs. **Derived last location:** most recent `HistoricGitRepoRecord` by `DateMigrated`. **UI:** `/git-history` list table; `/git-history/{id}` detail with previous locations table; add/edit/delete on both levels; all URLs clickable. **Nav:** sidebar and home card. |
-| **Test / demo** | Add a repository with two previous locations → list shows current and derived last location links → detail page shows ordered previous locations table → edit and delete work. `dotnet test --filter GitRepositoryServiceTests` → pass. |
+| **Description** | Introduce **Git History** as a first-class domain. Initial model tracked migration at repository level; superseded by GTH-002. |
 | **Depends on** | FND-002 |
-| **Implementation** | `GitRepository`, `HistoricGitRepoRecord`, `GitRepositoryDisplay`, `GitRepositoryService`, `Pages/GitHistory/`, `ExternalUrlLink` component. |
+
+### GTH-002
+
+| Field | Detail |
+|-------|--------|
+| **ID** | GTH-002 |
+| **Title** | Artifact components — per-component migration history |
+| **Status** | Done |
+| **Description** | Refactor so each `GitRepository` has a collection of `ArtifactComponent` entities. Migration fields (`DateMigrated`, `CurrentLocationUrl`, `PreviousLocations`) move to the component. **Service:** component CRUD; historic records keyed by `ArtifactComponentId`. **UI:** three-level navigation (repos → components → previous locations). **Migration:** legacy repo-level data converted to a default component per repository. |
+| **Test / demo** | Add a repository with two components, each with previous locations → list shows component count → component detail shows derived last location → `dotnet test --filter GitRepositoryServiceTests` → pass. |
+| **Depends on** | GTH-001 |
+| **Implementation** | `ArtifactComponent`, `ArtifactComponentDisplay`, updated `GitRepositoryService`, `Pages/GitHistory/ComponentDetail.razor`, SQLite migration in `DevDashDataServiceCollectionExtensions`. |
