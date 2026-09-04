@@ -244,7 +244,51 @@ public sealed class DeployedPackageServiceTests
         var result = await fixture.Service.CompareInstancesAsync(instanceA.Id, instanceB.Id);
 
         Assert.IsFalse(result.IsSuccess);
-        StringAssert.Contains(result.ErrorMessage!, "same deployable application");
+        StringAssert.Contains(result.ErrorMessage!, "same deployable application or the same environment");
+    }
+
+    [TestMethod]
+    public async Task CompareInstancesAsync_ComparesDifferentAppsInSameEnvironment()
+    {
+        await using var fixture = await DeployedPackageServiceFixture.CreateAsync();
+        var leftDirectory = await fixture.CreatePackageDirectoryAsync();
+        var rightDirectory = await fixture.CreatePackageDirectoryAsync();
+        await fixture.WriteManifestAsync(
+            leftDirectory,
+            """
+            "Path","Version"
+            "Shared.dll","1.0.0.0"
+            """);
+        await fixture.WriteManifestAsync(
+            rightDirectory,
+            """
+            "Path","Version"
+            "Shared.dll","2.0.0.0"
+            """);
+
+        var applicationA = await fixture.DeployableApplicationService.CreateAsync("Portal");
+        var applicationB = await fixture.DeployableApplicationService.CreateAsync("API");
+        var environment = await fixture.CreateTrackedEnvironmentAsync(20);
+        var leftInstance = await fixture.ApplicationInstanceService.UpsertAsync(new ApplicationInstanceUpsert
+        {
+            DeployableApplicationId = applicationA.Id,
+            EnvironmentId = environment.Id,
+            BuildVersionNumber = "100",
+            PhysicalPath = leftDirectory
+        });
+        var rightInstance = await fixture.ApplicationInstanceService.UpsertAsync(new ApplicationInstanceUpsert
+        {
+            DeployableApplicationId = applicationB.Id,
+            EnvironmentId = environment.Id,
+            BuildVersionNumber = "100",
+            PhysicalPath = rightDirectory
+        });
+
+        var result = await fixture.Service.CompareInstancesAsync(leftInstance.Id, rightInstance.Id);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.HasCount(1, result.Rows);
+        Assert.AreEqual(DeployedPackageComparisonStatus.Mismatch, result.Rows[0].Status);
     }
 
     private sealed class DeployedPackageServiceFixture : IAsyncDisposable

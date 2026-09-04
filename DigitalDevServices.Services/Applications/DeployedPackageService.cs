@@ -117,13 +117,25 @@ public sealed class DeployedPackageService : IDeployedPackageService
             };
         }
 
-        if (leftInstance.DeployableApplicationId != rightInstance.DeployableApplicationId)
+        if (leftInstance.DeployableApplicationId != rightInstance.DeployableApplicationId
+            && leftInstance.EnvironmentId != rightInstance.EnvironmentId)
         {
             return new DeployedPackageComparisonResult
             {
                 LeftInstanceId = leftInstanceId,
                 RightInstanceId = rightInstanceId,
-                ErrorMessage = "Both instances must belong to the same deployable application."
+                ErrorMessage = "Instances must belong to the same deployable application or the same environment."
+            };
+        }
+
+        if (leftInstance.DeployableApplicationId == rightInstance.DeployableApplicationId
+            && leftInstance.EnvironmentId == rightInstance.EnvironmentId)
+        {
+            return new DeployedPackageComparisonResult
+            {
+                LeftInstanceId = leftInstanceId,
+                RightInstanceId = rightInstanceId,
+                ErrorMessage = "Choose two different application instances to compare."
             };
         }
 

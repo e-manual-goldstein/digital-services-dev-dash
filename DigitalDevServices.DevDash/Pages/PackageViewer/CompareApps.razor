@@ -1,0 +1,192 @@
+@page "/package-viewer/compare/apps"
+@inject IEnvironmentService EnvironmentService
+@inject IApplicationInstanceService InstanceService
+@inject NavigationManager Navigation
+
+<PageTitle>Compare packages</PageTitle>
+
+<div class="mb-3">
+    <a href="/package-viewer" class="text-decoration-none">&larr; Back to package viewer</a>
+</div>
+
+<h1 class="mb-1">Compare packages</h1>
+<p class="text-muted mb-4">Compare DLL versions for two applications deployed in the same environment.</p>
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="alert alert-danger" role="alert">@_errorMessage</div>
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-12 col-lg-4">
+                <label class="form-label" for="compare-apps-environment">Environment</label>
+                <EnvironmentPickerSelect id="compare-apps-environment"
+                                         @bind-Value="_selectedEnvironmentId"
+                                         OnAfterChange="OnEnvironmentChangedAsync"
+                                         Environments="_environments"
+                                         Disabled="_isLoading" />
+            </div>
+            <div class="col-12 col-lg-4">
+                <label class="form-label" for="compare-app-a">Application A</label>
+                <InputSelect id="compare-app-a"
+                             class="form-select"
+                             @bind-Value="_selectedLeftInstanceId"
+                             @bind-Value:after="OnLeftInstanceChanged"
+                             disabled="@(_isLoading || _instances.Count < 2 || _selectedEnvironmentId is null)">
+                    <option value="">Select application…</option>
+                    @foreach (var instance in _instances)
+                    {
+                        <option value="@instance.Id">@instance.DeployableApplication.Name</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="col-12 col-lg-4">
+                <label class="form-label" for="compare-app-b">Application B</label>
+                <InputSelect id="compare-app-b"
+                             class="form-select"
+                             @bind-Value="_selectedRightInstanceId"
+                             disabled="@(_isLoading || !GetAvailableRightInstances().Any() || _selectedLeftInstanceId is null)">
+                    <option value="">Select application…</option>
+                    @foreach (var instance in GetAvailableRightInstances())
+                    {
+                        <option value="@instance.Id">@instance.DeployableApplication.Name</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="col-12">
+                <button type="button"
+                        class="btn btn-primary"
+                        disabled="@(_isLoading || _selectedLeftInstanceId is null || _selectedRightInstanceId is null)"
+                        @onclick="CompareSelectedInstances">
+                    Compare
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (_isLoading)
+{
+    <p class="text-muted">Loading environments…</p>
+}
+else if (_environments.Count == 0)
+{
+    <div class="alert alert-light border" role="status">
+        No tracked environments yet. Open <a href="/environments">Environments</a> and refresh the catalog first.
+    </div>
+}
+else if (_selectedEnvironmentId is not null && _instances.Count < 2 && !_isLoadingInstances)
+{
+    <div class="alert alert-light border" role="status">
+        This environment needs at least two deployed applications to compare.
+    </div>
+}
+
+@code {
+    private IReadOnlyList<CachedEnvironment> _environments = [];
+    private IReadOnlyList<ApplicationInstance> _instances = [];
+    private Guid? _selectedEnvironmentId;
+    private Guid? _selectedLeftInstanceId;
+    private Guid? _selectedRightInstanceId;
+    private bool _isLoading = true;
+    private bool _isLoadingInstances;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEnvironmentsAsync();
+    }
+
+    private async Task LoadEnvironmentsAsync()
+    {
+        _errorMessage = null;
+        _isLoading = true;
+
+        try
+        {
+            _environments = await EnvironmentService.GetEnvironmentsAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Could not load environments: {ex.Message}";
+            _environments = [];
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OnEnvironmentChangedAsync()
+    {
+        _selectedLeftInstanceId = null;
+        _selectedRightInstanceId = null;
+        _instances = [];
+
+        if (_selectedEnvironmentId is null)
+        {
+            return;
+        }
+
+        _isLoadingInstances = true;
+
+        try
+        {
+            _instances = await InstanceService.GetByEnvironmentIdAsync(_selectedEnvironmentId.Value);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Could not load application instances: {ex.Message}";
+            _instances = [];
+        }
+        finally
+        {
+            _isLoadingInstances = false;
+        }
+    }
+
+    private void OnLeftInstanceChanged()
+    {
+        if (_selectedRightInstanceId is null)
+        {
+            return;
+        }
+
+        var leftInstance = _instances.SingleOrDefault(instance => instance.Id == _selectedLeftInstanceId);
+        var rightInstance = _instances.SingleOrDefault(instance => instance.Id == _selectedRightInstanceId);
+        if (leftInstance is not null
+            && rightInstance is not null
+            && leftInstance.DeployableApplicationId == rightInstance.DeployableApplicationId)
+        {
+            _selectedRightInstanceId = null;
+        }
+    }
+
+    private IEnumerable<ApplicationInstance> GetAvailableRightInstances()
+    {
+        if (_selectedLeftInstanceId is null)
+        {
+            return _instances;
+        }
+
+        var leftInstance = _instances.SingleOrDefault(instance => instance.Id == _selectedLeftInstanceId);
+        if (leftInstance is null)
+        {
+            return _instances;
+        }
+
+        return _instances.Where(instance => instance.DeployableApplicationId != leftInstance.DeployableApplicationId);
+    }
+
+    private void CompareSelectedInstances()
+    {
+        if (_selectedLeftInstanceId is null || _selectedRightInstanceId is null)
+        {
+            return;
+        }
+
+        Navigation.NavigateTo($"/package-viewer/compare/{_selectedLeftInstanceId.Value}/{_selectedRightInstanceId.Value}");
+    }
+}

@@ -6,7 +6,7 @@
 <PageTitle>@_pageTitle</PageTitle>
 
 <div class="mb-3">
-    <a href="/package-viewer/compare" class="text-decoration-none">&larr; Back to compare</a>
+    <a href="@_backLink" class="text-decoration-none">&larr; Back to compare</a>
 </div>
 
 @if (_isLoading)
@@ -17,9 +17,9 @@ else
 {
     <div class="mb-3">
         <h1 class="mb-1">Compare packages</h1>
-        @if (!string.IsNullOrWhiteSpace(_applicationName))
+        @if (!string.IsNullOrWhiteSpace(_subtitle))
         {
-            <p class="text-muted mb-0">@_applicationName</p>
+            <p class="text-muted mb-0">@_subtitle</p>
         }
     </div>
 
@@ -38,7 +38,8 @@ else
     private DeployedPackageComparisonResult? _comparison;
     private bool _isLoading = true;
     private string _pageTitle = "Compare packages";
-    private string _applicationName = string.Empty;
+    private string _subtitle = string.Empty;
+    private string _backLink = "/package-viewer/compare";
     private string _leftColumnLabel = "Instance A";
     private string _rightColumnLabel = "Instance B";
 
@@ -51,7 +52,8 @@ else
     {
         _isLoading = true;
         _comparison = null;
-        _applicationName = string.Empty;
+        _subtitle = string.Empty;
+        _backLink = "/package-viewer/compare";
         _leftColumnLabel = "Instance A";
         _rightColumnLabel = "Instance B";
 
@@ -61,19 +63,32 @@ else
 
             var leftInstance = await InstanceService.GetByIdAsync(LeftInstanceId);
             var rightInstance = await InstanceService.GetByIdAsync(RightInstanceId);
-            var environments = await EnvironmentService.GetEnvironmentsAsync();
-            var environmentsById = environments.ToDictionary(environment => environment.LocalId);
-
-            if (leftInstance is not null)
+            if (leftInstance is null || rightInstance is null)
             {
-                _applicationName = leftInstance.DeployableApplication.Name;
-                _pageTitle = $"Compare packages — {_applicationName}";
-                _leftColumnLabel = FormatInstanceLabel(leftInstance, environmentsById);
+                return;
             }
 
-            if (rightInstance is not null)
+            var environments = await EnvironmentService.GetEnvironmentsAsync();
+            var environmentsById = environments.ToDictionary(environment => environment.LocalId);
+            var comparesAppsInSameEnvironment = leftInstance.DeployableApplicationId != rightInstance.DeployableApplicationId;
+
+            _backLink = comparesAppsInSameEnvironment
+                ? "/package-viewer/compare/apps"
+                : "/package-viewer/compare";
+
+            if (comparesAppsInSameEnvironment)
             {
-                _rightColumnLabel = FormatInstanceLabel(rightInstance, environmentsById);
+                _subtitle = FormatEnvironmentLabel(leftInstance, environmentsById);
+                _pageTitle = "Compare packages — environment";
+                _leftColumnLabel = leftInstance.DeployableApplication.Name;
+                _rightColumnLabel = rightInstance.DeployableApplication.Name;
+            }
+            else
+            {
+                _subtitle = leftInstance.DeployableApplication.Name;
+                _pageTitle = $"Compare packages — {leftInstance.DeployableApplication.Name}";
+                _leftColumnLabel = FormatEnvironmentLabel(leftInstance, environmentsById);
+                _rightColumnLabel = FormatEnvironmentLabel(rightInstance, environmentsById);
             }
         }
         finally
@@ -82,7 +97,7 @@ else
         }
     }
 
-    private static string FormatInstanceLabel(
+    private static string FormatEnvironmentLabel(
         ApplicationInstance instance,
         IReadOnlyDictionary<Guid, CachedEnvironment> environmentsById)
     {

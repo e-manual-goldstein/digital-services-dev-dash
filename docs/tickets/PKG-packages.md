@@ -23,7 +23,7 @@
 | [PKG-002](#pkg-002) | Done | Consume deployment manifest file when present | PKG-001 |
 | [PKG-003](#pkg-003) | Open | Resolve deployment package by build number for instance view | PKG-001, ENV-016 |
 | [PKG-004](#pkg-004) | Done | Compare DLL versions between two instances of same app | PKG-001 |
-| [PKG-005](#pkg-005) | Open | Compare DLL versions between two apps in same environment | PKG-001 |
+| [PKG-005](#pkg-005) | Done | Compare DLL versions between two apps in same environment | PKG-001 |
 
 ---
 
@@ -119,7 +119,8 @@ Package viewer hub at `/package-viewer` with environment → instance picker. In
 |-------|--------|
 | **ID** | PKG-005 |
 | **Title** | Compare DLL versions between two apps in same environment |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | Add a **compare** workflow: user picks an **environment**, then two **DeployableApplication** instances deployed in that environment. Show DLL / assembly name with version columns for App A and App B; highlight differences. Useful for verifying shared dependencies (e.g. two web apps on the same server should run the same `Common.dll` version). Reuse package resolution and comparison grid from PKG-004 where possible. |
 | **Test / demo** | Pick two apps in UAT-01 → compare → shared DLLs with same version align → version skew highlighted. |
 | **Depends on** | PKG-001 |
+| **Implementation** | `/package-viewer/compare/apps` picker; shared results route and `PackageViewerComparisonContent`; `CompareInstancesAsync` accepts same-environment cross-app pairs; hub links for both compare modes. |
