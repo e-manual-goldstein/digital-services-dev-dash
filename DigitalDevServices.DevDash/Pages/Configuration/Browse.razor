@@ -14,7 +14,7 @@
     }
     else
     {
-        <a href="/configuration" class="text-decoration-none">&larr; Back to configuration</a>
+        <a href="/configuration" class="text-decoration-none">&larr; Back to configuration viewer</a>
     }
 </div>
 
@@ -32,7 +32,7 @@ else
 {
     <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
         <div>
-            <h1 class="mb-1">Configuration</h1>
+            <h1 class="mb-1">Configuration viewer</h1>
             <p class="text-muted mb-0">
                 @(_environment?.Details.Name ?? "Environment") &middot; @_instance.DeployableApplication.Name
             </p>
@@ -172,7 +172,7 @@ else
     private bool _isRefreshing;
     private string? _errorMessage;
     private string? _refreshMessage;
-    private string _pageTitle = "Configuration";
+    private string _pageTitle = "Configuration viewer";
 
     private DateTimeOffset? _lastCapturedAt =>
         _settings.Count == 0 ? null : _settings.Max(setting => setting.CapturedAt);
@@ -215,12 +215,12 @@ else
             _instance = await InstanceService.GetByIdAsync(InstanceId);
             if (_instance is null)
             {
-                _pageTitle = "Configuration";
+                _pageTitle = "Configuration viewer";
                 return;
             }
 
             _environment = await EnvironmentService.GetTrackedEnvironmentAsync(_instance.EnvironmentId);
-            _pageTitle = $"Configuration — {_instance.DeployableApplication.Name}";
+            _pageTitle = $"Configuration viewer — {_instance.DeployableApplication.Name}";
             _settings = await ConfigurationSettingService.GetByApplicationInstanceIdAsync(InstanceId);
         }
         catch (Exception ex)

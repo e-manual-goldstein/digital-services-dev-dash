@@ -24,7 +24,7 @@
 | [CFG-003](#cfg-003) | Done | Settings browser UI (view all settings for an instance) | CFG-002, ENV-005 |
 | [CFG-004](#cfg-004) | Shelved | Compare setting by name across apps in one environment | CFG-002, ENV-002 |
 | [CFG-005](#cfg-005) | Shelved | Compare setting by name for one app across environments | CFG-002, APP-004 |
-| [CFG-006](#cfg-006) | Open | Rename section to Configuration Viewer | CFG-003 |
+| [CFG-006](#cfg-006) | Done | Rename section to Configuration Viewer | CFG-003 |
 | [CFG-007](#cfg-007) | Open | Import web.config, app.config, and exe.config | CFG-002 |
 
 ---
@@ -59,7 +59,7 @@ Uniqueness: one row per (`ApplicationInstanceId`, `Key`) — refresh replaces va
 
 ### UI notes
 
-- Sidebar: **Configuration**
+- Sidebar: **Configuration viewer**
 - Sub-views: **Browse** (instance → all keys), **Compare in environment**, **Compare across environments**
 - Browse is also reachable as `/configuration/{instanceId}` from the environment details **Configuration** button (ENV-005)
 - Mask values when key matches `*Secret*`, `*Password*`, `*Key*` (configurable list)
@@ -139,8 +139,8 @@ Shelved — compare views deprioritized; per-instance browse (CFG-003) sufficien
 |-------|--------|
 | **ID** | CFG-006 |
 | **Title** | Rename section to Configuration Viewer |
-| **Status** | Open |
-| **Description** | Rebrand the **Configuration** area as **Configuration Viewer** everywhere user-facing: sidebar nav label, page titles (`<PageTitle>` and `<h1>`), landing page card, environment details button label (if space allows), and breadcrumbs/back links. Route paths (`/configuration`) may remain unchanged for bookmark compatibility unless a redirect alias is added. Update home card and nav menu consistently. |
+| **Status** | Done |
+| **Description** | Rebranded the **Configuration** area as **Configuration viewer** everywhere user-facing: sidebar nav label, page titles (`<PageTitle>` and `<h1>`), landing page card, environment details action column (**Viewer** button with `title="Configuration viewer"`), and breadcrumbs/back links. Route paths (`/configuration`) unchanged for bookmark compatibility. |
 | **Test / demo** | Sidebar shows **Configuration Viewer** → `/configuration` page title matches → home card updated → deep link from environment still works. |
 | **Depends on** | CFG-003 |
 

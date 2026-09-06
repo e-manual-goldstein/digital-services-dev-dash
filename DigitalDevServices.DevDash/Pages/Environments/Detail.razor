@@ -387,7 +387,7 @@ else
                             <th class="table-deployed-apps__branch">Branch</th>
                             <th class="table-deployed-apps__homepage">Homepage</th>
                             <th class="table-deployed-apps__action">Logs</th>
-                            <th class="table-deployed-apps__action">Configuration</th>
+                            <th class="table-deployed-apps__action">Viewer</th>
                             <th class="table-deployed-apps__action">Packages</th>
                             <th class="table-deployed-apps__action">Edit</th>
                             <th class="table-deployed-apps__action">Delete</th>
@@ -442,8 +442,9 @@ else
                                 </td>
                                 <td class="table-deployed-apps__action">
                                     <a class="btn btn-sm btn-outline-secondary"
-                                       href="@($"/configuration/{instance.Id}")">
-                                        Configuration
+                                       href="@($"/configuration/{instance.Id}")"
+                                       title="Configuration viewer">
+                                        Viewer
                                     </a>
                                 </td>
                                 <td class="table-deployed-apps__action">
