@@ -25,7 +25,7 @@
 | [CFG-004](#cfg-004) | Shelved | Compare setting by name across apps in one environment | CFG-002, ENV-002 |
 | [CFG-005](#cfg-005) | Shelved | Compare setting by name for one app across environments | CFG-002, APP-004 |
 | [CFG-006](#cfg-006) | Done | Rename section to Configuration Viewer | CFG-003 |
-| [CFG-007](#cfg-007) | Open | Import web.config, app.config, and exe.config | CFG-002 |
+| [CFG-007](#cfg-007) | Done | Import web.config, app.config, and exe.config | CFG-002 |
 
 ---
 
@@ -46,7 +46,9 @@ Uniqueness: one row per (`ApplicationInstanceId`, `Key`) — refresh replaces va
 
 ### Import strategy (v1)
 
-- Read from paths on **ApplicationInstance** (`PhysicalPath`) — support common formats: JSON (`appsettings*.json`), XML (`web.config`), key-value env files.
+- Read from paths on **ApplicationInstance** (`PhysicalPath`) — support JSON (`appsettings*.json`) and XML (`web.config`, `app.config`, `{ApplicationName}.exe.config`).
+- **Precedence** (later overrides earlier): `appsettings.json` → other `appsettings*.json` (alphabetical) → `web.config` → `app.config` → `{appName}.exe.config` candidates → other `*.exe.config` (alphabetical).
+- XML `connectionStrings` import as `ConnectionStrings:{name}`; `appSettings` keys stored as-is.
 - Manual “Refresh settings” per instance or bulk per environment.
 - Future: scheduled refresh, diff since last capture.
 
@@ -150,8 +152,8 @@ Shelved — compare views deprioritized; per-instance browse (CFG-003) sufficien
 |-------|--------|
 | **ID** | CFG-007 |
 | **Title** | Import web.config, app.config, and exe.config |
-| **Status** | Open |
-| **Description** | Extend `IConfigurationImportService` (CFG-002) to locate and import settings from **`web.config`**, **`app.config`**, and **`{appName}.exe.config`** in addition to `appsettings*.json`. Discovery order and merge rules: document precedence when multiple files exist (e.g. `appsettings.json` + `web.config` appSettings + connectionStrings). Flatten XML `appSettings` keys and `connectionStrings` names into the same `Key` / `Value` model with `Source` filename. Handle missing files gracefully (JSON-only apps unchanged). Unit tests with sample XML configs under `samples/config/`. |
+| **Status** | Done |
+| **Description** | Extended `IConfigurationImportService` to import **`web.config`**, **`app.config`**, and **`{appName}.exe.config`** alongside `appsettings*.json`. `XmlConfigurationFlattener` flattens `appSettings` keys and `connectionStrings` names into the existing `Key` / `Value` model with `Source` filename. `ConfigurationFileDiscovery` documents merge precedence. Sample XML configs under `samples/config/`. Missing XML files are skipped; JSON-only apps unchanged. |
 | **Test / demo** | Instance with `PhysicalPath` containing `web.config` → **Refresh settings** → `appSettings` keys appear → `app.config` / `{appName}.exe.config` samples import → source column shows file name. `dotnet test --filter ConfigurationImport` → pass. |
 | **Depends on** | CFG-002 |
 

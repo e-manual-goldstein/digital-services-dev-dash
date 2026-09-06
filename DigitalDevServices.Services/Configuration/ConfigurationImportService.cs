@@ -54,42 +54,25 @@ public sealed class ConfigurationImportService : IConfigurationImportService
 
         try
         {
-            foreach (var filePath in GetAppsettingsFiles(physicalPath))
+            foreach (var filePath in ConfigurationFileDiscovery.GetConfigurationFiles(
+                         physicalPath,
+                         instance.DeployableApplication.Name))
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var fileName = Path.GetFileName(filePath);
-                string jsonContent;
-
-                try
-                {
-                    jsonContent = await File.ReadAllTextAsync(filePath, cancellationToken).ConfigureAwait(false);
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                var importResult = await ImportConfigurationFileAsync(filePath, cancellationToken)
+                    .ConfigureAwait(false);
+                if (importResult.ErrorMessage is not null)
                 {
                     return new ConfigurationImportResult
                     {
-                        ErrorMessage = $"Could not read '{fileName}': {ex.Message}"
+                        ErrorMessage = importResult.ErrorMessage
                     };
                 }
 
-                IReadOnlyDictionary<string, string> flattened;
-
-                try
+                foreach (var (key, value, source) in importResult.Entries)
                 {
-                    flattened = JsonConfigurationFlattener.Flatten(jsonContent);
-                }
-                catch (JsonException ex)
-                {
-                    return new ConfigurationImportResult
-                    {
-                        ErrorMessage = $"Could not parse '{fileName}': {ex.Message}"
-                    };
-                }
-
-                foreach (var (key, value) in flattened)
-                {
-                    mergedSettings[key] = (value, fileName);
+                    mergedSettings[key] = (value, source);
                 }
             }
         }
@@ -122,11 +105,57 @@ public sealed class ConfigurationImportService : IConfigurationImportService
         };
     }
 
-    private static IEnumerable<string> GetAppsettingsFiles(string physicalPath)
+    private static async Task<FileImportResult> ImportConfigurationFileAsync(
+        string filePath,
+        CancellationToken cancellationToken)
     {
-        return Directory
-            .EnumerateFiles(physicalPath, "appsettings*.json", SearchOption.TopDirectoryOnly)
-            .OrderBy(path => string.Equals(Path.GetFileName(path), "appsettings.json", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
-            .ThenBy(path => path, StringComparer.OrdinalIgnoreCase);
+        var fileName = Path.GetFileName(filePath);
+        string fileContent;
+
+        try
+        {
+            fileContent = await File.ReadAllTextAsync(filePath, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return FileImportResult.Failed($"Could not read '{fileName}': {ex.Message}");
+        }
+
+        IReadOnlyDictionary<string, string> flattened;
+
+        try
+        {
+            flattened = IsJsonConfigFile(fileName)
+                ? JsonConfigurationFlattener.Flatten(fileContent)
+                : XmlConfigurationFlattener.Flatten(fileContent);
+        }
+        catch (JsonException ex)
+        {
+            return FileImportResult.Failed($"Could not parse '{fileName}': {ex.Message}");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return FileImportResult.Failed($"Could not parse '{fileName}': {ex.Message}");
+        }
+
+        return FileImportResult.Succeeded(
+            flattened.Select(pair => (pair.Key, pair.Value, fileName)).ToList());
+    }
+
+    private static bool IsJsonConfigFile(string fileName) =>
+        fileName.StartsWith("appsettings", StringComparison.OrdinalIgnoreCase)
+        && fileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase);
+
+    private sealed class FileImportResult
+    {
+        public string? ErrorMessage { get; init; }
+
+        public IReadOnlyList<(string Key, string Value, string Source)> Entries { get; init; } = [];
+
+        public static FileImportResult Succeeded(IReadOnlyList<(string Key, string Value, string Source)> entries) =>
+            new() { Entries = entries };
+
+        public static FileImportResult Failed(string errorMessage) =>
+            new() { ErrorMessage = errorMessage };
     }
 }

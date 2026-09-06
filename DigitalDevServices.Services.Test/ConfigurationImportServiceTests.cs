@@ -132,6 +132,96 @@ public sealed class ConfigurationImportServiceTests
         Assert.AreEqual("Warning", result.Settings.Single(setting => setting.Key == "Logging:LogLevel:Microsoft.AspNetCore").Value);
     }
 
+    [TestMethod]
+    public async Task RefreshAsync_ImportsAppSettingsAndConnectionStringsFromWebConfig()
+    {
+        await using var fixture = await ConfigurationImportServiceFixture.CreateAsync();
+        var configDirectory = await fixture.CreateConfigDirectoryAsync();
+        await fixture.WriteConfigFileAsync(configDirectory, "web.config", """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <appSettings>
+                <add key="Api:BaseUrl" value="https://uat-01.example.com/api" />
+              </appSettings>
+              <connectionStrings>
+                <add name="Default" connectionString="Server=uat-sql;Database=PortalDb;" />
+              </connectionStrings>
+            </configuration>
+            """);
+
+        var instance = await fixture.CreateApplicationInstanceAsync(configDirectory);
+        var result = await fixture.ImportService.RefreshAsync(instance.Id);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual("https://uat-01.example.com/api", result.Settings.Single(setting => setting.Key == "Api:BaseUrl").Value);
+        Assert.AreEqual("Server=uat-sql;Database=PortalDb;", result.Settings.Single(setting => setting.Key == "ConnectionStrings:Default").Value);
+        Assert.AreEqual("web.config", result.Settings.Single(setting => setting.Key == "Api:BaseUrl").Source);
+    }
+
+    [TestMethod]
+    public async Task RefreshAsync_WebConfigOverridesAppsettingsJson()
+    {
+        await using var fixture = await ConfigurationImportServiceFixture.CreateAsync();
+        var configDirectory = await fixture.CreateConfigDirectoryAsync();
+        await fixture.WriteAppsettingsAsync(configDirectory, """
+            {
+              "ConnectionStrings": {
+                "Default": "Server=localhost;Database=AppDb;"
+              }
+            }
+            """);
+        await fixture.WriteConfigFileAsync(configDirectory, "web.config", """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <connectionStrings>
+                <add name="Default" connectionString="Server=uat-sql;Database=PortalDb;" />
+              </connectionStrings>
+            </configuration>
+            """);
+
+        var instance = await fixture.CreateApplicationInstanceAsync(configDirectory);
+        var result = await fixture.ImportService.RefreshAsync(instance.Id);
+
+        Assert.IsTrue(result.IsSuccess);
+        var connectionString = result.Settings.Single(setting => setting.Key == "ConnectionStrings:Default");
+        Assert.AreEqual("Server=uat-sql;Database=PortalDb;", connectionString.Value);
+        Assert.AreEqual("web.config", connectionString.Source);
+    }
+
+    [TestMethod]
+    public async Task RefreshAsync_ImportsAppConfigAndExeConfig()
+    {
+        await using var fixture = await ConfigurationImportServiceFixture.CreateAsync();
+        var configDirectory = await fixture.CreateConfigDirectoryAsync();
+        await fixture.WriteConfigFileAsync(configDirectory, "app.config", """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <appSettings>
+                <add key="ServiceBus:QueueName" value="orders-inbound" />
+              </appSettings>
+            </configuration>
+            """);
+        await fixture.WriteConfigFileAsync(configDirectory, "CustomerPortalAPI.exe.config", """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <appSettings>
+                <add key="Worker:PollingIntervalSeconds" value="30" />
+              </appSettings>
+            </configuration>
+            """);
+
+        var instance = await fixture.CreateApplicationInstanceAsync(
+            configDirectory,
+            applicationName: "Customer Portal API");
+        var result = await fixture.ImportService.RefreshAsync(instance.Id);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual("orders-inbound", result.Settings.Single(setting => setting.Key == "ServiceBus:QueueName").Value);
+        Assert.AreEqual("app.config", result.Settings.Single(setting => setting.Key == "ServiceBus:QueueName").Source);
+        Assert.AreEqual("30", result.Settings.Single(setting => setting.Key == "Worker:PollingIntervalSeconds").Value);
+        Assert.AreEqual("CustomerPortalAPI.exe.config", result.Settings.Single(setting => setting.Key == "Worker:PollingIntervalSeconds").Source);
+    }
+
     private sealed class ConfigurationImportServiceFixture : IAsyncDisposable
     {
         private readonly ServiceProvider _serviceProvider;
@@ -203,9 +293,20 @@ public sealed class ConfigurationImportServiceTests
             await File.WriteAllTextAsync(filePath, jsonContent);
         }
 
-        public async Task<ApplicationInstance> CreateApplicationInstanceAsync(string? physicalPath)
+        public async Task WriteConfigFileAsync(
+            string configDirectory,
+            string fileName,
+            string content)
         {
-            var application = await DeployableApplicationService.CreateAsync("Customer Portal API");
+            var filePath = Path.Combine(configDirectory, fileName);
+            await File.WriteAllTextAsync(filePath, content);
+        }
+
+        public async Task<ApplicationInstance> CreateApplicationInstanceAsync(
+            string? physicalPath,
+            string applicationName = "Customer Portal API")
+        {
+            var application = await DeployableApplicationService.CreateAsync(applicationName);
             var environment = new TrackedEnvironment
             {
                 Id = Guid.NewGuid(),
