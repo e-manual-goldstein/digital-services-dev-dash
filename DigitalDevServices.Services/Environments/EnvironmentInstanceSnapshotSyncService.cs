@@ -104,6 +104,22 @@ public sealed class EnvironmentInstanceSnapshotSyncService : IEnvironmentInstanc
             changed = true;
         }
 
+        if (!instance.DeployableApplication.IsWebApp || instance.HomepageUrlIsManual)
+        {
+            return changed;
+        }
+
+        var homepageUrl = EnvironmentHomepageResolver.SuggestHomepageUrl(
+            snapshot.Details,
+            applicationName,
+            isWebApp: true);
+        if (!string.IsNullOrWhiteSpace(homepageUrl)
+            && !string.Equals(instance.HomepageUrl, homepageUrl, StringComparison.OrdinalIgnoreCase))
+        {
+            instance.HomepageUrl = homepageUrl;
+            changed = true;
+        }
+
         return changed;
     }
 

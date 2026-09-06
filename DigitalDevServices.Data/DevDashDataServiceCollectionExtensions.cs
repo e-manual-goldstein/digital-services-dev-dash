@@ -29,6 +29,7 @@ public static class DevDashDataServiceCollectionExtensions
         EnsureApplicationInstancesTableExists(db);
         EnsureDeployableApplicationsIsWebAppColumnExists(db);
         EnsureApplicationInstancesHomepageUrlColumnExists(db);
+        EnsureApplicationInstancesHomepageUrlIsManualColumnExists(db);
         EnsureLogFormatProfilesTableExists(db);
         EnsureConfigurationSettingsTableExists(db);
         EnsureTrackedEnvironmentsIsFavouriteColumnExists(db);
@@ -121,6 +122,15 @@ public static class DevDashDataServiceCollectionExtensions
             "ApplicationInstances",
             "HomepageUrl",
             "ALTER TABLE \"ApplicationInstances\" ADD COLUMN \"HomepageUrl\" TEXT NULL");
+    }
+
+    private static void EnsureApplicationInstancesHomepageUrlIsManualColumnExists(DevDashDbContext db)
+    {
+        EnsureColumnExists(
+            db,
+            "ApplicationInstances",
+            "HomepageUrlIsManual",
+            "ALTER TABLE \"ApplicationInstances\" ADD COLUMN \"HomepageUrlIsManual\" INTEGER NOT NULL DEFAULT 0");
     }
 
     private static void EnsureLogFormatProfilesTableExists(DevDashDbContext db)

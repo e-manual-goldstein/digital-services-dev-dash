@@ -93,6 +93,11 @@ public sealed class ApplicationInstanceService : IApplicationInstanceService
         existing.PhysicalPath = NormalizeOptionalText(upsert.PhysicalPath);
         existing.LogPath = NormalizeOptionalText(upsert.LogPath);
         existing.HomepageUrl = NormalizeOptionalText(upsert.HomepageUrl);
+        if (upsert.HomepageUrlIsManual.HasValue)
+        {
+            existing.HomepageUrlIsManual = upsert.HomepageUrlIsManual.Value;
+        }
+
         existing.SqlServerInstance = NormalizeOptionalText(upsert.SqlServerInstance);
         existing.Notes = NormalizeOptionalText(upsert.Notes);
         existing.UpdatedAt = now;

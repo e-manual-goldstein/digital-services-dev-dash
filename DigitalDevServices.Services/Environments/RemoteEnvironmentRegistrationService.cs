@@ -76,6 +76,7 @@ public sealed class RemoteEnvironmentRegistrationService : IRemoteEnvironmentReg
                 PhysicalPath = existing?.PhysicalPath,
                 LogPath = existing?.LogPath,
                 HomepageUrl = homepageUrl,
+                HomepageUrlIsManual = false,
                 SqlServerInstance = existing?.SqlServerInstance,
                 Notes = existing?.Notes
             },
@@ -140,6 +141,7 @@ public sealed class RemoteEnvironmentRegistrationService : IRemoteEnvironmentReg
                 PhysicalPath = physicalPath,
                 LogPath = existing?.LogPath,
                 HomepageUrl = existing?.HomepageUrl,
+                HomepageUrlIsManual = false,
                 SqlServerInstance = existing?.SqlServerInstance,
                 Notes = existing?.Notes
             },
@@ -204,6 +206,7 @@ public sealed class RemoteEnvironmentRegistrationService : IRemoteEnvironmentReg
                 PhysicalPath = binaryPath,
                 LogPath = existing?.LogPath,
                 HomepageUrl = existing?.HomepageUrl,
+                HomepageUrlIsManual = false,
                 SqlServerInstance = existing?.SqlServerInstance,
                 Notes = existing?.Notes
             },

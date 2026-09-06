@@ -74,6 +74,7 @@ public class DevDashDbContext : DbContext
             entity.Property(e => e.PhysicalPath).HasMaxLength(2000);
             entity.Property(e => e.LogPath).HasMaxLength(2000);
             entity.Property(e => e.HomepageUrl).HasMaxLength(2000);
+            entity.Property(e => e.HomepageUrlIsManual).IsRequired();
             entity.Property(e => e.SqlServerInstance).HasMaxLength(500);
             entity.Property(e => e.Notes).HasMaxLength(2000);
             entity.Property(e => e.CreatedAt).IsRequired();

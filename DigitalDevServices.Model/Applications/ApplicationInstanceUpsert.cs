@@ -22,6 +22,8 @@ public class ApplicationInstanceUpsert
 
     public string? HomepageUrl { get; init; }
 
+    public bool? HomepageUrlIsManual { get; init; }
+
     public string? SqlServerInstance { get; init; }
 
     public string? Notes { get; init; }

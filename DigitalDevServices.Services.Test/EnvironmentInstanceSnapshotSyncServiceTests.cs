@@ -86,4 +86,100 @@ public sealed class EnvironmentInstanceSnapshotSyncServiceTests
         Assert.AreEqual(@"UAT-01\SQL2019", instance.SqlServerInstance);
         Assert.AreEqual(new DateTimeOffset(2026, 9, 1, 8, 30, 0, TimeSpan.Zero), instance.DeployedAt);
     }
+
+    [TestMethod]
+    public void ApplySnapshotToInstance_UpdatesHomepageUrlForWebApps()
+    {
+        var instance = new ApplicationInstance
+        {
+            Id = Guid.NewGuid(),
+            DeployableApplicationId = Guid.NewGuid(),
+            EnvironmentId = Guid.NewGuid(),
+            BuildVersionNumber = "123456",
+            DeployableApplication = new DeployableApplication
+            {
+                Id = Guid.NewGuid(),
+                Name = "Customer Portal",
+                IsWebApp = true,
+                CreatedAt = DateTimeOffset.UtcNow
+            }
+        };
+
+        var snapshot = new EnvironmentRefreshSnapshot
+        {
+            DateLastRefreshed = DateTimeOffset.UtcNow,
+            Details = new RemoteEnvironmentDetails
+            {
+                Id = 1,
+                Code = "UAT-01",
+                Name = "UAT-01",
+                EnvironmentType = "UAT",
+                EnvironmentUrls =
+                [
+                    new EnvironmentUrl
+                    {
+                        ApplicationName = "Customer Portal",
+                        Url = "https://uat-01.example.com/portal"
+                    }
+                ]
+            }
+        };
+
+        var changed = EnvironmentInstanceSnapshotSyncService.ApplySnapshotToInstance(
+            instance,
+            snapshot,
+            environmentSqlServerInstance: null);
+
+        Assert.IsTrue(changed);
+        Assert.AreEqual("https://uat-01.example.com/portal", instance.HomepageUrl);
+    }
+
+    [TestMethod]
+    public void ApplySnapshotToInstance_SkipsHomepageUrlWhenManualOverrideSet()
+    {
+        var instance = new ApplicationInstance
+        {
+            Id = Guid.NewGuid(),
+            DeployableApplicationId = Guid.NewGuid(),
+            EnvironmentId = Guid.NewGuid(),
+            BuildVersionNumber = "123456",
+            HomepageUrl = "https://custom.example.com",
+            HomepageUrlIsManual = true,
+            DeployableApplication = new DeployableApplication
+            {
+                Id = Guid.NewGuid(),
+                Name = "Customer Portal",
+                IsWebApp = true,
+                CreatedAt = DateTimeOffset.UtcNow
+            }
+        };
+
+        var snapshot = new EnvironmentRefreshSnapshot
+        {
+            DateLastRefreshed = DateTimeOffset.UtcNow,
+            Details = new RemoteEnvironmentDetails
+            {
+                Id = 1,
+                Code = "UAT-01",
+                Name = "UAT-01",
+                EnvironmentType = "UAT",
+                EnvironmentUrls =
+                [
+                    new EnvironmentUrl
+                    {
+                        ApplicationName = "Customer Portal",
+                        Url = "https://uat-01.example.com/portal"
+                    }
+                ]
+            }
+        };
+
+        var changed = EnvironmentInstanceSnapshotSyncService.ApplySnapshotToInstance(
+            instance,
+            snapshot,
+            environmentSqlServerInstance: null);
+
+        Assert.IsFalse(changed);
+        Assert.AreEqual("https://custom.example.com", instance.HomepageUrl);
+    }
 }

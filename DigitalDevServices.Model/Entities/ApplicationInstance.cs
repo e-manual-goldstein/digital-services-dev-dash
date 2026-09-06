@@ -28,6 +28,8 @@ public class ApplicationInstance
 
     public string? HomepageUrl { get; set; }
 
+    public bool HomepageUrlIsManual { get; set; }
+
     public string? SqlServerInstance { get; set; }
 
     public string? Notes { get; set; }

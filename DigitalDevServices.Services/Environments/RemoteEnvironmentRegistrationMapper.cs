@@ -123,7 +123,8 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
             webApplication,
             deploymentDetails,
             applicationName,
-            homepageUrl: existingInstance?.HomepageUrl,
+            homepageUrl: existingInstance?.HomepageUrl
+                ?? EnvironmentHomepageResolver.SuggestHomepageUrl(environmentDetails, applicationName, isWebApp: true),
             userPhysicalPathOverride: null,
             remotePhysicalPath: webApplication.PhysicalPath?.Trim() ?? existingInstance?.PhysicalPath,
             machineName: webSite.MachineName,
@@ -215,7 +216,9 @@ public sealed class RemoteEnvironmentRegistrationMapper : IRemoteEnvironmentRegi
             remoteMatch.WebApplication,
             deploymentDetails,
             deployableApplication.Name,
-            homepageUrl: remoteMatch.EnvironmentUrl?.Url?.Trim(),
+            homepageUrl: deployableApplication.IsWebApp
+                ? EnvironmentHomepageResolver.SuggestHomepageUrl(environmentDetails, deployableApplication.Name, isWebApp: true)
+                : null,
             userPhysicalPathOverride: userPhysicalPathOverride,
             remotePhysicalPath: remoteMatch.WebApplication?.PhysicalPath?.Trim()
                 ?? remoteMatch.WindowsService?.BinaryPathName?.Trim(),

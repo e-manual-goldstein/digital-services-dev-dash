@@ -318,6 +318,63 @@ public sealed class EnvironmentServiceTests
     }
 
     [TestMethod]
+    public async Task RefreshEnvironmentAsync_SyncsHomepageUrlToRegisteredWebApp()
+    {
+        var fakeApi = new FakeRemoteEnvironmentApiClient
+        {
+            Environments =
+            {
+                [99] = new RemoteEnvironmentDetails
+                {
+                    Id = 99,
+                    Code = "UAT-01",
+                    Name = "UAT-01",
+                    EnvironmentType = "UAT",
+                    EnvironmentUrls =
+                    [
+                        new EnvironmentUrl
+                        {
+                            ApplicationName = "Customer Portal",
+                            Url = "https://uat-01.example.com/portal"
+                        }
+                    ]
+                }
+            }
+        };
+
+        await using var fixture = await EnvironmentServiceFixture.CreateAsync(fakeApi);
+        var environments = await fixture.Service.GetEnvironmentsAsync();
+        var environment = environments.Single(item => item.RemoteId == 99);
+
+        var application = new DeployableApplication
+        {
+            Id = Guid.NewGuid(),
+            Name = "Customer Portal",
+            IsWebApp = true,
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+        fixture.Db.DeployableApplications.Add(application);
+        fixture.Db.ApplicationInstances.Add(new ApplicationInstance
+        {
+            Id = Guid.NewGuid(),
+            DeployableApplicationId = application.Id,
+            EnvironmentId = environment.LocalId,
+            BuildVersionNumber = "123456",
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+        await fixture.Db.SaveChangesAsync();
+
+        await fixture.Service.RefreshEnvironmentAsync(99);
+
+        var instance = await fixture.Db.ApplicationInstances
+            .AsNoTracking()
+            .SingleAsync(item => item.EnvironmentId == environment.LocalId);
+
+        Assert.AreEqual("https://uat-01.example.com/portal", instance.HomepageUrl);
+        Assert.IsFalse(instance.HomepageUrlIsManual);
+    }
+
+    [TestMethod]
     public async Task RefreshEnvironmentAsync_RefreshesSingleEnvironmentFromRemoteApi()
     {
         var fakeApi = new FakeRemoteEnvironmentApiClient

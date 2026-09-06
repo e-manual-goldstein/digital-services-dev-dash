@@ -25,7 +25,7 @@
 | [APP-004](#app-004) | Done | ApplicationInstance admin UI | APP-002, ENV-004, ENV-005 |
 | [APP-005](#app-005) | Done | `PathToLogFiles` template on DeployableApplication | APP-001, APP-003 |
 | [APP-006](#app-006) | Done | Wire Source Branch on deployed applications | ENV-017, ENV-019 |
-| [APP-007](#app-007) | Open | Wire Homepage URL on deployed applications | ENV-012, ENV-019 |
+| [APP-007](#app-007) | Done | Wire Homepage URL on deployed applications | ENV-012, ENV-019 |
 
 ---
 
@@ -186,8 +186,8 @@ Unknown `{tokens}` are left unchanged. Resolved value is stored on `ApplicationI
 |-------|--------|
 | **ID** | APP-007 |
 | **Title** | Wire Homepage URL on deployed applications |
-| **Status** | Open |
-| **Description** | **Homepage URL** on deployed web application instances is not fully wired. Derive and persist `ApplicationInstance.HomepageUrl` from remote environment data when available — `EnvironmentUrls`, `WebSites` / `WebApplications`, or matching URL rows in the ENV-019 refresh snapshot — using the same application-name matching rules as ENV-012/ENV-013 registration. On environment refresh, update homepage URL on existing instances when remote data provides a match (without overwriting a deliberate manual override — document precedence: manual edit wins, or last-refreshed remote wins). Deployed-applications table **Homepage** column/link must reflect the wired URL. Non-web apps continue to omit homepage. |
+| **Status** | Done |
+| **Description** | **Homepage URL** on deployed web application instances is wired. Derive and persist `ApplicationInstance.HomepageUrl` from `EnvironmentUrls` in the ENV-019 refresh snapshot using `EnvironmentHomepageResolver` and the same application-name matching rules as registration. On environment refresh, update existing instances when remote data provides a match. Manual overrides are preserved via `HomepageUrlIsManual` when the saved URL differs from the remote suggestion. Deployed-applications table **Homepage** column reflects the wired URL. Non-web apps continue to omit homepage. |
 | **Test / demo** | Web app instance registered from Environment URL → homepage link works → refresh updates URL when remote changes → manual override preserved if implemented. |
 | **Depends on** | ENV-012, ENV-019 |
 

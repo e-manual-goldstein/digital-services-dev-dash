@@ -318,6 +318,12 @@ else
                                                class="form-control"
                                                @bind-Value="_deploymentForm.HomepageUrl"
                                                disabled="@_isBusy" />
+                                    @if (_environment.DeploymentDetails is null && _editingInstanceId is null)
+                                    {
+                                        <div class="form-text text-muted">
+                                            Refresh this environment to load the homepage URL from environment URLs.
+                                        </div>
+                                    }
                                 </div>
                             }
                             <div class="col-12">
@@ -862,6 +868,12 @@ else
 
         try
         {
+            var selectedApplication = GetSelectedDeployableApplication();
+            var savedHomepageUrl = IsSelectedAppWebApp ? NormalizeOptional(_deploymentForm.HomepageUrl) : null;
+            var suggestedHomepageUrl = selectedApplication is { IsWebApp: true }
+                ? EnvironmentHomepageResolver.SuggestHomepageUrl(_environment.Details, selectedApplication.Name, isWebApp: true)
+                : null;
+
             var upsert = new ApplicationInstanceUpsert
             {
                 DeployableApplicationId = _deploymentForm.DeployableApplicationId,
@@ -874,7 +886,9 @@ else
                     : null,
                 PhysicalPath = NormalizeOptional(_deploymentForm.PhysicalPath),
                 LogPath = NormalizeOptional(_deploymentForm.LogPath),
-                HomepageUrl = IsSelectedAppWebApp ? NormalizeOptional(_deploymentForm.HomepageUrl) : null,
+                HomepageUrl = savedHomepageUrl,
+                HomepageUrlIsManual = IsSelectedAppWebApp
+                    && EnvironmentHomepageResolver.IsHomepageUrlManualOverride(savedHomepageUrl, suggestedHomepageUrl),
                 SqlServerInstance = NormalizeOptional(_deploymentForm.SqlServerInstance),
                 Notes = NormalizeOptional(_deploymentForm.Notes)
             };
