@@ -1,6 +1,7 @@
 using DigitalDevServices.Data;
 using DigitalDevServices.Model.Configuration;
 using DigitalDevServices.Model.Entities;
+using DigitalDevServices.Services.Applications;
 using Microsoft.EntityFrameworkCore;
 
 namespace DigitalDevServices.Services.Configuration;
@@ -8,10 +9,14 @@ namespace DigitalDevServices.Services.Configuration;
 public sealed class ConfigurationSettingService : IConfigurationSettingService
 {
     private readonly DevDashDbContext _db;
+    private readonly IApplicationInstanceService _applicationInstanceService;
 
-    public ConfigurationSettingService(DevDashDbContext db)
+    public ConfigurationSettingService(
+        DevDashDbContext db,
+        IApplicationInstanceService applicationInstanceService)
     {
         _db = db;
+        _applicationInstanceService = applicationInstanceService;
     }
 
     public async Task<IReadOnlyList<ConfigurationSetting>> GetByApplicationInstanceIdAsync(
@@ -39,6 +44,71 @@ public sealed class ConfigurationSettingService : IConfigurationSettingService
                 setting => setting.ApplicationInstanceId == applicationInstanceId && setting.Key == normalizedKey,
                 cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    public async Task<ConfigurationComparisonResult> CompareInstancesAsync(
+        Guid leftInstanceId,
+        Guid rightInstanceId,
+        CancellationToken cancellationToken = default)
+    {
+        if (leftInstanceId == rightInstanceId)
+        {
+            return new ConfigurationComparisonResult
+            {
+                LeftInstanceId = leftInstanceId,
+                RightInstanceId = rightInstanceId,
+                ErrorMessage = "Choose two different application instances to compare."
+            };
+        }
+
+        var leftInstance = await _applicationInstanceService
+            .GetByIdAsync(leftInstanceId, cancellationToken)
+            .ConfigureAwait(false);
+        var rightInstance = await _applicationInstanceService
+            .GetByIdAsync(rightInstanceId, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (leftInstance is null || rightInstance is null)
+        {
+            return new ConfigurationComparisonResult
+            {
+                LeftInstanceId = leftInstanceId,
+                RightInstanceId = rightInstanceId,
+                ErrorMessage = "One or both application instances were not found."
+            };
+        }
+
+        if (leftInstance.DeployableApplicationId != rightInstance.DeployableApplicationId)
+        {
+            return new ConfigurationComparisonResult
+            {
+                LeftInstanceId = leftInstanceId,
+                RightInstanceId = rightInstanceId,
+                ErrorMessage = "Instances must belong to the same deployable application."
+            };
+        }
+
+        if (leftInstance.EnvironmentId == rightInstance.EnvironmentId)
+        {
+            return new ConfigurationComparisonResult
+            {
+                LeftInstanceId = leftInstanceId,
+                RightInstanceId = rightInstanceId,
+                ErrorMessage = "Choose two different application instances to compare."
+            };
+        }
+
+        var leftSettings = await GetByApplicationInstanceIdAsync(leftInstanceId, cancellationToken)
+            .ConfigureAwait(false);
+        var rightSettings = await GetByApplicationInstanceIdAsync(rightInstanceId, cancellationToken)
+            .ConfigureAwait(false);
+
+        return new ConfigurationComparisonResult
+        {
+            LeftInstanceId = leftInstanceId,
+            RightInstanceId = rightInstanceId,
+            Rows = ConfigurationSettingComparer.Compare(leftSettings, rightSettings)
+        };
     }
 
     public async Task<ConfigurationSetting> UpsertAsync(

@@ -14,6 +14,11 @@ public interface IConfigurationSettingService
         string key,
         CancellationToken cancellationToken = default);
 
+    Task<ConfigurationComparisonResult> CompareInstancesAsync(
+        Guid leftInstanceId,
+        Guid rightInstanceId,
+        CancellationToken cancellationToken = default);
+
     Task<ConfigurationSetting> UpsertAsync(
         ConfigurationSettingUpsert upsert,
         CancellationToken cancellationToken = default);

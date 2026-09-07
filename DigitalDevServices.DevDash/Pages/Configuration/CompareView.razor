@@ -1,0 +1,96 @@
+@page "/configuration/compare/{LeftInstanceId:guid}/{RightInstanceId:guid}"
+@inject IConfigurationSettingService ConfigurationSettingService
+@inject IApplicationInstanceService InstanceService
+@inject IEnvironmentService EnvironmentService
+
+<PageTitle>@_pageTitle</PageTitle>
+
+<div class="mb-3">
+    <a href="@_backLink" class="text-decoration-none">&larr; Back to compare</a>
+</div>
+
+@if (_isLoading)
+{
+    <p class="text-muted">Comparing configuration…</p>
+}
+else
+{
+    <div class="mb-3">
+        <h1 class="mb-1">Compare configuration</h1>
+        @if (!string.IsNullOrWhiteSpace(_subtitle))
+        {
+            <p class="text-muted mb-0">@_subtitle</p>
+        }
+    </div>
+
+    <ConfigurationComparisonContent Result="_comparison"
+                                    LeftColumnLabel="@_leftColumnLabel"
+                                    RightColumnLabel="@_rightColumnLabel" />
+}
+
+@code {
+    [Parameter]
+    public Guid LeftInstanceId { get; set; }
+
+    [Parameter]
+    public Guid RightInstanceId { get; set; }
+
+    private ConfigurationComparisonResult? _comparison;
+    private bool _isLoading = true;
+    private string _pageTitle = "Compare configuration";
+    private string _subtitle = string.Empty;
+    private string _backLink = "/configuration/compare";
+    private string _leftColumnLabel = "Instance A";
+    private string _rightColumnLabel = "Instance B";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _comparison = null;
+        _subtitle = string.Empty;
+        _backLink = "/configuration/compare";
+        _leftColumnLabel = "Instance A";
+        _rightColumnLabel = "Instance B";
+
+        try
+        {
+            _comparison = await ConfigurationSettingService.CompareInstancesAsync(LeftInstanceId, RightInstanceId);
+
+            var leftInstance = await InstanceService.GetByIdAsync(LeftInstanceId);
+            var rightInstance = await InstanceService.GetByIdAsync(RightInstanceId);
+            if (leftInstance is null || rightInstance is null)
+            {
+                return;
+            }
+
+            var environments = await EnvironmentService.GetEnvironmentsAsync();
+            var environmentsById = environments.ToDictionary(environment => environment.LocalId);
+
+            _subtitle = leftInstance.DeployableApplication.Name;
+            _pageTitle = $"Compare configuration — {leftInstance.DeployableApplication.Name}";
+            _leftColumnLabel = FormatEnvironmentLabel(leftInstance, environmentsById);
+            _rightColumnLabel = FormatEnvironmentLabel(rightInstance, environmentsById);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private static string FormatEnvironmentLabel(
+        ApplicationInstance instance,
+        IReadOnlyDictionary<Guid, CachedEnvironment> environmentsById)
+    {
+        if (environmentsById.TryGetValue(instance.EnvironmentId, out var environment))
+        {
+            return EnvironmentPickerDisplay.FormatOptionLabel(environment);
+        }
+
+        return $"Environment {instance.Environment.RemoteId}";
+    }
+}

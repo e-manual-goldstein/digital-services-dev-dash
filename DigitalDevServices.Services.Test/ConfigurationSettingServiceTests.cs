@@ -93,6 +93,69 @@ public sealed class ConfigurationSettingServiceTests
         StringAssert.Contains(ex.Message, "not found");
     }
 
+    [TestMethod]
+    public async Task CompareInstancesAsync_ReturnsComparisonRowsForSameApplication()
+    {
+        await using var fixture = await ConfigurationSettingServiceFixture.CreateAsync();
+        var application = await fixture.DeployableApplicationService.CreateAsync("Compare App");
+        var leftEnvironment = await fixture.CreateTrackedEnvironmentAsync(10);
+        var rightEnvironment = await fixture.CreateTrackedEnvironmentAsync(11);
+        var leftInstance = await fixture.CreateApplicationInstanceAsync(application.Id, leftEnvironment.Id);
+        var rightInstance = await fixture.CreateApplicationInstanceAsync(application.Id, rightEnvironment.Id);
+
+        await fixture.Service.UpsertAsync(new ConfigurationSettingUpsert
+        {
+            ApplicationInstanceId = leftInstance.Id,
+            Key = "Shared:Key",
+            Value = "left",
+            Source = "appsettings.json"
+        });
+        await fixture.Service.UpsertAsync(new ConfigurationSettingUpsert
+        {
+            ApplicationInstanceId = rightInstance.Id,
+            Key = "Shared:Key",
+            Value = "right",
+            Source = "appsettings.json"
+        });
+        await fixture.Service.UpsertAsync(new ConfigurationSettingUpsert
+        {
+            ApplicationInstanceId = leftInstance.Id,
+            Key = "LeftOnly:Key",
+            Value = "value"
+        });
+        await fixture.Service.UpsertAsync(new ConfigurationSettingUpsert
+        {
+            ApplicationInstanceId = rightInstance.Id,
+            Key = "RightOnly:Key",
+            Value = "value"
+        });
+
+        var result = await fixture.Service.CompareInstancesAsync(leftInstance.Id, rightInstance.Id);
+
+        Assert.IsTrue(result.IsSuccess);
+        var rows = result.Rows.ToDictionary(row => row.Key);
+        Assert.AreEqual(ConfigurationComparisonStatus.Mismatch, rows["Shared:Key"].Status);
+        Assert.AreEqual(ConfigurationComparisonStatus.LeftOnly, rows["LeftOnly:Key"].Status);
+        Assert.AreEqual(ConfigurationComparisonStatus.RightOnly, rows["RightOnly:Key"].Status);
+    }
+
+    [TestMethod]
+    public async Task CompareInstancesAsync_RejectsDifferentApplications()
+    {
+        await using var fixture = await ConfigurationSettingServiceFixture.CreateAsync();
+        var applicationA = await fixture.DeployableApplicationService.CreateAsync("App A");
+        var applicationB = await fixture.DeployableApplicationService.CreateAsync("App B");
+        var environmentA = await fixture.CreateTrackedEnvironmentAsync(12);
+        var environmentB = await fixture.CreateTrackedEnvironmentAsync(13);
+        var instanceA = await fixture.CreateApplicationInstanceAsync(applicationA.Id, environmentA.Id);
+        var instanceB = await fixture.CreateApplicationInstanceAsync(applicationB.Id, environmentB.Id);
+
+        var result = await fixture.Service.CompareInstancesAsync(instanceA.Id, instanceB.Id);
+
+        Assert.IsFalse(result.IsSuccess);
+        StringAssert.Contains(result.ErrorMessage!, "same deployable application");
+    }
+
     private sealed class ConfigurationSettingServiceFixture : IAsyncDisposable
     {
         private readonly ServiceProvider _serviceProvider;
@@ -144,24 +207,34 @@ public sealed class ConfigurationSettingServiceTests
         public async Task<ApplicationInstance> CreateApplicationInstanceAsync()
         {
             var application = await DeployableApplicationService.CreateAsync("Customer Portal API");
+            var environment = await CreateTrackedEnvironmentAsync(Random.Shared.Next(1, 10000));
+            return await CreateApplicationInstanceAsync(application.Id, environment.Id);
+        }
+
+        public async Task<TrackedEnvironment> CreateTrackedEnvironmentAsync(int remoteId)
+        {
             var environment = new TrackedEnvironment
             {
                 Id = Guid.NewGuid(),
-                RemoteId = Random.Shared.Next(1, 10000),
+                RemoteId = remoteId,
                 DateLastUpdated = DateTimeOffset.UtcNow
             };
 
             Db.TrackedEnvironments.Add(environment);
             await Db.SaveChangesAsync();
+            return environment;
+        }
 
-            return await ApplicationInstanceService.UpsertAsync(new ApplicationInstanceUpsert
+        public Task<ApplicationInstance> CreateApplicationInstanceAsync(
+            Guid deployableApplicationId,
+            Guid environmentId) =>
+            ApplicationInstanceService.UpsertAsync(new ApplicationInstanceUpsert
             {
-                DeployableApplicationId = application.Id,
-                EnvironmentId = environment.Id,
+                DeployableApplicationId = deployableApplicationId,
+                EnvironmentId = environmentId,
                 BuildVersionNumber = "1.0.0",
                 PhysicalPath = @"D:\apps\customer-portal"
             });
-        }
 
         public async ValueTask DisposeAsync()
         {

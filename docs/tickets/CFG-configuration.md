@@ -26,7 +26,7 @@
 | [CFG-005](#cfg-005) | Shelved | Compare setting by name for one app across environments | CFG-002, APP-004 |
 | [CFG-006](#cfg-006) | Done | Rename section to Configuration Viewer | CFG-003 |
 | [CFG-007](#cfg-007) | Done | Import web.config, app.config, and exe.config | CFG-002 |
-| [CFG-008](#cfg-008) | Open | Compare configuration between two instances of same app | CFG-003, PKG-004 |
+| [CFG-008](#cfg-008) | Done | Compare configuration between two instances of same app | CFG-003, PKG-004 |
 | [CFG-009](#cfg-009) | Open | Compare configuration between two apps in same environment | CFG-003, PKG-005 |
 | [CFG-010](#cfg-010) | Open | Connection strings in separate collapsible table | CFG-003 |
 | [CFG-011](#cfg-011) | Open | Pinned configuration keys | CFG-003, ENV-003 |
@@ -179,10 +179,11 @@ Shelved — compare views deprioritized; per-instance browse (CFG-003) sufficien
 |-------|--------|
 | **ID** | CFG-008 |
 | **Title** | Compare configuration between two instances of same app |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | Add a **Compare instances** flow to Configuration viewer, mirroring [PKG-004](PKG-packages.md). **Hub:** `/configuration/compare` — pick deployable application, then Instance A and Instance B (must be different instances; typically different environments). **Result view:** `/configuration/compare/{leftInstanceId}/{rightInstanceId}` — side-by-side grid of all captured setting keys with values from each instance; highlight keys where values differ; show keys present in only one instance. Reuse secret masking from browse. Respect pinned-key ordering (CFG-011) and connection-string sectioning (CFG-010) when those tickets land; if implemented first, structure compare UI so sectioning can be added without rework. **Service:** comparison query over `ConfigurationSetting` rows for two `ApplicationInstanceId`s, keyed by `Key`. |
 | **Test / demo** | Register same app in UAT-01 and SYS-02 → import settings with differing values → **Compare instances** → pick both → diff highlights mismatches → equal keys not highlighted. |
 | **Depends on** | CFG-003, PKG-004 |
+| **Implementation** | `/configuration/compare` picker and `/configuration/compare/{leftId}/{rightId}` results; `ConfigurationSettingComparer`, `CompareInstancesAsync`, `ConfigurationComparisonContent`; hub link on configuration viewer index. |
 
 ### CFG-009
 
