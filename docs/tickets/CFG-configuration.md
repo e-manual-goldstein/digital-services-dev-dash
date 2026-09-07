@@ -26,6 +26,10 @@
 | [CFG-005](#cfg-005) | Shelved | Compare setting by name for one app across environments | CFG-002, APP-004 |
 | [CFG-006](#cfg-006) | Done | Rename section to Configuration Viewer | CFG-003 |
 | [CFG-007](#cfg-007) | Done | Import web.config, app.config, and exe.config | CFG-002 |
+| [CFG-008](#cfg-008) | Open | Compare configuration between two instances of same app | CFG-003, PKG-004 |
+| [CFG-009](#cfg-009) | Open | Compare configuration between two apps in same environment | CFG-003, PKG-005 |
+| [CFG-010](#cfg-010) | Open | Connection strings in separate collapsible table | CFG-003 |
+| [CFG-011](#cfg-011) | Open | Pinned configuration keys | CFG-003, ENV-003 |
 
 ---
 
@@ -56,14 +60,26 @@ Uniqueness: one row per (`ApplicationInstanceId`, `Key`) — refresh replaces va
 
 | Mode | User selects | Result |
 |------|--------------|--------|
-| **Across environment** | Environment + setting key | Table: each ApplicationInstance in env → value |
-| **Across environments** | DeployableApplication + setting key | Table: each Environment where app is deployed → value |
+| **Same app, two instances** (CFG-008) | DeployableApplication + Instance A + Instance B | Grid: setting key → value in A vs B; highlight mismatches; connection strings sectioned separately (CFG-010) |
+| **Same environment, two apps** (CFG-009) | Environment + App A + App B | Grid: setting key → value in each app; highlight mismatches; connection strings sectioned separately (CFG-010) |
+| **Across environment** (shelved CFG-004) | Environment + setting key | Table: each ApplicationInstance in env → value |
+| **Across environments** (shelved CFG-005) | DeployableApplication + setting key | Table: each Environment where app is deployed → value |
+
+CFG-008 and CFG-009 supersede the shelved key-by-key compare tickets (CFG-004/CFG-005) with full side-by-side instance diff views, mirroring [Package viewer](PKG-packages.md) compare flows.
+
+### Pinned keys (CFG-011)
+
+Global pinned configuration keys (stored in SQLite, similar to `TrackedEnvironment.IsFavourite` / `DisplayOrder`). A pinned key appears at the top of any settings table when the current instance has a value for that key. Pin/unpin from the browse view.
+
+### Connection strings presentation (CFG-010)
+
+Keys matching `ConnectionStrings:*` (or imported from XML `connectionStrings`) are shown in a dedicated collapsible table, separate from general app settings, on browse and compare views.
 
 ### UI notes
 
 - Sidebar: **Configuration viewer**
-- Sub-views: **Browse** (instance → all keys), **Compare in environment**, **Compare across environments**
-- Browse is also reachable as `/configuration/{instanceId}` from the environment details **Configuration** button (ENV-005)
+- Sub-views: **Browse** (instance → all keys), **Compare instances** (CFG-008), **Compare applications** (CFG-009)
+- Browse is also reachable as `/configuration/{instanceId}` from the environment details **Viewer** button (ENV-005)
 - Mask values when key matches `*Secret*`, `*Password*`, `*Key*` (configurable list)
 
 ### Out of scope (epic v1)
@@ -156,4 +172,48 @@ Shelved — compare views deprioritized; per-instance browse (CFG-003) sufficien
 | **Description** | Extended `IConfigurationImportService` to import **`web.config`**, **`app.config`**, and **`{appName}.exe.config`** alongside `appsettings*.json`. `XmlConfigurationFlattener` flattens `appSettings` keys and `connectionStrings` names into the existing `Key` / `Value` model with `Source` filename. `ConfigurationFileDiscovery` documents merge precedence. Sample XML configs under `samples/config/`. Missing XML files are skipped; JSON-only apps unchanged. |
 | **Test / demo** | Instance with `PhysicalPath` containing `web.config` → **Refresh settings** → `appSettings` keys appear → `app.config` / `{appName}.exe.config` samples import → source column shows file name. `dotnet test --filter ConfigurationImport` → pass. |
 | **Depends on** | CFG-002 |
+
+### CFG-008
+
+| Field | Detail |
+|-------|--------|
+| **ID** | CFG-008 |
+| **Title** | Compare configuration between two instances of same app |
+| **Status** | Open |
+| **Description** | Add a **Compare instances** flow to Configuration viewer, mirroring [PKG-004](PKG-packages.md). **Hub:** `/configuration/compare` — pick deployable application, then Instance A and Instance B (must be different instances; typically different environments). **Result view:** `/configuration/compare/{leftInstanceId}/{rightInstanceId}` — side-by-side grid of all captured setting keys with values from each instance; highlight keys where values differ; show keys present in only one instance. Reuse secret masking from browse. Respect pinned-key ordering (CFG-011) and connection-string sectioning (CFG-010) when those tickets land; if implemented first, structure compare UI so sectioning can be added without rework. **Service:** comparison query over `ConfigurationSetting` rows for two `ApplicationInstanceId`s, keyed by `Key`. |
+| **Test / demo** | Register same app in UAT-01 and SYS-02 → import settings with differing values → **Compare instances** → pick both → diff highlights mismatches → equal keys not highlighted. |
+| **Depends on** | CFG-003, PKG-004 |
+
+### CFG-009
+
+| Field | Detail |
+|-------|--------|
+| **ID** | CFG-009 |
+| **Title** | Compare configuration between two apps in same environment |
+| **Status** | Open |
+| **Description** | Add a **Compare applications** flow to Configuration viewer, mirroring [PKG-005](PKG-packages.md). **Hub:** `/configuration/compare/apps` — pick environment, then Application A and Application B (must be different deployable applications deployed in that environment). **Result view:** same route pattern as PKG-005 compare or dedicated config compare URL with both instance IDs resolved from environment + app selection. Side-by-side grid of setting keys → value in App A vs App B; highlight differences; keys only in one app shown clearly. Same masking, pinning, and connection-string rules as CFG-008/CFG-010/CFG-011. |
+| **Test / demo** | Two apps deployed in UAT-01 with overlapping and distinct keys → compare → shared keys show both values → differing values highlighted. |
+| **Depends on** | CFG-003, PKG-005 |
+
+### CFG-010
+
+| Field | Detail |
+|-------|--------|
+| **ID** | CFG-010 |
+| **Title** | Connection strings in separate collapsible table |
+| **Status** | Open |
+| **Description** | On the configuration **browse** view (`/configuration/{instanceId}`) and on compare result views (CFG-008/CFG-009), separate keys whose name starts with `ConnectionStrings:` (case-insensitive) into a dedicated **Connection strings** collapsible section (expanded by default). General app settings remain in the main searchable table. Compare views apply the same split for both sides. Empty connection-string section hidden or shows “No connection strings captured.” |
+| **Test / demo** | Import `samples/config` → browse instance → `ConnectionStrings:Default` appears only under **Connection strings** → other keys in main table → collapse section hides connection strings. |
+| **Depends on** | CFG-003 |
+
+### CFG-011
+
+| Field | Detail |
+|-------|--------|
+| **ID** | CFG-011 |
+| **Title** | Pinned configuration keys |
+| **Status** | Open |
+| **Description** | Allow users to **pin** frequently checked configuration keys so they always appear at the top of settings tables when the current instance has a value. **Model:** global pinned-key registry in SQLite (e.g. `PinnedConfigurationKey`: `Key`, `DisplayOrder`, `CreatedAt`) — same UX pattern as environment favourites (`TrackedEnvironment.IsFavourite`, `DisplayOrder`). **UI:** pin/unpin control on browse table rows (and optionally from compare); pinned keys sorted first (by `DisplayOrder`, then key name) in browse and compare tables; unpinned keys follow. Keys pinned but absent from the current instance are omitted (not shown as empty rows). **Service:** `IPinnedConfigurationKeyService` CRUD + merge into display ordering. |
+| **Test / demo** | Pin `ConnectionStrings:Default` and `FeatureFlags:NewCheckout` → browse instance with both keys → pinned rows appear at top in display order → unpin one → it returns to alphabetical position in main table. |
+| **Depends on** | CFG-003, ENV-003 |
 

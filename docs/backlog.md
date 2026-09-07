@@ -16,6 +16,10 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
+| CFG-008 | [CFG](tickets/CFG-configuration.md) | **Compare instances** — two deployments of the same application |
+| CFG-009 | [CFG](tickets/CFG-configuration.md) | **Compare applications** — two apps in the same environment |
+| CFG-010 | [CFG](tickets/CFG-configuration.md) | **Connection strings** in separate collapsible table |
+| CFG-011 | [CFG](tickets/CFG-configuration.md) | **Pinned configuration keys** (favourites-style ordering) |
 | PIP-004 | [PIP](tickets/PIP-pipeline-feeds.md) | **Pipeline feeds** derived from deployments and build branch |
 | THM-001 | [THM](tickets/THM-theme.md) | **Global colour scheme** — non-blue buttons, landing page |
 | PKG-003 | [PKG](tickets/PKG-packages.md) | Resolve package by **build number** |
@@ -28,7 +32,7 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 |------|-------------|-------------------|-----------------|---------------|----------|
 | [Theme (THM)](tickets/THM-theme.md) | Global colour scheme | 0 | 0 | 1 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
 | [Packages (PKG)](tickets/PKG-packages.md) | DLL inspection and comparison | 4 | 0 | 5 | 🟩🟩🟩🟩🟩🟩🟩🟩⬜⬜ 80% |
-| [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 5 | 2 | 7 | 🟩🟩🟩🟩🟩🟩🟩⬜⬜⬜ 71% |
+| [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 5 | 2 | 11 | 🟩🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 45% |
 | [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Named pipeline feeds | 2 | 1 | 4 | 🟩🟩🟩🟩🟩⬜⬜⬜⬜⬜ 50% |
 
 *Progress bar: 10 squares — 🟩 completed, 🟨 shelved, ⬜ open; percentage = completed only.*
@@ -38,8 +42,8 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 | TicketId | Epic | Description | Notes |
 |----------|------|-------------|-------|
 | PIP-002 | [PIP](tickets/PIP-pipeline-feeds.md) | Resolve feed from branch name on ApplicationInstance | Shelved — branch rules enforced elsewhere; no pattern matching in DevDash yet |
-| CFG-004 | [CFG](tickets/CFG-configuration.md) | Compare setting by name across apps in one environment | Shelved — compare views deprioritized; per-instance browse (CFG-003) sufficient for now |
-| CFG-005 | [CFG](tickets/CFG-configuration.md) | Compare setting by name for one app across environments | Shelved — compare views deprioritized; per-instance browse (CFG-003) sufficient for now |
+| CFG-004 | [CFG](tickets/CFG-configuration.md) | Compare setting by name across apps in one environment | Shelved — superseded by CFG-009 (full app-to-app compare) |
+| CFG-005 | [CFG](tickets/CFG-configuration.md) | Compare setting by name for one app across environments | Shelved — superseded by CFG-008 (full instance-to-instance compare) |
 
 ## Cancelled
 
