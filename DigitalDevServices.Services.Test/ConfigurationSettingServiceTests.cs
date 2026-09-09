@@ -153,7 +153,38 @@ public sealed class ConfigurationSettingServiceTests
         var result = await fixture.Service.CompareInstancesAsync(instanceA.Id, instanceB.Id);
 
         Assert.IsFalse(result.IsSuccess);
-        StringAssert.Contains(result.ErrorMessage!, "same deployable application");
+        StringAssert.Contains(result.ErrorMessage!, "same deployable application or the same environment");
+    }
+
+    [TestMethod]
+    public async Task CompareInstancesAsync_ComparesDifferentAppsInSameEnvironment()
+    {
+        await using var fixture = await ConfigurationSettingServiceFixture.CreateAsync();
+        var applicationA = await fixture.DeployableApplicationService.CreateAsync("App A");
+        var applicationB = await fixture.DeployableApplicationService.CreateAsync("App B");
+        var environment = await fixture.CreateTrackedEnvironmentAsync(14);
+        var leftInstance = await fixture.CreateApplicationInstanceAsync(applicationA.Id, environment.Id);
+        var rightInstance = await fixture.CreateApplicationInstanceAsync(applicationB.Id, environment.Id);
+
+        await fixture.Service.UpsertAsync(new ConfigurationSettingUpsert
+        {
+            ApplicationInstanceId = leftInstance.Id,
+            Key = "Shared:Key",
+            Value = "left",
+            Source = "appsettings.json"
+        });
+        await fixture.Service.UpsertAsync(new ConfigurationSettingUpsert
+        {
+            ApplicationInstanceId = rightInstance.Id,
+            Key = "Shared:Key",
+            Value = "right",
+            Source = "appsettings.json"
+        });
+
+        var result = await fixture.Service.CompareInstancesAsync(leftInstance.Id, rightInstance.Id);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(ConfigurationComparisonStatus.Mismatch, result.Rows[0].Status);
     }
 
     private sealed class ConfigurationSettingServiceFixture : IAsyncDisposable

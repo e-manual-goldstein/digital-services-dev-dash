@@ -27,7 +27,7 @@
 | [CFG-006](#cfg-006) | Done | Rename section to Configuration Viewer | CFG-003 |
 | [CFG-007](#cfg-007) | Done | Import web.config, app.config, and exe.config | CFG-002 |
 | [CFG-008](#cfg-008) | Done | Compare configuration between two instances of same app | CFG-003, PKG-004 |
-| [CFG-009](#cfg-009) | Open | Compare configuration between two apps in same environment | CFG-003, PKG-005 |
+| [CFG-009](#cfg-009) | Done | Compare configuration between two apps in same environment | CFG-003, PKG-005 |
 | [CFG-010](#cfg-010) | Open | Connection strings in separate collapsible table | CFG-003 |
 | [CFG-011](#cfg-011) | Open | Pinned configuration keys | CFG-003, ENV-003 |
 
@@ -191,10 +191,11 @@ Shelved — compare views deprioritized; per-instance browse (CFG-003) sufficien
 |-------|--------|
 | **ID** | CFG-009 |
 | **Title** | Compare configuration between two apps in same environment |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | Add a **Compare applications** flow to Configuration viewer, mirroring [PKG-005](PKG-packages.md). **Hub:** `/configuration/compare/apps` — pick environment, then Application A and Application B (must be different deployable applications deployed in that environment). **Result view:** same route pattern as PKG-005 compare or dedicated config compare URL with both instance IDs resolved from environment + app selection. Side-by-side grid of setting keys → value in App A vs App B; highlight differences; keys only in one app shown clearly. Same masking, pinning, and connection-string rules as CFG-008/CFG-010/CFG-011. |
 | **Test / demo** | Two apps deployed in UAT-01 with overlapping and distinct keys → compare → shared keys show both values → differing values highlighted. |
 | **Depends on** | CFG-003, PKG-005 |
+| **Implementation** | `/configuration/compare/apps` picker; shared `/configuration/compare/{leftId}/{rightId}` results and `ConfigurationComparisonContent`; `CompareInstancesAsync` accepts same-environment cross-app pairs; hub links for both compare modes. |
 
 ### CFG-010
 

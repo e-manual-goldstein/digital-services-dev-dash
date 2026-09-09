@@ -70,11 +70,26 @@ else
 
             var environments = await EnvironmentService.GetEnvironmentsAsync();
             var environmentsById = environments.ToDictionary(environment => environment.LocalId);
+            var comparesAppsInSameEnvironment = leftInstance.DeployableApplicationId != rightInstance.DeployableApplicationId;
 
-            _subtitle = leftInstance.DeployableApplication.Name;
-            _pageTitle = $"Compare configuration — {leftInstance.DeployableApplication.Name}";
-            _leftColumnLabel = FormatEnvironmentLabel(leftInstance, environmentsById);
-            _rightColumnLabel = FormatEnvironmentLabel(rightInstance, environmentsById);
+            _backLink = comparesAppsInSameEnvironment
+                ? "/configuration/compare/apps"
+                : "/configuration/compare";
+
+            if (comparesAppsInSameEnvironment)
+            {
+                _subtitle = FormatEnvironmentLabel(leftInstance, environmentsById);
+                _pageTitle = "Compare configuration — environment";
+                _leftColumnLabel = leftInstance.DeployableApplication.Name;
+                _rightColumnLabel = rightInstance.DeployableApplication.Name;
+            }
+            else
+            {
+                _subtitle = leftInstance.DeployableApplication.Name;
+                _pageTitle = $"Compare configuration — {leftInstance.DeployableApplication.Name}";
+                _leftColumnLabel = FormatEnvironmentLabel(leftInstance, environmentsById);
+                _rightColumnLabel = FormatEnvironmentLabel(rightInstance, environmentsById);
+            }
         }
         finally
         {
