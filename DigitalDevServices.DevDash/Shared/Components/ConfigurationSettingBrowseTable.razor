@@ -1,0 +1,51 @@
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Key</th>
+                <th>Value</th>
+                <th>Source</th>
+                <th>Captured</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var setting in Settings)
+            {
+                var isMasked = ConfigurationSecretMasker.ShouldMaskKey(setting.Key) && !RevealSecrets;
+                <tr>
+                    <td><code>@setting.Key</code></td>
+                    <td>
+                        @if (isMasked)
+                        {
+                            <span class="text-muted font-monospace">@ConfigurationSecretMasker.GetDisplayValue(setting.Key, setting.Value, RevealSecrets)</span>
+                            <span class="badge bg-secondary ms-1">masked</span>
+                        }
+                        else
+                        {
+                            <code class="text-break">@setting.Value</code>
+                        }
+                    </td>
+                    <td>
+                        @if (string.IsNullOrWhiteSpace(setting.Source))
+                        {
+                            <span class="text-muted">—</span>
+                        }
+                        else
+                        {
+                            @setting.Source
+                        }
+                    </td>
+                    <td class="text-nowrap">@setting.CapturedAt.ToLocalTime().ToString("g")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<ConfigurationSetting> Settings { get; set; } = [];
+
+    [Parameter]
+    public bool RevealSecrets { get; set; }
+}

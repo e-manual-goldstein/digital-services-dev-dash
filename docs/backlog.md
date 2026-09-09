@@ -10,13 +10,12 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~CFG-009~~ | [CFG](tickets/CFG-configuration.md) | **Compare applications** — two apps in the same environment |
+| ~~CFG-010~~ | [CFG](tickets/CFG-configuration.md) | **Connection strings** in separate collapsible table |
 
 ## Active (recommended order)
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| CFG-010 | [CFG](tickets/CFG-configuration.md) | **Connection strings** in separate collapsible table |
 | CFG-011 | [CFG](tickets/CFG-configuration.md) | **Pinned configuration keys** (favourites-style ordering) |
 | PIP-004 | [PIP](tickets/PIP-pipeline-feeds.md) | **Pipeline feeds** derived from deployments and build branch |
 | THM-001 | [THM](tickets/THM-theme.md) | **Global colour scheme** — non-blue buttons, landing page |
@@ -30,7 +29,7 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 |------|-------------|-------------------|-----------------|---------------|----------|
 | [Theme (THM)](tickets/THM-theme.md) | Global colour scheme | 0 | 0 | 1 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
 | [Packages (PKG)](tickets/PKG-packages.md) | DLL inspection and comparison | 4 | 0 | 5 | 🟩🟩🟩🟩🟩🟩🟩🟩⬜⬜ 80% |
-| [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 7 | 2 | 11 | 🟩🟩🟩🟩🟩🟩🟩⬜⬜⬜⬜ 64% |
+| [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 8 | 2 | 11 | 🟩🟩🟩🟩🟩🟩🟩🟩⬜⬜⬜ 73% |
 | [Pipeline Feeds (PIP)](tickets/PIP-pipeline-feeds.md) | Named pipeline feeds | 2 | 1 | 4 | 🟩🟩🟩🟩🟩⬜⬜⬜⬜⬜ 50% |
 
 *Progress bar: 10 squares — 🟩 completed, 🟨 shelved, ⬜ open; percentage = completed only.*

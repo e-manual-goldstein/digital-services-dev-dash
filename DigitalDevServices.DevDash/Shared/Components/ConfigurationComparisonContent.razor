@@ -52,27 +52,45 @@ else if (Result is not null)
                 </p>
             </div>
 
-            <div class="table-responsive">
-                <table class="table table-striped table-hover align-middle package-comparison-table">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Key</th>
-                            <th>@LeftColumnLabel</th>
-                            <th>@RightColumnLabel</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var row in FilteredRows)
-                        {
-                            <tr class="@GetRowClass(row.Status)">
-                                <td><code>@row.Key</code></td>
-                                <td>@RenderValueCell(row.Key, row.LeftValue, row.LeftSource)</td>
-                                <td>@RenderValueCell(row.Key, row.RightValue, row.RightSource)</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+            <div class="mb-4">
+                <CollapsibleSection Title="@GetConnectionStringsSectionTitle()"
+                                    DefaultExpanded="true"
+                                    IsEmpty="@(_connectionStringRows.Count == 0)">
+                    @if (_connectionStringRows.Count == 0)
+                    {
+                        <p class="text-muted mb-0">No connection strings captured.</p>
+                    }
+                    else if (FilteredConnectionStringRows.Count == 0)
+                    {
+                        <p class="text-muted mb-0">No connection strings match the current search.</p>
+                    }
+                    else
+                    {
+                        <ConfigurationComparisonTable Rows="FilteredConnectionStringRows"
+                                                      LeftColumnLabel="@LeftColumnLabel"
+                                                      RightColumnLabel="@RightColumnLabel"
+                                                      RevealSecrets="_revealSecrets" />
+                    }
+                </CollapsibleSection>
             </div>
+
+            @if (FilteredAppSettingRows.Count == 0)
+            {
+                @if (_appSettingRows.Count > 0)
+                {
+                    <div class="alert alert-light border" role="status">
+                        No app settings match the current search.
+                    </div>
+                }
+            }
+            else
+            {
+                <h2 class="h5 mb-3">App settings</h2>
+                <ConfigurationComparisonTable Rows="FilteredAppSettingRows"
+                                              LeftColumnLabel="@LeftColumnLabel"
+                                              RightColumnLabel="@RightColumnLabel"
+                                              RevealSecrets="_revealSecrets" />
+            }
         }
     }
 }
@@ -92,6 +110,12 @@ else if (Result is not null)
 
     private int _differenceCount =>
         Result?.Rows.Count(row => row.Status != ConfigurationComparisonStatus.Match) ?? 0;
+
+    private IReadOnlyList<ConfigurationComparisonRow> _connectionStringRows =>
+        Result?.Rows.Where(row => ConfigurationConnectionStringKey.IsConnectionStringKey(row.Key)).ToList() ?? [];
+
+    private IReadOnlyList<ConfigurationComparisonRow> _appSettingRows =>
+        Result?.Rows.Where(row => !ConfigurationConnectionStringKey.IsConnectionStringKey(row.Key)).ToList() ?? [];
 
     private IReadOnlyList<ConfigurationComparisonRow> FilteredRows
     {
@@ -119,31 +143,15 @@ else if (Result is not null)
         }
     }
 
-    private static string GetRowClass(ConfigurationComparisonStatus status) =>
-        status switch
-        {
-            ConfigurationComparisonStatus.Mismatch => "package-comparison-table__mismatch",
-            ConfigurationComparisonStatus.LeftOnly => "package-comparison-table__left-only",
-            ConfigurationComparisonStatus.RightOnly => "package-comparison-table__right-only",
-            _ => string.Empty
-        };
+    private IReadOnlyList<ConfigurationComparisonRow> FilteredConnectionStringRows =>
+        FilteredRows.Where(row => ConfigurationConnectionStringKey.IsConnectionStringKey(row.Key)).ToList();
 
-    private MarkupString RenderValueCell(string key, string? value, string? source)
+    private IReadOnlyList<ConfigurationComparisonRow> FilteredAppSettingRows =>
+        FilteredRows.Where(row => !ConfigurationConnectionStringKey.IsConnectionStringKey(row.Key)).ToList();
+
+    private string GetConnectionStringsSectionTitle()
     {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return new MarkupString("<span class=\"text-muted\">—</span>");
-        }
-
-        var isMasked = ConfigurationSecretMasker.ShouldMaskKey(key) && !_revealSecrets;
-        var displayValue = ConfigurationSecretMasker.GetDisplayValue(key, value, _revealSecrets);
-        var encodedValue = System.Net.WebUtility.HtmlEncode(displayValue);
-        var sourceMarkup = string.IsNullOrWhiteSpace(source)
-            ? string.Empty
-            : $"<div class=\"text-muted small\">{System.Net.WebUtility.HtmlEncode(source)}</div>";
-        var maskedBadge = isMasked ? "<span class=\"badge bg-secondary ms-1\">masked</span>" : string.Empty;
-
-        return new MarkupString(
-            $"<code class=\"text-break\">{encodedValue}</code>{maskedBadge}{sourceMarkup}");
+        var count = _connectionStringRows.Count;
+        return count == 0 ? "Connection strings" : $"Connection strings ({count})";
     }
 }

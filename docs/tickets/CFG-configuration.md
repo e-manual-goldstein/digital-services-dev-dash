@@ -28,7 +28,7 @@
 | [CFG-007](#cfg-007) | Done | Import web.config, app.config, and exe.config | CFG-002 |
 | [CFG-008](#cfg-008) | Done | Compare configuration between two instances of same app | CFG-003, PKG-004 |
 | [CFG-009](#cfg-009) | Done | Compare configuration between two apps in same environment | CFG-003, PKG-005 |
-| [CFG-010](#cfg-010) | Open | Connection strings in separate collapsible table | CFG-003 |
+| [CFG-010](#cfg-010) | Done | Connection strings in separate collapsible table | CFG-003 |
 | [CFG-011](#cfg-011) | Open | Pinned configuration keys | CFG-003, ENV-003 |
 
 ---
@@ -203,10 +203,11 @@ Shelved — compare views deprioritized; per-instance browse (CFG-003) sufficien
 |-------|--------|
 | **ID** | CFG-010 |
 | **Title** | Connection strings in separate collapsible table |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | On the configuration **browse** view (`/configuration/{instanceId}`) and on compare result views (CFG-008/CFG-009), separate keys whose name starts with `ConnectionStrings:` (case-insensitive) into a dedicated **Connection strings** collapsible section (expanded by default). General app settings remain in the main searchable table. Compare views apply the same split for both sides. Empty connection-string section hidden or shows “No connection strings captured.” |
 | **Test / demo** | Import `samples/config` → browse instance → `ConnectionStrings:Default` appears only under **Connection strings** → other keys in main table → collapse section hides connection strings. |
 | **Depends on** | CFG-003 |
+| **Implementation** | `ConfigurationConnectionStringKey` helper; browse and compare UIs split settings into collapsible **Connection strings** section (default expanded) and **App settings** table; shared `ConfigurationSettingBrowseTable` and `ConfigurationComparisonTable` components. |
 
 ### CFG-011
 
