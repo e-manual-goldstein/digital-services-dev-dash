@@ -9,6 +9,7 @@ public static class ConfigurationServiceCollectionExtensions
     {
         services.AddScoped<IConfigurationSettingService, ConfigurationSettingService>();
         services.AddScoped<IConfigurationImportService, ConfigurationImportService>();
+        services.AddScoped<IPinnedConfigurationKeyService, PinnedConfigurationKeyService>();
 
         return services;
     }

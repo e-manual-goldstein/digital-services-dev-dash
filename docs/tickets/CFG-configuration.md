@@ -29,7 +29,7 @@
 | [CFG-008](#cfg-008) | Done | Compare configuration between two instances of same app | CFG-003, PKG-004 |
 | [CFG-009](#cfg-009) | Done | Compare configuration between two apps in same environment | CFG-003, PKG-005 |
 | [CFG-010](#cfg-010) | Done | Connection strings in separate collapsible table | CFG-003 |
-| [CFG-011](#cfg-011) | Open | Pinned configuration keys | CFG-003, ENV-003 |
+| [CFG-011](#cfg-011) | Done | Pinned configuration keys | CFG-003, ENV-003 |
 
 ---
 
@@ -69,7 +69,7 @@ CFG-008 and CFG-009 supersede the shelved key-by-key compare tickets (CFG-004/CF
 
 ### Pinned keys (CFG-011)
 
-Global pinned configuration keys (stored in SQLite, similar to `TrackedEnvironment.IsFavourite` / `DisplayOrder`). A pinned key appears at the top of any settings table when the current instance has a value for that key. Pin/unpin from the browse view.
+Global pinned configuration keys stored in SQLite (`PinnedConfigurationKey`: `Key`, `DisplayOrder`, `CreatedAt`). Pin/unpin via ★/☆ on browse and compare tables. Pinned keys sort to the top of each settings section (connection strings and app settings) when present on the current instance; absent pinned keys are omitted.
 
 ### Connection strings presentation (CFG-010)
 
@@ -215,8 +215,9 @@ Shelved — compare views deprioritized; per-instance browse (CFG-003) sufficien
 |-------|--------|
 | **ID** | CFG-011 |
 | **Title** | Pinned configuration keys |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | Allow users to **pin** frequently checked configuration keys so they always appear at the top of settings tables when the current instance has a value. **Model:** global pinned-key registry in SQLite (e.g. `PinnedConfigurationKey`: `Key`, `DisplayOrder`, `CreatedAt`) — same UX pattern as environment favourites (`TrackedEnvironment.IsFavourite`, `DisplayOrder`). **UI:** pin/unpin control on browse table rows (and optionally from compare); pinned keys sorted first (by `DisplayOrder`, then key name) in browse and compare tables; unpinned keys follow. Keys pinned but absent from the current instance are omitted (not shown as empty rows). **Service:** `IPinnedConfigurationKeyService` CRUD + merge into display ordering. |
 | **Test / demo** | Pin `ConnectionStrings:Default` and `FeatureFlags:NewCheckout` → browse instance with both keys → pinned rows appear at top in display order → unpin one → it returns to alphabetical position in main table. |
 | **Depends on** | CFG-003, ENV-003 |
+| **Implementation** | `PinnedConfigurationKey` entity + `IPinnedConfigurationKeyService`; `ConfigurationSettingDisplayOrder`; pin column (★/☆) on browse and compare tables; ordering applied within connection-string and app-settings sections. |
 

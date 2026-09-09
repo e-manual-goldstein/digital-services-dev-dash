@@ -22,6 +22,8 @@ public class DevDashDbContext : DbContext
 
     public DbSet<ConfigurationSetting> ConfigurationSettings => Set<ConfigurationSetting>();
 
+    public DbSet<PinnedConfigurationKey> PinnedConfigurationKeys => Set<PinnedConfigurationKey>();
+
     public DbSet<GitRepository> GitRepositories => Set<GitRepository>();
 
     public DbSet<ArtifactComponent> ArtifactComponents => Set<ArtifactComponent>();
@@ -125,6 +127,16 @@ public class DevDashDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.ApplicationInstanceId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PinnedConfigurationKey>(entity =>
+        {
+            entity.ToTable("PinnedConfigurationKeys");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Key).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.DisplayOrder).IsRequired();
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.HasIndex(e => e.Key).IsUnique();
         });
 
         modelBuilder.Entity<GitRepository>(entity =>

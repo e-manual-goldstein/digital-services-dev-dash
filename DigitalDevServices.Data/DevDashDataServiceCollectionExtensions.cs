@@ -32,6 +32,7 @@ public static class DevDashDataServiceCollectionExtensions
         EnsureApplicationInstancesHomepageUrlIsManualColumnExists(db);
         EnsureLogFormatProfilesTableExists(db);
         EnsureConfigurationSettingsTableExists(db);
+        EnsurePinnedConfigurationKeysTableExists(db);
         EnsureTrackedEnvironmentsIsFavouriteColumnExists(db);
         EnsureTrackedEnvironmentsDisplayOrderColumnExists(db);
         EnsureDeployableApplicationsPathToLogFilesColumnExists(db);
@@ -170,6 +171,23 @@ public static class DevDashDataServiceCollectionExtensions
         db.Database.ExecuteSqlRaw("""
             CREATE UNIQUE INDEX IF NOT EXISTS "IX_ConfigurationSettings_ApplicationInstanceId_Key"
             ON "ConfigurationSettings" ("ApplicationInstanceId", "Key");
+            """);
+    }
+
+    private static void EnsurePinnedConfigurationKeysTableExists(DevDashDbContext db)
+    {
+        db.Database.ExecuteSqlRaw("""
+            CREATE TABLE IF NOT EXISTS "PinnedConfigurationKeys" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_PinnedConfigurationKeys" PRIMARY KEY,
+                "Key" TEXT NOT NULL,
+                "DisplayOrder" INTEGER NOT NULL,
+                "CreatedAt" TEXT NOT NULL
+            );
+            """);
+
+        db.Database.ExecuteSqlRaw("""
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_PinnedConfigurationKeys_Key"
+            ON "PinnedConfigurationKeys" ("Key");
             """);
     }
 

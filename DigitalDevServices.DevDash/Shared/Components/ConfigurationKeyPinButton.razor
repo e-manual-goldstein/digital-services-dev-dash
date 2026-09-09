@@ -1,0 +1,22 @@
+<button type="button"
+        class="btn btn-sm btn-link @(IsPinned ? "text-warning" : "text-secondary") p-0"
+        title="@(IsPinned ? "Unpin key" : "Pin key")"
+        aria-label="@(IsPinned ? "Unpin key" : "Pin key")"
+        disabled="@(IsBusy)"
+        @onclick="() => OnToggle.InvokeAsync(Key)">
+    @(IsPinned ? "★" : "☆")
+</button>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Key { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool IsPinned { get; set; }
+
+    [Parameter]
+    public bool IsBusy { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnToggle { get; set; }
+}

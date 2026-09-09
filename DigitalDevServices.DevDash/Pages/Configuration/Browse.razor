@@ -3,6 +3,7 @@
 @inject IApplicationInstanceService InstanceService
 @inject IConfigurationSettingService ConfigurationSettingService
 @inject IConfigurationImportService ConfigurationImportService
+@inject IPinnedConfigurationKeyService PinnedConfigurationKeyService
 @inject NotificationService NotificationService
 
 <PageTitle>@_pageTitle</PageTitle>
@@ -130,7 +131,10 @@ else
                 else
                 {
                     <ConfigurationSettingBrowseTable Settings="filteredConnectionStrings"
-                                                       RevealSecrets="_revealSecrets" />
+                                                       RevealSecrets="_revealSecrets"
+                                                       PinnedKeys="_pinnedKeyNames"
+                                                       IsPinBusy="_isPinBusy"
+                                                       OnTogglePin="TogglePinAsync" />
                 }
             </CollapsibleSection>
         </div>
@@ -148,7 +152,10 @@ else
         {
             <h2 class="h5 mb-3">App settings</h2>
             <ConfigurationSettingBrowseTable Settings="filteredAppSettings"
-                                               RevealSecrets="_revealSecrets" />
+                                               RevealSecrets="_revealSecrets"
+                                               PinnedKeys="_pinnedKeyNames"
+                                               IsPinBusy="_isPinBusy"
+                                               OnTogglePin="TogglePinAsync" />
         }
     }
 }
@@ -160,11 +167,14 @@ else
     private CachedEnvironment? _environment;
     private ApplicationInstance? _instance;
     private IReadOnlyList<ConfigurationSetting> _settings = [];
+    private IReadOnlyList<PinnedConfigurationKey> _pinnedKeys = [];
+    private IReadOnlySet<string> _pinnedKeyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     private string _searchText = string.Empty;
     private bool _revealSecrets;
     private bool _isLoading = true;
     private bool _isBusy;
     private bool _isRefreshing;
+    private bool _isPinBusy;
     private string? _errorMessage;
     private string? _refreshMessage;
     private string _pageTitle = "Configuration viewer";
@@ -198,10 +208,14 @@ else
         _settings.Where(setting => !ConfigurationConnectionStringKey.IsConnectionStringKey(setting.Key)).ToList();
 
     private IReadOnlyList<ConfigurationSetting> FilteredConnectionStringSettings =>
-        FilteredSettings.Where(setting => ConfigurationConnectionStringKey.IsConnectionStringKey(setting.Key)).ToList();
+        ConfigurationSettingDisplayOrder.SortSettings(
+            FilteredSettings.Where(setting => ConfigurationConnectionStringKey.IsConnectionStringKey(setting.Key)),
+            _pinnedKeys);
 
     private IReadOnlyList<ConfigurationSetting> FilteredAppSettings =>
-        FilteredSettings.Where(setting => !ConfigurationConnectionStringKey.IsConnectionStringKey(setting.Key)).ToList();
+        ConfigurationSettingDisplayOrder.SortSettings(
+            FilteredSettings.Where(setting => !ConfigurationConnectionStringKey.IsConnectionStringKey(setting.Key)),
+            _pinnedKeys);
 
     private string GetConnectionStringsSectionTitle()
     {
@@ -235,6 +249,7 @@ else
             _environment = await EnvironmentService.GetTrackedEnvironmentAsync(_instance.EnvironmentId);
             _pageTitle = $"Configuration viewer — {_instance.DeployableApplication.Name}";
             _settings = await ConfigurationSettingService.GetByApplicationInstanceIdAsync(InstanceId);
+            await LoadPinnedKeysAsync();
         }
         catch (Exception ex)
         {
@@ -279,6 +294,39 @@ else
         {
             _isRefreshing = false;
             _isBusy = false;
+        }
+    }
+
+    private async Task LoadPinnedKeysAsync()
+    {
+        _pinnedKeys = await PinnedConfigurationKeyService.GetAllAsync();
+        _pinnedKeyNames = new HashSet<string>(_pinnedKeys.Select(pinnedKey => pinnedKey.Key), StringComparer.OrdinalIgnoreCase);
+    }
+
+    private async Task TogglePinAsync(string key)
+    {
+        _isPinBusy = true;
+
+        try
+        {
+            if (_pinnedKeyNames.Contains(key))
+            {
+                await PinnedConfigurationKeyService.UnpinAsync(key);
+            }
+            else
+            {
+                await PinnedConfigurationKeyService.PinAsync(key);
+            }
+
+            await LoadPinnedKeysAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isPinBusy = false;
         }
     }
 }

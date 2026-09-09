@@ -2,6 +2,7 @@
     <table class="table table-striped table-hover align-middle">
         <thead class="table-light">
             <tr>
+                <th class="text-center" style="width: 3rem;">Pin</th>
                 <th>Key</th>
                 <th>Value</th>
                 <th>Source</th>
@@ -12,7 +13,14 @@
             @foreach (var setting in Settings)
             {
                 var isMasked = ConfigurationSecretMasker.ShouldMaskKey(setting.Key) && !RevealSecrets;
+                var isPinned = IsPinned(setting.Key);
                 <tr>
+                    <td class="text-center">
+                        <ConfigurationKeyPinButton Key="@setting.Key"
+                                                   IsPinned="isPinned"
+                                                   IsBusy="IsPinBusy"
+                                                   OnToggle="OnTogglePin" />
+                    </td>
                     <td><code>@setting.Key</code></td>
                     <td>
                         @if (isMasked)
@@ -48,4 +56,16 @@
 
     [Parameter]
     public bool RevealSecrets { get; set; }
+
+    [Parameter]
+    public IReadOnlySet<string> PinnedKeys { get; set; } = new HashSet<string>();
+
+    [Parameter]
+    public bool IsPinBusy { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnTogglePin { get; set; }
+
+    private bool IsPinned(string key) =>
+        PinnedKeys.Contains(key);
 }

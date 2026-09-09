@@ -1,3 +1,5 @@
+@inject IPinnedConfigurationKeyService PinnedConfigurationKeyService
+
 @if (!string.IsNullOrWhiteSpace(Result?.ErrorMessage))
 {
     <div class="alert alert-warning" role="alert">@Result.ErrorMessage</div>
@@ -69,7 +71,10 @@ else if (Result is not null)
                         <ConfigurationComparisonTable Rows="FilteredConnectionStringRows"
                                                       LeftColumnLabel="@LeftColumnLabel"
                                                       RightColumnLabel="@RightColumnLabel"
-                                                      RevealSecrets="_revealSecrets" />
+                                                      RevealSecrets="_revealSecrets"
+                                                      PinnedKeys="_pinnedKeyNames"
+                                                      IsPinBusy="_isPinBusy"
+                                                      OnTogglePin="TogglePinAsync" />
                     }
                 </CollapsibleSection>
             </div>
@@ -89,7 +94,10 @@ else if (Result is not null)
                 <ConfigurationComparisonTable Rows="FilteredAppSettingRows"
                                               LeftColumnLabel="@LeftColumnLabel"
                                               RightColumnLabel="@RightColumnLabel"
-                                              RevealSecrets="_revealSecrets" />
+                                              RevealSecrets="_revealSecrets"
+                                              PinnedKeys="_pinnedKeyNames"
+                                              IsPinBusy="_isPinBusy"
+                                              OnTogglePin="TogglePinAsync" />
             }
         }
     }
@@ -107,6 +115,14 @@ else if (Result is not null)
 
     private string _searchText = string.Empty;
     private bool _revealSecrets;
+    private bool _isPinBusy;
+    private IReadOnlyList<PinnedConfigurationKey> _pinnedKeys = [];
+    private IReadOnlySet<string> _pinnedKeyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadPinnedKeysAsync();
+    }
 
     private int _differenceCount =>
         Result?.Rows.Count(row => row.Status != ConfigurationComparisonStatus.Match) ?? 0;
@@ -144,14 +160,47 @@ else if (Result is not null)
     }
 
     private IReadOnlyList<ConfigurationComparisonRow> FilteredConnectionStringRows =>
-        FilteredRows.Where(row => ConfigurationConnectionStringKey.IsConnectionStringKey(row.Key)).ToList();
+        ConfigurationSettingDisplayOrder.SortComparisonRows(
+            FilteredRows.Where(row => ConfigurationConnectionStringKey.IsConnectionStringKey(row.Key)),
+            _pinnedKeys);
 
     private IReadOnlyList<ConfigurationComparisonRow> FilteredAppSettingRows =>
-        FilteredRows.Where(row => !ConfigurationConnectionStringKey.IsConnectionStringKey(row.Key)).ToList();
+        ConfigurationSettingDisplayOrder.SortComparisonRows(
+            FilteredRows.Where(row => !ConfigurationConnectionStringKey.IsConnectionStringKey(row.Key)),
+            _pinnedKeys);
 
     private string GetConnectionStringsSectionTitle()
     {
         var count = _connectionStringRows.Count;
         return count == 0 ? "Connection strings" : $"Connection strings ({count})";
+    }
+
+    private async Task LoadPinnedKeysAsync()
+    {
+        _pinnedKeys = await PinnedConfigurationKeyService.GetAllAsync();
+        _pinnedKeyNames = new HashSet<string>(_pinnedKeys.Select(pinnedKey => pinnedKey.Key), StringComparer.OrdinalIgnoreCase);
+    }
+
+    private async Task TogglePinAsync(string key)
+    {
+        _isPinBusy = true;
+
+        try
+        {
+            if (_pinnedKeyNames.Contains(key))
+            {
+                await PinnedConfigurationKeyService.UnpinAsync(key);
+            }
+            else
+            {
+                await PinnedConfigurationKeyService.PinAsync(key);
+            }
+
+            await LoadPinnedKeysAsync();
+        }
+        finally
+        {
+            _isPinBusy = false;
+        }
     }
 }
