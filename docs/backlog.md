@@ -10,7 +10,10 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~COV-005~~ | [COV](tickets/COV-coverlet-viewer.md) | Row **selection**, batch **Hide**, **Show hidden** |
+| ~~COV-009~~ | [COV](tickets/COV-coverlet-viewer.md) | **Class summary** by module (dropdown) |
+| ~~COV-008~~ | [COV](tickets/COV-coverlet-viewer.md) | **Modules summary** collapsible report |
+| ~~COV-007~~ | [COV](tickets/COV-coverlet-viewer.md) | Results table layout; drop **File** column |
+| ~~COV-006~~ | [COV](tickets/COV-coverlet-viewer.md) | Collapsible **Method results** section |
 
 ## Active (recommended order)
 
@@ -66,7 +69,7 @@ Unprioritized — not in the active queue. See [IDE-ideas.md](tickets/IDE-ideas.
 | [Foundation (FND)](tickets/FND-foundation.md) | Blazor skeleton and layout | FND-001 – FND-002 |
 | [Git History (GTH)](tickets/GTH-git-history.md) | Azure DevOps repository migration history | GTH-001 |
 | [Applications (APP)](tickets/APP-applications.md) | Deployable app vs instance | APP-001 – APP-007 |
-| [Coverlet Viewer (COV)](tickets/COV-coverlet-viewer.md) | Coverlet JSON coverage upload and table | COV-001 – COV-005 |
+| [Coverlet Viewer (COV)](tickets/COV-coverlet-viewer.md) | Coverlet JSON coverage upload and table | COV-001 – COV-009 |
 
 *LOG, ENV, GTH, APP, and COV epics complete — see [Completed epics](#completed-epics-100).*
 

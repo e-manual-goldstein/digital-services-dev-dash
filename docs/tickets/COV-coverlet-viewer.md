@@ -24,6 +24,10 @@
 | [COV-003](#cov-003) | Done | Coverage results table (single view) | COV-002 |
 | [COV-004](#cov-004) | Done | Column-header filters on results table | COV-003 |
 | [COV-005](#cov-005) | Done | Row selection, batch Hide, and Show hidden toggle | COV-004 |
+| [COV-006](#cov-006) | Done | Collapsible **Method results** section | COV-005 |
+| [COV-007](#cov-007) | Done | Results table column layout; drop **File** column | COV-006 |
+| [COV-008](#cov-008) | Done | **Modules summary** collapsible report | COV-005 |
+| [COV-009](#cov-009) | Done | **Class summary** by module (dropdown) | COV-008 |
 
 ---
 
@@ -51,7 +55,9 @@ No new SQLite tables for COV v1.
 | Area | Behaviour |
 |------|-----------|
 | **Hub** | `/coverlet-viewer` — title **Coverlet Viewer**, short description, file upload (`InputFile`), optional summary stats after load |
-| **Results** | Single table below upload (no tabs in v1) |
+| **Modules summary** | Collapsible section (default collapsed) — module name, class count, method count, aggregated line % for rows **not hidden** |
+| **Class summary** | Collapsible section (default collapsed) — module dropdown (same module list as modules summary), then class / method count / line % per class |
+| **Method results** | Main filterable table inside a collapsible section (default expanded) |
 | **Table toolbar** | Above table, **right-aligned**: checkbox **Show hidden** — when unchecked, rows the user hid are omitted; when checked, hidden rows appear (visually distinct optional) |
 | **Table columns** | Data columns from coverage model + leading **Select** column with checkbox per row for bulk actions |
 | **Column filters** | Filter controls live **in the column headers** (e.g. text contains, numeric min/max, or enum where appropriate) — each column that is filterable exposes its control in `<thead>` |
@@ -137,3 +143,51 @@ No new SQLite tables for COV v1.
 | **Test / demo** | Select several rows → **Hide** → rows disappear → enable **Show hidden** → rows reappear → upload new file → hidden state cleared. |
 | **Depends on** | COV-004 |
 | **Implementation** | `CoverletCoverageRowVisibility`; header select-all-visible; **Hide** bulk action; **Show hidden** toggle; hidden row styling; state cleared on new upload. |
+
+### COV-006
+
+| Field | Detail |
+|-------|--------|
+| **ID** | COV-006 |
+| **Title** | Collapsible method results section |
+| **Status** | Done |
+| **Description** | Wrap the main coverage results table in `CollapsibleSection` (default expanded). Title includes parsed method row count. |
+| **Test / demo** | Upload JSON → expand/collapse **Method results** → table and filters remain functional. |
+| **Depends on** | COV-005 |
+| **Implementation** | `Index.razor` — `CollapsibleSection` around `CoverletCoverageResultsTable`. |
+
+### COV-007
+
+| Field | Detail |
+|-------|--------|
+| **ID** | COV-007 |
+| **Title** | Results table column layout (remove File column) |
+| **Status** | Done |
+| **Description** | Fix column widths with `table-layout: fixed` and `colgroup`. Remove **File** column and file header filter from the method table (source file still parsed for legacy JSON). Truncate long module/class/method cells with `title` tooltip. |
+| **Test / demo** | Wide assembly names → columns stay aligned → hover shows full name. |
+| **Depends on** | COV-006 |
+| **Implementation** | `site.css` coverlet table styles; `CoverletCoverageResultsTable.razor`; `CoverletCoverageFilterState` without file filter. |
+
+### COV-008
+
+| Field | Detail |
+|-------|--------|
+| **ID** | COV-008 |
+| **Title** | Modules summary report |
+| **Status** | Done |
+| **Description** | Collapsible **Modules summary** (default collapsed). Table: module name, number of classes, number of methods, aggregated line coverage %. Counts and percentages use method rows that are **not hidden** (ignore **Show hidden** on the main table). |
+| **Test / demo** | Hide methods in a module → modules summary updates → expand section → line % reflects visible rows only. |
+| **Depends on** | COV-005 |
+| **Implementation** | `CoverletCoverageSummaryBuilder`, `CoverletModuleSummaryRow`, `CoverletCoverageModulesSummaryTable`. |
+
+### COV-009
+
+| Field | Detail |
+|-------|--------|
+| **ID** | COV-009 |
+| **Title** | Class summary by module |
+| **Status** | Done |
+| **Description** | Collapsible **Class summary** (default collapsed). Module `<select>` options match modules summary. Table: class name, method count, line coverage % for non-hidden rows in the selected module. |
+| **Test / demo** | Change module dropdown → class rows update → hide a method → class and module summaries shrink accordingly. |
+| **Depends on** | COV-008 |
+| **Implementation** | `CoverletClassSummaryRow`, `CoverletCoverageClassSummaryTable`. |

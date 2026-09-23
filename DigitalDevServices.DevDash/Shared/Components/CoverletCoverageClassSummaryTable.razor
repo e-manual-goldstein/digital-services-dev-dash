@@ -1,0 +1,91 @@
+<div class="mb-3">
+    <label class="form-label" for="coverlet-class-summary-module">Module</label>
+    <select id="coverlet-class-summary-module"
+            class="form-select form-select-sm"
+            @bind="_selectedModule">
+        @foreach (var module in ModuleSummaries)
+        {
+            <option value="@module.ModuleName">@module.ModuleName</option>
+        }
+    </select>
+</div>
+
+@if (ModuleSummaries.Count == 0)
+{
+    <p class="text-muted mb-0">No modules with visible method rows.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm table-striped align-middle coverlet-summary-table">
+            <colgroup>
+                <col class="coverlet-summary-table__class" />
+                <col class="coverlet-summary-table__count" />
+                <col class="coverlet-summary-table__percent" />
+            </colgroup>
+            <thead class="table-light">
+                <tr>
+                    <th>Class name</th>
+                    <th class="text-end">Methods</th>
+                    <th class="text-end">Line coverage</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (ClassSummaries.Count == 0)
+                {
+                    <tr>
+                        <td colspan="3" class="text-muted text-center py-3">No classes in the selected module.</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var row in ClassSummaries)
+                    {
+                        <tr>
+                            <td><code class="coverlet-cell-truncate" title="@row.ClassName">@row.ClassName</code></td>
+                            <td class="text-end">@row.MethodCount</td>
+                            <td class="text-end text-nowrap">@FormatPercent(row.LineCoveragePercent)</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public IReadOnlyList<CoverletCoverageRow> Rows { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlySet<string> HiddenRowKeys { get; set; } = new HashSet<string>(StringComparer.Ordinal);
+
+    private string? _selectedModule;
+
+    private IReadOnlyList<CoverletModuleSummaryRow> ModuleSummaries =>
+        CoverletCoverageSummaryBuilder.BuildModuleSummaries(Rows, HiddenRowKeys);
+
+    private IReadOnlyList<CoverletClassSummaryRow> ClassSummaries =>
+        string.IsNullOrWhiteSpace(_selectedModule)
+            ? []
+            : CoverletCoverageSummaryBuilder.BuildClassSummaries(Rows, HiddenRowKeys, _selectedModule);
+
+    protected override void OnParametersSet()
+    {
+        var modules = ModuleSummaries;
+        if (modules.Count == 0)
+        {
+            _selectedModule = null;
+            return;
+        }
+
+        if (_selectedModule is null
+            || !modules.Any(module =>
+                string.Equals(module.ModuleName, _selectedModule, StringComparison.OrdinalIgnoreCase)))
+        {
+            _selectedModule = modules[0].ModuleName;
+        }
+    }
+
+    private static string FormatPercent(decimal value) => $"{value:0.##}%";
+}

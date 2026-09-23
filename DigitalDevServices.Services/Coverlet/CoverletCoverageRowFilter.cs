@@ -18,11 +18,6 @@ public static class CoverletCoverageRowFilter
             return false;
         }
 
-        if (!ContainsIgnoreCase(row.SourceFile, filters.SourceFileContains))
-        {
-            return false;
-        }
-
         if (!ContainsIgnoreCase(row.ClassName, filters.ClassContains))
         {
             return false;

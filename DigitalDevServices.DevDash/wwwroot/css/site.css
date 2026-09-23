@@ -251,6 +251,60 @@ code {
     background-color: #f8d7da;
 }
 
+.coverlet-coverage-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.coverlet-coverage-table__select {
+    width: 2.75rem;
+}
+
+.coverlet-coverage-table__module {
+    width: 22%;
+}
+
+.coverlet-coverage-table__class {
+    width: 22%;
+}
+
+.coverlet-coverage-table__method {
+    width: 28%;
+}
+
+.coverlet-coverage-table__metric {
+    width: 6.5%;
+}
+
+.coverlet-summary-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.coverlet-summary-table__module {
+    width: 55%;
+}
+
+.coverlet-summary-table__class {
+    width: 60%;
+}
+
+.coverlet-summary-table__count {
+    width: 15%;
+}
+
+.coverlet-summary-table__percent {
+    width: 15%;
+}
+
+.coverlet-cell-truncate {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
 .coverlet-coverage-table__hidden > td {
     opacity: 0.65;
 }

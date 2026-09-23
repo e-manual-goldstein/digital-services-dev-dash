@@ -59,14 +59,37 @@ else if (_parseResult is { IsSuccess: true } result)
         </div>
     </div>
 
-    <h2 class="h5 mb-3">Results</h2>
-    <CoverletCoverageResultsTable Rows="result.Rows"
-                                   SelectedRowKeys="_selectedRowKeys"
-                                   SelectedRowKeysChanged="OnSelectedRowKeysChanged"
-                                   HiddenRowKeys="_hiddenRowKeys"
-                                   HiddenRowKeysChanged="OnHiddenRowKeysChanged"
-                                   ShowHidden="_showHidden"
-                                   ShowHiddenChanged="OnShowHiddenChanged" />
+    <div class="mb-4">
+        <CollapsibleSection Title="@GetModulesSummaryTitle()"
+                            DefaultExpanded="false"
+                            IsEmpty="@(result.Rows.Count == 0)">
+            <CoverletCoverageModulesSummaryTable Rows="result.Rows"
+                                                 HiddenRowKeys="_hiddenRowKeys" />
+        </CollapsibleSection>
+    </div>
+
+    <div class="mb-4">
+        <CollapsibleSection Title="Class summary"
+                            DefaultExpanded="false"
+                            IsEmpty="@(result.Rows.Count == 0)">
+            <CoverletCoverageClassSummaryTable Rows="result.Rows"
+                                               HiddenRowKeys="_hiddenRowKeys" />
+        </CollapsibleSection>
+    </div>
+
+    <div class="mb-4">
+        <CollapsibleSection Title="@GetResultsSectionTitle(result.Rows.Count)"
+                            DefaultExpanded="true"
+                            IsEmpty="@(result.Rows.Count == 0)">
+            <CoverletCoverageResultsTable Rows="result.Rows"
+                                           SelectedRowKeys="_selectedRowKeys"
+                                           SelectedRowKeysChanged="OnSelectedRowKeysChanged"
+                                           HiddenRowKeys="_hiddenRowKeys"
+                                           HiddenRowKeysChanged="OnHiddenRowKeysChanged"
+                                           ShowHidden="_showHidden"
+                                           ShowHiddenChanged="OnShowHiddenChanged" />
+        </CollapsibleSection>
+    </div>
 }
 else
 {
@@ -156,4 +179,14 @@ else
     }
 
     private static string FormatPercent(decimal value) => $"{value:0.##}%";
+
+    private string GetModulesSummaryTitle()
+    {
+        var moduleCount = CoverletCoverageSummaryBuilder
+            .BuildModuleSummaries(_parseResult?.Rows ?? [], _hiddenRowKeys)
+            .Count;
+        return $"Modules summary ({moduleCount})";
+    }
+
+    private static string GetResultsSectionTitle(int rowCount) => $"Method results ({rowCount})";
 }

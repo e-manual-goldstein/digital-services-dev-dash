@@ -4,8 +4,6 @@ public class CoverletCoverageFilterState
 {
     public string ModuleContains { get; init; } = string.Empty;
 
-    public string SourceFileContains { get; init; } = string.Empty;
-
     public string ClassContains { get; init; } = string.Empty;
 
     public string MethodContains { get; init; } = string.Empty;
@@ -20,7 +18,6 @@ public class CoverletCoverageFilterState
 
     public bool HasActiveFilters =>
         !string.IsNullOrWhiteSpace(ModuleContains)
-        || !string.IsNullOrWhiteSpace(SourceFileContains)
         || !string.IsNullOrWhiteSpace(ClassContains)
         || !string.IsNullOrWhiteSpace(MethodContains)
         || MinLineCoveragePercent is not null

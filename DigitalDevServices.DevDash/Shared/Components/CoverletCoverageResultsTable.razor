@@ -34,17 +34,26 @@
 </div>
 
 <div class="table-responsive">
-    <table class="table table-striped table-hover align-middle">
+    <table class="table table-striped table-hover align-middle coverlet-coverage-table">
+        <colgroup>
+            <col class="coverlet-coverage-table__select" />
+            <col class="coverlet-coverage-table__module" />
+            <col class="coverlet-coverage-table__class" />
+            <col class="coverlet-coverage-table__method" />
+            <col class="coverlet-coverage-table__metric" />
+            <col class="coverlet-coverage-table__metric" />
+            <col class="coverlet-coverage-table__metric" />
+            <col class="coverlet-coverage-table__metric" />
+        </colgroup>
         <thead class="table-light">
             <tr>
-                <th class="text-center" style="width: 3rem;">
+                <th class="text-center">
                     <input type="checkbox"
                            class="form-check-input"
                            checked="@IsAllVisibleSelected"
                            @onchange="ToggleSelectAllVisibleAsync" />
                 </th>
                 <th>Module</th>
-                <th>File</th>
                 <th>Class</th>
                 <th>Method</th>
                 <th class="text-end">Line %</th>
@@ -60,14 +69,6 @@
                            class="form-control form-control-sm"
                            placeholder="Contains"
                            @bind="_moduleFilter"
-                           @bind:event="oninput" />
-                </th>
-                <th>
-                    <label class="visually-hidden" for="coverlet-filter-file">Filter file</label>
-                    <input id="coverlet-filter-file"
-                           class="form-control form-control-sm"
-                           placeholder="Contains"
-                           @bind="_sourceFileFilter"
                            @bind:event="oninput" />
                 </th>
                 <th>
@@ -124,7 +125,7 @@
             @if (VisibleRows.Count == 0)
             {
                 <tr>
-                    <td colspan="9" class="text-muted text-center py-4">No rows match the current filters and visibility.</td>
+                    <td colspan="8" class="text-muted text-center py-4">No rows match the current filters and visibility.</td>
                 </tr>
             }
             else
@@ -140,24 +141,14 @@
                                    @onchange="eventArgs => ToggleSelectionAsync(row.RowKey, eventArgs)" />
                         </td>
                         <td>
-                            <code class="text-break">@row.Module</code>
+                            <code class="coverlet-cell-truncate" title="@row.Module">@row.Module</code>
                             @if (isHidden)
                             {
                                 <span class="badge bg-secondary ms-1">hidden</span>
                             }
                         </td>
-                        <td>
-                            @if (string.IsNullOrWhiteSpace(row.SourceFile))
-                            {
-                                <span class="text-muted">—</span>
-                            }
-                            else
-                            {
-                                <code class="text-break">@row.SourceFile</code>
-                            }
-                        </td>
-                        <td><code class="text-break">@row.ClassName</code></td>
-                        <td><code class="text-break">@row.MethodName</code></td>
+                        <td><code class="coverlet-cell-truncate" title="@row.ClassName">@row.ClassName</code></td>
+                        <td><code class="coverlet-cell-truncate" title="@row.MethodName">@row.MethodName</code></td>
                         <td class="text-end text-nowrap">@FormatPercent(row.LineCoveragePercent)</td>
                         <td class="text-end text-nowrap">@row.CoveredLines / @row.CoverableLines</td>
                         <td class="text-end text-nowrap">@FormatPercent(row.BranchCoveragePercent)</td>
@@ -192,7 +183,6 @@
     public EventCallback<bool> ShowHiddenChanged { get; set; }
 
     private string _moduleFilter = string.Empty;
-    private string _sourceFileFilter = string.Empty;
     private string _classFilter = string.Empty;
     private string _methodFilter = string.Empty;
     private string _minLineCoverageText = string.Empty;
@@ -203,7 +193,6 @@
     private CoverletCoverageFilterState FilterState => new()
     {
         ModuleContains = _moduleFilter,
-        SourceFileContains = _sourceFileFilter,
         ClassContains = _classFilter,
         MethodContains = _methodFilter,
         MinLineCoveragePercent = ParseOptionalDecimal(_minLineCoverageText),
@@ -226,7 +215,6 @@
     private void ClearFilters()
     {
         _moduleFilter = string.Empty;
-        _sourceFileFilter = string.Empty;
         _classFilter = string.Empty;
         _methodFilter = string.Empty;
         _minLineCoverageText = string.Empty;
