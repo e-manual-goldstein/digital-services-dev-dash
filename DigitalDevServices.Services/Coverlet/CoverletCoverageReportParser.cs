@@ -5,6 +5,8 @@ namespace DigitalDevServices.Services.Coverlet;
 
 public sealed class CoverletCoverageReportParser : ICoverletCoverageReportParser
 {
+    private static readonly string[] ModuleMetadataPropertyNames = ["Summary", "Classes"];
+
     public CoverletCoverageParseResult Parse(string json)
     {
         if (string.IsNullOrWhiteSpace(json))
@@ -34,9 +36,18 @@ public sealed class CoverletCoverageReportParser : ICoverletCoverageReportParser
 
         foreach (var moduleProperty in root.EnumerateObject())
         {
-            if (!TryParseModule(moduleProperty.Name, moduleProperty.Value, rows))
+            if (moduleProperty.Value.ValueKind != JsonValueKind.Object)
             {
                 continue;
+            }
+
+            if (HasPropertyIgnoreCase(moduleProperty.Value, "Classes"))
+            {
+                ParseModernModule(moduleProperty.Name, moduleProperty.Value, rows);
+            }
+            else
+            {
+                ParseLegacyModule(moduleProperty.Name, moduleProperty.Value, rows);
             }
         }
 
@@ -52,33 +63,108 @@ public sealed class CoverletCoverageReportParser : ICoverletCoverageReportParser
         };
     }
 
-    private static bool TryParseModule(string moduleName, JsonElement moduleElement, List<CoverletCoverageRow> rows)
+    private static void ParseModernModule(string moduleName, JsonElement moduleElement, List<CoverletCoverageRow> rows)
     {
-        if (moduleElement.ValueKind != JsonValueKind.Object)
+        if (!TryGetPropertyIgnoreCase(moduleElement, "Classes", out var classesElement)
+            || classesElement.ValueKind != JsonValueKind.Object)
         {
-            return false;
-        }
-
-        if (!moduleElement.TryGetProperty("Classes", out var classesElement)
-            && !TryGetPropertyIgnoreCase(moduleElement, "Classes", out classesElement))
-        {
-            return false;
-        }
-
-        if (classesElement.ValueKind != JsonValueKind.Object)
-        {
-            return false;
+            return;
         }
 
         foreach (var classProperty in classesElement.EnumerateObject())
         {
-            ParseClass(moduleName, classProperty.Name, classProperty.Value, rows);
+            ParseModernClass(moduleName, classProperty.Name, classProperty.Value, rows);
         }
-
-        return true;
     }
 
-    private static void ParseClass(
+    private static void ParseLegacyModule(string moduleName, JsonElement moduleElement, List<CoverletCoverageRow> rows)
+    {
+        foreach (var fileProperty in moduleElement.EnumerateObject())
+        {
+            if (IsMetadataProperty(fileProperty.Name))
+            {
+                continue;
+            }
+
+            if (fileProperty.Value.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            ParseLegacyFile(moduleName, fileProperty.Name, fileProperty.Value, rows);
+        }
+    }
+
+    private static void ParseLegacyFile(
+        string moduleName,
+        string sourceFile,
+        JsonElement fileElement,
+        List<CoverletCoverageRow> rows)
+    {
+        foreach (var typeProperty in fileElement.EnumerateObject())
+        {
+            if (IsMetadataProperty(typeProperty.Name))
+            {
+                continue;
+            }
+
+            if (typeProperty.Value.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            ParseLegacyType(moduleName, sourceFile, typeProperty.Name, typeProperty.Value, rows);
+        }
+    }
+
+    private static void ParseLegacyType(
+        string moduleName,
+        string sourceFile,
+        string typeName,
+        JsonElement typeElement,
+        List<CoverletCoverageRow> rows)
+    {
+        foreach (var methodProperty in typeElement.EnumerateObject())
+        {
+            if (IsMetadataProperty(methodProperty.Name))
+            {
+                continue;
+            }
+
+            if (methodProperty.Value.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            if (!TryGetPropertyIgnoreCase(methodProperty.Value, "Lines", out var linesElement))
+            {
+                continue;
+            }
+
+            var lineMetrics = CoverletCoverageMetricsCalculator.FromLines(linesElement);
+            var branchMetrics = TryGetPropertyIgnoreCase(methodProperty.Value, "Branches", out var branchesElement)
+                ? CoverletCoverageMetricsCalculator.FromBranches(branchesElement)
+                : (CoveredBranches: 0, TotalBranches: 0, BranchCoveragePercent: 0m);
+
+            rows.Add(new CoverletCoverageRow
+            {
+                RowKey = BuildRowKey(moduleName, sourceFile, typeName, methodProperty.Name),
+                Module = moduleName,
+                SourceFile = sourceFile,
+                ClassName = typeName,
+                MethodName = methodProperty.Name,
+                CoveredLines = lineMetrics.CoveredLines,
+                CoverableLines = lineMetrics.CoverableLines,
+                TotalLines = lineMetrics.TotalLines,
+                LineCoveragePercent = lineMetrics.LineCoveragePercent,
+                CoveredBranches = branchMetrics.CoveredBranches,
+                TotalBranches = branchMetrics.TotalBranches,
+                BranchCoveragePercent = branchMetrics.BranchCoveragePercent
+            });
+        }
+    }
+
+    private static void ParseModernClass(
         string moduleName,
         string className,
         JsonElement classElement,
@@ -89,13 +175,8 @@ public sealed class CoverletCoverageReportParser : ICoverletCoverageReportParser
             return;
         }
 
-        if (!classElement.TryGetProperty("Methods", out var methodsElement)
-            && !TryGetPropertyIgnoreCase(classElement, "Methods", out methodsElement))
-        {
-            return;
-        }
-
-        if (methodsElement.ValueKind != JsonValueKind.Object)
+        if (!TryGetPropertyIgnoreCase(classElement, "Methods", out var methodsElement)
+            || methodsElement.ValueKind != JsonValueKind.Object)
         {
             return;
         }
@@ -110,7 +191,7 @@ public sealed class CoverletCoverageReportParser : ICoverletCoverageReportParser
 
             rows.Add(new CoverletCoverageRow
             {
-                RowKey = BuildRowKey(moduleName, className, methodProperty.Name),
+                RowKey = BuildRowKey(moduleName, string.Empty, className, methodProperty.Name),
                 Module = moduleName,
                 ClassName = className,
                 MethodName = methodProperty.Name,
@@ -132,8 +213,7 @@ public sealed class CoverletCoverageReportParser : ICoverletCoverageReportParser
             return null;
         }
 
-        if (!methodOrSummaryContainer.TryGetProperty("Summary", out var summaryElement)
-            && !TryGetPropertyIgnoreCase(methodOrSummaryContainer, "Summary", out summaryElement))
+        if (!TryGetPropertyIgnoreCase(methodOrSummaryContainer, "Summary", out var summaryElement))
         {
             return null;
         }
@@ -188,6 +268,23 @@ public sealed class CoverletCoverageReportParser : ICoverletCoverageReportParser
         };
     }
 
+    private static bool IsMetadataProperty(string propertyName) =>
+        ModuleMetadataPropertyNames.Any(name =>
+            string.Equals(name, propertyName, StringComparison.OrdinalIgnoreCase));
+
+    private static bool HasPropertyIgnoreCase(JsonElement element, string propertyName)
+    {
+        foreach (var property in element.EnumerateObject())
+        {
+            if (string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static decimal Percent(int covered, int total) =>
         total == 0 ? 0 : Math.Round(covered * 100m / total, 2);
 
@@ -236,8 +333,8 @@ public sealed class CoverletCoverageReportParser : ICoverletCoverageReportParser
         return false;
     }
 
-    private static string BuildRowKey(string module, string className, string methodName) =>
-        $"{module}\u001f{className}\u001f{methodName}";
+    private static string BuildRowKey(string module, string sourceFile, string className, string methodName) =>
+        $"{module}\u001f{sourceFile}\u001f{className}\u001f{methodName}";
 
     private static CoverletCoverageParseResult Error(string message) =>
         new() { ErrorMessage = message };

@@ -6,6 +6,8 @@ public class CoverletCoverageRow
 
     public required string Module { get; init; }
 
+    public string SourceFile { get; init; } = string.Empty;
+
     public required string ClassName { get; init; }
 
     public required string MethodName { get; init; }

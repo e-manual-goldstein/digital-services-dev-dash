@@ -42,7 +42,7 @@ No new SQLite tables for COV v1.
 
 ### Input format (v1)
 
-- **Coverlet JSON** — the standard JSON report produced by Coverlet (e.g. `coverage.json` from `dotnet test` with Coverlet collector / `--collect:"XPlat Code Coverage"` and JSON formatter as documented for your toolchain).
+- **Coverlet JSON** — standard **summary** reports (`Classes` / `Methods` / `Summary`) and **legacy** reports (module → file → type → method with `Lines` / `Branches` maps). Parser accepts both in one upload.
 - Parser lives in `DigitalDevServices.Services` (or `Model` DTOs + service) and returns a **flat list of row DTOs** suitable for binding (assembly/module, file, class, method, line/branch metrics — exact columns follow whatever the JSON exposes after flattening).
 - Invalid or non-JSON files: clear error on the page; no partial table unless parse succeeds.
 

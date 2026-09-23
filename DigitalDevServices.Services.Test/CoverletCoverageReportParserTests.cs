@@ -25,6 +25,22 @@ public sealed class CoverletCoverageReportParserTests
     }
 
     [TestMethod]
+    public void Parse_ReturnsMethodRowsFromLegacySampleJson()
+    {
+        var json = File.ReadAllText(GetSamplePath("coverage.legacy.sample.json"));
+
+        var result = Parser.Parse(json);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.HasCount(2, result.Rows);
+        Assert.AreEqual("SampleClass.cs", result.Rows[0].SourceFile);
+        Assert.AreEqual("Sample.Namespace.SampleClass::DoWork()", result.Rows[0].MethodName);
+        Assert.AreEqual(50.0m, result.Rows[0].LineCoveragePercent);
+        Assert.AreEqual(1, result.Rows[0].CoveredBranches);
+        Assert.AreEqual(2, result.Rows[0].TotalBranches);
+    }
+
+    [TestMethod]
     public void Parse_RejectsEmptyContent()
     {
         var result = Parser.Parse("   ");

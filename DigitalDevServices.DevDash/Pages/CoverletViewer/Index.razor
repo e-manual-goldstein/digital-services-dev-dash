@@ -24,7 +24,7 @@
                    OnChange="OnFileSelectedAsync"
                    disabled="@_isLoading" />
         <p class="form-text text-muted mb-0">
-            Standard Coverlet JSON (for example <code>coverage.json</code> from <code>dotnet test</code> with the Coverlet collector).
+            Standard Coverlet JSON — summary format (<code>Classes</code> / <code>Methods</code>) or legacy format (module → file → type → method with <code>Lines</code> / <code>Branches</code>).
             @if (!string.IsNullOrWhiteSpace(_loadedFileName))
             {
                 <span>Loaded: <strong>@_loadedFileName</strong>.</span>
