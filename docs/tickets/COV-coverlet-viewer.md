@@ -21,7 +21,7 @@
 |----|--------|-------|------------|
 | [COV-001](#cov-001) | Done | Coverlet Viewer domain shell (nav and page) | FND-002 |
 | [COV-002](#cov-002) | Done | Parse Coverlet JSON upload into in-memory session model | COV-001 |
-| [COV-003](#cov-003) | Open | Coverage results table (single view) | COV-002 |
+| [COV-003](#cov-003) | Done | Coverage results table (single view) | COV-002 |
 | [COV-004](#cov-004) | Open | Column-header filters on results table | COV-003 |
 | [COV-005](#cov-005) | Open | Row selection, batch Hide, and Show hidden toggle | COV-004 |
 
@@ -108,10 +108,11 @@ No new SQLite tables for COV v1.
 |-------|--------|
 | **ID** | COV-003 |
 | **Title** | Coverage results table (single view) |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | After successful parse (COV-002), render a single **sortable** (optional v1: default order from parser) table of all coverage rows. Columns reflect flattened model (e.g. assembly, file, class, method, line coverage %, covered/total lines — align to parser output). Include a **Select** column with checkbox per row (selection wiring completed in COV-005; column can be present but bulk bar optional until COV-005). Empty state when no file loaded. |
 | **Test / demo** | Upload sample JSON → table populated → row count matches parser output. |
 | **Depends on** | COV-002 |
+| **Implementation** | `CoverletCoverageResultsTable` component; module/class/method and coverage metrics columns; per-row select checkboxes with session selection state on hub page. |
 
 ### COV-004
 

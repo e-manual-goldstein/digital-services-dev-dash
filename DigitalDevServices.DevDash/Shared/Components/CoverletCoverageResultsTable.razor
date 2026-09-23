@@ -1,0 +1,71 @@
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th class="text-center" style="width: 3rem;">Select</th>
+                <th>Module</th>
+                <th>Class</th>
+                <th>Method</th>
+                <th class="text-end">Line %</th>
+                <th class="text-end">Lines</th>
+                <th class="text-end">Branch %</th>
+                <th class="text-end">Branches</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in Rows)
+            {
+                <tr>
+                    <td class="text-center">
+                        <input type="checkbox"
+                               class="form-check-input"
+                               checked="@IsSelected(row.RowKey)"
+                               @onchange="eventArgs => ToggleSelectionAsync(row.RowKey, eventArgs)" />
+                    </td>
+                    <td><code class="text-break">@row.Module</code></td>
+                    <td><code class="text-break">@row.ClassName</code></td>
+                    <td><code class="text-break">@row.MethodName</code></td>
+                    <td class="text-end text-nowrap">@FormatPercent(row.LineCoveragePercent)</td>
+                    <td class="text-end text-nowrap">@row.CoveredLines / @row.CoverableLines</td>
+                    <td class="text-end text-nowrap">@FormatPercent(row.BranchCoveragePercent)</td>
+                    <td class="text-end text-nowrap">@row.CoveredBranches / @row.TotalBranches</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<CoverletCoverageRow> Rows { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlySet<string> SelectedRowKeys { get; set; } = new HashSet<string>(StringComparer.Ordinal);
+
+    [Parameter]
+    public EventCallback<IReadOnlySet<string>> SelectedRowKeysChanged { get; set; }
+
+    private bool IsSelected(string rowKey) => SelectedRowKeys.Contains(rowKey);
+
+    private async Task ToggleSelectionAsync(string rowKey, ChangeEventArgs eventArgs)
+    {
+        var isChecked = eventArgs.Value is bool value && value;
+        var updated = new HashSet<string>(SelectedRowKeys, StringComparer.Ordinal);
+
+        if (isChecked)
+        {
+            updated.Add(rowKey);
+        }
+        else
+        {
+            updated.Remove(rowKey);
+        }
+
+        if (SelectedRowKeysChanged.HasDelegate)
+        {
+            await SelectedRowKeysChanged.InvokeAsync(updated);
+        }
+    }
+
+    private static string FormatPercent(decimal value) => $"{value:0.##}%";
+}

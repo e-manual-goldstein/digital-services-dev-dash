@@ -58,6 +58,11 @@ else if (_parseResult is { IsSuccess: true } result)
             </p>
         </div>
     </div>
+
+    <h2 class="h5 mb-3">Results</h2>
+    <CoverletCoverageResultsTable Rows="result.Rows"
+                                   SelectedRowKeys="_selectedRowKeys"
+                                   SelectedRowKeysChanged="OnSelectedRowKeysChanged" />
 }
 else
 {
@@ -73,12 +78,20 @@ else
     private string? _loadedFileName;
     private string? _errorMessage;
     private bool _isLoading;
+    private HashSet<string> _selectedRowKeys = new(StringComparer.Ordinal);
+
+    private Task OnSelectedRowKeysChanged(IReadOnlySet<string> selectedRowKeys)
+    {
+        _selectedRowKeys = new HashSet<string>(selectedRowKeys, StringComparer.Ordinal);
+        return Task.CompletedTask;
+    }
 
     private async Task OnFileSelectedAsync(InputFileChangeEventArgs args)
     {
         _errorMessage = null;
         _parseResult = null;
         _loadedFileName = null;
+        _selectedRowKeys.Clear();
 
         var file = args.File;
         if (file.Size == 0)
