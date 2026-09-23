@@ -5,7 +5,8 @@ using Radzen;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorPages();
-builder.Services.AddServerSideBlazor();
+builder.Services.AddServerSideBlazor()
+    .AddHubOptions(options => options.MaximumReceiveMessageSize = 52_428_800);
 builder.Services.AddScoped<DialogService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<TooltipService>();
@@ -19,6 +20,7 @@ builder.Services.AddLogServices();
 builder.Services.AddTextFormattingServices();
 builder.Services.AddConfigurationServices();
 builder.Services.AddGitHistoryServices();
+builder.Services.AddCoverletServices();
 
 var app = builder.Build();
 

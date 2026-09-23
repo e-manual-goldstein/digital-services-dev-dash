@@ -20,7 +20,7 @@
 | ID | Status | Title | Depends on |
 |----|--------|-------|------------|
 | [COV-001](#cov-001) | Done | Coverlet Viewer domain shell (nav and page) | FND-002 |
-| [COV-002](#cov-002) | Open | Parse Coverlet JSON upload into in-memory session model | COV-001 |
+| [COV-002](#cov-002) | Done | Parse Coverlet JSON upload into in-memory session model | COV-001 |
 | [COV-003](#cov-003) | Open | Coverage results table (single view) | COV-002 |
 | [COV-004](#cov-004) | Open | Column-header filters on results table | COV-003 |
 | [COV-005](#cov-005) | Open | Row selection, batch Hide, and Show hidden toggle | COV-004 |
@@ -96,10 +96,11 @@ No new SQLite tables for COV v1.
 |-------|--------|
 | **ID** | COV-002 |
 | **Title** | Parse Coverlet JSON upload into in-memory session model |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | Wire **InputFile** on `/coverlet-viewer` to read uploaded JSON in the browser (or stream to server endpoint that returns parsed DTOs only — **do not** write the file to disk). Implement `ICoverletCoverageReportParser` (or equivalent) that deserializes standard Coverlet JSON and produces `CoverletCoverageRow` (or similar) read-only list + optional run summary (totals, line rate). Hold parsed result in page/component state until user uploads a new file or leaves the page. Show validation errors for empty file, invalid JSON, or unrecognized schema. |
 | **Test / demo** | Upload a real `coverage.json` from a local Coverlet run → summary/count appears → no new rows in SQLite → refresh page clears state. `dotnet test --filter Coverlet` (parser unit tests with sample JSON under `samples/coverlet/`). |
 | **Depends on** | COV-001 |
+| **Implementation** | `ICoverletCoverageReportParser`, `CoverletCoverageReportParser`; in-memory state on `Index.razor`; `samples/coverlet/coverage.sample.json`; hub message size for large uploads. |
 
 ### COV-003
 

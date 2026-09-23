@@ -1,4 +1,6 @@
 @page "/coverlet-viewer"
+@inject ICoverletCoverageReportParser CoverageReportParser
+@using Microsoft.AspNetCore.Components.Forms
 
 <PageTitle>Coverlet Viewer</PageTitle>
 
@@ -8,20 +10,117 @@
     Files are parsed in your session only — nothing is saved to disk or the database.
 </p>
 
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="alert alert-danger" role="alert">@_errorMessage</div>
+}
+
 <div class="card mb-4">
     <div class="card-body">
         <label class="form-label" for="coverlet-upload">Coverage report (JSON)</label>
         <InputFile id="coverlet-upload"
                    class="form-control"
                    accept=".json,application/json"
-                   disabled="true" />
+                   OnChange="OnFileSelectedAsync"
+                   disabled="@_isLoading" />
         <p class="form-text text-muted mb-0">
-            Upload and parsing will be enabled in a follow-up ticket. Use a standard Coverlet JSON output file
-            (for example <code>coverage.json</code> from <code>dotnet test</code> with the Coverlet collector).
+            Standard Coverlet JSON (for example <code>coverage.json</code> from <code>dotnet test</code> with the Coverlet collector).
+            @if (!string.IsNullOrWhiteSpace(_loadedFileName))
+            {
+                <span>Loaded: <strong>@_loadedFileName</strong>.</span>
+            }
         </p>
     </div>
 </div>
 
-<div class="alert alert-light border" role="status">
-    <p class="mb-0 text-muted">Choose a JSON file above to load coverage results.</p>
-</div>
+@if (_isLoading)
+{
+    <p class="text-muted">Parsing coverage report…</p>
+}
+else if (_parseResult is { IsSuccess: true } result)
+{
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="h5 mb-3">Run summary</h2>
+            @if (result.Summary is not null)
+            {
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Line coverage</dt>
+                    <dd class="col-sm-8">@FormatPercent(result.Summary.LineCoveragePercent) (@result.Summary.CoveredLines / @result.Summary.CoverableLines coverable lines)</dd>
+                    <dt class="col-sm-4">Branch coverage</dt>
+                    <dd class="col-sm-8">@FormatPercent(result.Summary.BranchCoveragePercent) (@result.Summary.CoveredBranches / @result.Summary.TotalBranches branches)</dd>
+                    <dt class="col-sm-4">Methods</dt>
+                    <dd class="col-sm-8">@result.Summary.TotalMethods method row(s) in report</dd>
+                </dl>
+            }
+            <p class="text-muted small mb-0 mt-3">
+                @result.Rows.Count method row(s) parsed.
+            </p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-light border" role="status">
+        <p class="mb-0 text-muted">Choose a JSON file above to load coverage results.</p>
+    </div>
+}
+
+@code {
+    private const long MaxUploadBytes = 50 * 1024 * 1024;
+
+    private CoverletCoverageParseResult? _parseResult;
+    private string? _loadedFileName;
+    private string? _errorMessage;
+    private bool _isLoading;
+
+    private async Task OnFileSelectedAsync(InputFileChangeEventArgs args)
+    {
+        _errorMessage = null;
+        _parseResult = null;
+        _loadedFileName = null;
+
+        var file = args.File;
+        if (file.Size == 0)
+        {
+            _errorMessage = "The file is empty.";
+            return;
+        }
+
+        if (file.Size > MaxUploadBytes)
+        {
+            _errorMessage = $"The file is too large (max {MaxUploadBytes / (1024 * 1024)} MB).";
+            return;
+        }
+
+        _isLoading = true;
+
+        try
+        {
+            await using var stream = file.OpenReadStream(MaxUploadBytes);
+            using var reader = new StreamReader(stream);
+            var json = await reader.ReadToEndAsync();
+            _parseResult = CoverageReportParser.Parse(json);
+
+            if (!_parseResult.IsSuccess)
+            {
+                _errorMessage = _parseResult.ErrorMessage;
+                _parseResult = null;
+                return;
+            }
+
+            _loadedFileName = file.Name;
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Could not read the file: {ex.Message}";
+            _parseResult = null;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private static string FormatPercent(decimal value) => $"{value:0.##}%";
+}
