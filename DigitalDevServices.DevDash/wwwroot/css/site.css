@@ -250,3 +250,7 @@ code {
 .package-comparison-table__right-only > td {
     background-color: #f8d7da;
 }
+
+.coverlet-coverage-table__hidden > td {
+    opacity: 0.65;
+}

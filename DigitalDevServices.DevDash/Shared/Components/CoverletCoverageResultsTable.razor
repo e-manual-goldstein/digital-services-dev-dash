@@ -1,20 +1,48 @@
+@if (SelectedRowKeys.Count > 0)
+{
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+        <span class="text-muted small">@SelectedRowKeys.Count selected</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="HideSelectedAsync">
+            Hide
+        </button>
+    </div>
+}
+
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
     <p class="text-muted small mb-0">
-        Showing @FilteredRows.Count of @Rows.Count row(s)
+        Showing @VisibleRows.Count visible of @FilteredRows.Count filtered (@Rows.Count total)
+        @if (HiddenRowKeys.Count > 0)
+        {
+            <span>&middot; @HiddenRowKeys.Count hidden</span>
+        }
     </p>
-    @if (FilterState.HasActiveFilters)
-    {
-        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ClearFilters">
-            Clear filters
-        </button>
-    }
+    <div class="d-flex flex-wrap align-items-center gap-3">
+        @if (FilterState.HasActiveFilters)
+        {
+            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ClearFilters">
+                Clear filters
+            </button>
+        }
+        <div class="form-check mb-0">
+            <input id="coverlet-show-hidden"
+                   class="form-check-input"
+                   type="checkbox"
+                   @bind="ShowHidden" />
+            <label class="form-check-label" for="coverlet-show-hidden">Show hidden</label>
+        </div>
+    </div>
 </div>
 
 <div class="table-responsive">
     <table class="table table-striped table-hover align-middle">
         <thead class="table-light">
             <tr>
-                <th class="text-center" style="width: 3rem;">Select</th>
+                <th class="text-center" style="width: 3rem;">
+                    <input type="checkbox"
+                           class="form-check-input"
+                           checked="@IsAllVisibleSelected"
+                           @onchange="ToggleSelectAllVisibleAsync" />
+                </th>
                 <th>Module</th>
                 <th>Class</th>
                 <th>Method</th>
@@ -84,24 +112,31 @@
             </tr>
         </thead>
         <tbody>
-            @if (FilteredRows.Count == 0)
+            @if (VisibleRows.Count == 0)
             {
                 <tr>
-                    <td colspan="8" class="text-muted text-center py-4">No rows match the current filters.</td>
+                    <td colspan="8" class="text-muted text-center py-4">No rows match the current filters and visibility.</td>
                 </tr>
             }
             else
             {
-                @foreach (var row in FilteredRows)
+                @foreach (var row in VisibleRows)
                 {
-                    <tr>
+                    var isHidden = HiddenRowKeys.Contains(row.RowKey);
+                    <tr class="@(isHidden ? "coverlet-coverage-table__hidden" : null)">
                         <td class="text-center">
                             <input type="checkbox"
                                    class="form-check-input"
                                    checked="@IsSelected(row.RowKey)"
                                    @onchange="eventArgs => ToggleSelectionAsync(row.RowKey, eventArgs)" />
                         </td>
-                        <td><code class="text-break">@row.Module</code></td>
+                        <td>
+                            <code class="text-break">@row.Module</code>
+                            @if (isHidden)
+                            {
+                                <span class="badge bg-secondary ms-1">hidden</span>
+                            }
+                        </td>
                         <td><code class="text-break">@row.ClassName</code></td>
                         <td><code class="text-break">@row.MethodName</code></td>
                         <td class="text-end text-nowrap">@FormatPercent(row.LineCoveragePercent)</td>
@@ -125,6 +160,18 @@
     [Parameter]
     public EventCallback<IReadOnlySet<string>> SelectedRowKeysChanged { get; set; }
 
+    [Parameter]
+    public IReadOnlySet<string> HiddenRowKeys { get; set; } = new HashSet<string>(StringComparer.Ordinal);
+
+    [Parameter]
+    public EventCallback<IReadOnlySet<string>> HiddenRowKeysChanged { get; set; }
+
+    [Parameter]
+    public bool ShowHidden { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> ShowHiddenChanged { get; set; }
+
     private string _moduleFilter = string.Empty;
     private string _classFilter = string.Empty;
     private string _methodFilter = string.Empty;
@@ -147,6 +194,12 @@
     private IReadOnlyList<CoverletCoverageRow> FilteredRows =>
         CoverletCoverageRowFilter.Apply(Rows, FilterState);
 
+    private IReadOnlyList<CoverletCoverageRow> VisibleRows =>
+        CoverletCoverageRowVisibility.Apply(FilteredRows, HiddenRowKeys, ShowHidden);
+
+    private bool IsAllVisibleSelected =>
+        VisibleRows.Count > 0 && VisibleRows.All(row => SelectedRowKeys.Contains(row.RowKey));
+
     private bool IsSelected(string rowKey) => SelectedRowKeys.Contains(rowKey);
 
     private void ClearFilters()
@@ -158,6 +211,52 @@
         _minBranchCoverageText = string.Empty;
         _minCoveredLinesText = string.Empty;
         _minCoveredBranchesText = string.Empty;
+    }
+
+    private async Task HideSelectedAsync()
+    {
+        if (!HiddenRowKeysChanged.HasDelegate || SelectedRowKeys.Count == 0)
+        {
+            return;
+        }
+
+        var updatedHidden = new HashSet<string>(HiddenRowKeys, StringComparer.Ordinal);
+        foreach (var rowKey in SelectedRowKeys)
+        {
+            updatedHidden.Add(rowKey);
+        }
+
+        await HiddenRowKeysChanged.InvokeAsync(updatedHidden);
+
+        if (SelectedRowKeysChanged.HasDelegate)
+        {
+            await SelectedRowKeysChanged.InvokeAsync(new HashSet<string>(StringComparer.Ordinal));
+        }
+    }
+
+    private async Task ToggleSelectAllVisibleAsync(ChangeEventArgs eventArgs)
+    {
+        if (!SelectedRowKeysChanged.HasDelegate)
+        {
+            return;
+        }
+
+        var selectAll = eventArgs.Value is bool value && value;
+        var updated = new HashSet<string>(SelectedRowKeys, StringComparer.Ordinal);
+
+        foreach (var row in VisibleRows)
+        {
+            if (selectAll)
+            {
+                updated.Add(row.RowKey);
+            }
+            else
+            {
+                updated.Remove(row.RowKey);
+            }
+        }
+
+        await SelectedRowKeysChanged.InvokeAsync(updated);
     }
 
     private async Task ToggleSelectionAsync(string rowKey, ChangeEventArgs eventArgs)

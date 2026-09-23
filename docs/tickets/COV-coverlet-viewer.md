@@ -23,7 +23,7 @@
 | [COV-002](#cov-002) | Done | Parse Coverlet JSON upload into in-memory session model | COV-001 |
 | [COV-003](#cov-003) | Done | Coverage results table (single view) | COV-002 |
 | [COV-004](#cov-004) | Done | Column-header filters on results table | COV-003 |
-| [COV-005](#cov-005) | Open | Row selection, batch Hide, and Show hidden toggle | COV-004 |
+| [COV-005](#cov-005) | Done | Row selection, batch Hide, and Show hidden toggle | COV-004 |
 
 ---
 
@@ -132,7 +132,8 @@ No new SQLite tables for COV v1.
 |-------|--------|
 | **ID** | COV-005 |
 | **Title** | Row selection, batch Hide, and Show hidden toggle |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | **Selection:** checkboxes in the leading column; header checkbox selects all **currently visible** rows (after filters). **Bulk actions:** when one or more rows selected, show action bar with **Hide** — selected rows are marked hidden in session state and disappear from the table unless **Show hidden** is on. **Show hidden:** checkbox above the table on the **right** — when enabled, include hidden rows in the table (styled or badged as hidden). Hidden state is in-memory only; new upload clears hidden set. Extensible pattern for future batch actions (enum or command list). |
 | **Test / demo** | Select several rows → **Hide** → rows disappear → enable **Show hidden** → rows reappear → upload new file → hidden state cleared. |
 | **Depends on** | COV-004 |
+| **Implementation** | `CoverletCoverageRowVisibility`; header select-all-visible; **Hide** bulk action; **Show hidden** toggle; hidden row styling; state cleared on new upload. |

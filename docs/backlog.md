@@ -10,13 +10,12 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| ~~COV-004~~ | [COV](tickets/COV-coverlet-viewer.md) | **Column-header** filters |
+| ~~COV-005~~ | [COV](tickets/COV-coverlet-viewer.md) | Row **selection**, batch **Hide**, **Show hidden** |
 
 ## Active (recommended order)
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
-| COV-005 | [COV](tickets/COV-coverlet-viewer.md) | Row **selection**, batch **Hide**, **Show hidden** |
 | PIP-004 | [PIP](tickets/PIP-pipeline-feeds.md) | **Pipeline feeds** derived from deployments and build branch |
 | THM-001 | [THM](tickets/THM-theme.md) | **Global colour scheme** — non-blue buttons, landing page |
 | PKG-003 | [PKG](tickets/PKG-packages.md) | Resolve package by **build number** |
@@ -27,7 +26,6 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 
 | Epic | Description | Tickets Completed | Tickets Shelved | Total Tickets | Progress |
 |------|-------------|-------------------|-----------------|---------------|----------|
-| [Coverlet Viewer (COV)](tickets/COV-coverlet-viewer.md) | Coverlet JSON coverage upload and table | 4 | 0 | 5 | 🟩🟩🟩🟩🟩🟩🟩🟩⬜⬜ 80% |
 | [Theme (THM)](tickets/THM-theme.md) | Global colour scheme | 0 | 0 | 1 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
 | [Packages (PKG)](tickets/PKG-packages.md) | DLL inspection and comparison | 4 | 0 | 5 | 🟩🟩🟩🟩🟩🟩🟩🟩⬜⬜ 80% |
 | [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 9 | 2 | 11 | 🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜⬜ 82% |
@@ -68,8 +66,9 @@ Unprioritized — not in the active queue. See [IDE-ideas.md](tickets/IDE-ideas.
 | [Foundation (FND)](tickets/FND-foundation.md) | Blazor skeleton and layout | FND-001 – FND-002 |
 | [Git History (GTH)](tickets/GTH-git-history.md) | Azure DevOps repository migration history | GTH-001 |
 | [Applications (APP)](tickets/APP-applications.md) | Deployable app vs instance | APP-001 – APP-007 |
+| [Coverlet Viewer (COV)](tickets/COV-coverlet-viewer.md) | Coverlet JSON coverage upload and table | COV-001 – COV-005 |
 
-*LOG, ENV, GTH, and APP epics complete — see [Completed epics](#completed-epics-100).*
+*LOG, ENV, GTH, APP, and COV epics complete — see [Completed epics](#completed-epics-100).*
 
 ## Domain model (overview)
 
