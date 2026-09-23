@@ -1,3 +1,15 @@
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+    <p class="text-muted small mb-0">
+        Showing @FilteredRows.Count of @Rows.Count row(s)
+    </p>
+    @if (FilterState.HasActiveFilters)
+    {
+        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ClearFilters">
+            Clear filters
+        </button>
+    }
+</div>
+
 <div class="table-responsive">
     <table class="table table-striped table-hover align-middle">
         <thead class="table-light">
@@ -11,25 +23,93 @@
                 <th class="text-end">Branch %</th>
                 <th class="text-end">Branches</th>
             </tr>
+            <tr class="coverlet-coverage-table__filters">
+                <th></th>
+                <th>
+                    <label class="visually-hidden" for="coverlet-filter-module">Filter module</label>
+                    <input id="coverlet-filter-module"
+                           class="form-control form-control-sm"
+                           placeholder="Contains"
+                           @bind="_moduleFilter"
+                           @bind:event="oninput" />
+                </th>
+                <th>
+                    <label class="visually-hidden" for="coverlet-filter-class">Filter class</label>
+                    <input id="coverlet-filter-class"
+                           class="form-control form-control-sm"
+                           placeholder="Contains"
+                           @bind="_classFilter"
+                           @bind:event="oninput" />
+                </th>
+                <th>
+                    <label class="visually-hidden" for="coverlet-filter-method">Filter method</label>
+                    <input id="coverlet-filter-method"
+                           class="form-control form-control-sm"
+                           placeholder="Contains"
+                           @bind="_methodFilter"
+                           @bind:event="oninput" />
+                </th>
+                <th>
+                    <label class="visually-hidden" for="coverlet-filter-line-pct">Minimum line coverage percent</label>
+                    <input id="coverlet-filter-line-pct"
+                           class="form-control form-control-sm text-end"
+                           placeholder="Min %"
+                           @bind="_minLineCoverageText"
+                           @bind:event="oninput" />
+                </th>
+                <th>
+                    <label class="visually-hidden" for="coverlet-filter-covered-lines">Minimum covered lines</label>
+                    <input id="coverlet-filter-covered-lines"
+                           class="form-control form-control-sm text-end"
+                           placeholder="Min covered"
+                           @bind="_minCoveredLinesText"
+                           @bind:event="oninput" />
+                </th>
+                <th>
+                    <label class="visually-hidden" for="coverlet-filter-branch-pct">Minimum branch coverage percent</label>
+                    <input id="coverlet-filter-branch-pct"
+                           class="form-control form-control-sm text-end"
+                           placeholder="Min %"
+                           @bind="_minBranchCoverageText"
+                           @bind:event="oninput" />
+                </th>
+                <th>
+                    <label class="visually-hidden" for="coverlet-filter-covered-branches">Minimum covered branches</label>
+                    <input id="coverlet-filter-covered-branches"
+                           class="form-control form-control-sm text-end"
+                           placeholder="Min covered"
+                           @bind="_minCoveredBranchesText"
+                           @bind:event="oninput" />
+                </th>
+            </tr>
         </thead>
         <tbody>
-            @foreach (var row in Rows)
+            @if (FilteredRows.Count == 0)
             {
                 <tr>
-                    <td class="text-center">
-                        <input type="checkbox"
-                               class="form-check-input"
-                               checked="@IsSelected(row.RowKey)"
-                               @onchange="eventArgs => ToggleSelectionAsync(row.RowKey, eventArgs)" />
-                    </td>
-                    <td><code class="text-break">@row.Module</code></td>
-                    <td><code class="text-break">@row.ClassName</code></td>
-                    <td><code class="text-break">@row.MethodName</code></td>
-                    <td class="text-end text-nowrap">@FormatPercent(row.LineCoveragePercent)</td>
-                    <td class="text-end text-nowrap">@row.CoveredLines / @row.CoverableLines</td>
-                    <td class="text-end text-nowrap">@FormatPercent(row.BranchCoveragePercent)</td>
-                    <td class="text-end text-nowrap">@row.CoveredBranches / @row.TotalBranches</td>
+                    <td colspan="8" class="text-muted text-center py-4">No rows match the current filters.</td>
                 </tr>
+            }
+            else
+            {
+                @foreach (var row in FilteredRows)
+                {
+                    <tr>
+                        <td class="text-center">
+                            <input type="checkbox"
+                                   class="form-check-input"
+                                   checked="@IsSelected(row.RowKey)"
+                                   @onchange="eventArgs => ToggleSelectionAsync(row.RowKey, eventArgs)" />
+                        </td>
+                        <td><code class="text-break">@row.Module</code></td>
+                        <td><code class="text-break">@row.ClassName</code></td>
+                        <td><code class="text-break">@row.MethodName</code></td>
+                        <td class="text-end text-nowrap">@FormatPercent(row.LineCoveragePercent)</td>
+                        <td class="text-end text-nowrap">@row.CoveredLines / @row.CoverableLines</td>
+                        <td class="text-end text-nowrap">@FormatPercent(row.BranchCoveragePercent)</td>
+                        <td class="text-end text-nowrap">@row.CoveredBranches / @row.TotalBranches</td>
+                    </tr>
+                }
             }
         </tbody>
     </table>
@@ -45,7 +125,40 @@
     [Parameter]
     public EventCallback<IReadOnlySet<string>> SelectedRowKeysChanged { get; set; }
 
+    private string _moduleFilter = string.Empty;
+    private string _classFilter = string.Empty;
+    private string _methodFilter = string.Empty;
+    private string _minLineCoverageText = string.Empty;
+    private string _minBranchCoverageText = string.Empty;
+    private string _minCoveredLinesText = string.Empty;
+    private string _minCoveredBranchesText = string.Empty;
+
+    private CoverletCoverageFilterState FilterState => new()
+    {
+        ModuleContains = _moduleFilter,
+        ClassContains = _classFilter,
+        MethodContains = _methodFilter,
+        MinLineCoveragePercent = ParseOptionalDecimal(_minLineCoverageText),
+        MinBranchCoveragePercent = ParseOptionalDecimal(_minBranchCoverageText),
+        MinCoveredLines = ParseOptionalInt(_minCoveredLinesText),
+        MinCoveredBranches = ParseOptionalInt(_minCoveredBranchesText)
+    };
+
+    private IReadOnlyList<CoverletCoverageRow> FilteredRows =>
+        CoverletCoverageRowFilter.Apply(Rows, FilterState);
+
     private bool IsSelected(string rowKey) => SelectedRowKeys.Contains(rowKey);
+
+    private void ClearFilters()
+    {
+        _moduleFilter = string.Empty;
+        _classFilter = string.Empty;
+        _methodFilter = string.Empty;
+        _minLineCoverageText = string.Empty;
+        _minBranchCoverageText = string.Empty;
+        _minCoveredLinesText = string.Empty;
+        _minCoveredBranchesText = string.Empty;
+    }
 
     private async Task ToggleSelectionAsync(string rowKey, ChangeEventArgs eventArgs)
     {
@@ -65,6 +178,26 @@
         {
             await SelectedRowKeysChanged.InvokeAsync(updated);
         }
+    }
+
+    private static decimal? ParseOptionalDecimal(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return decimal.TryParse(value.Trim(), out var parsed) ? parsed : null;
+    }
+
+    private static int? ParseOptionalInt(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return int.TryParse(value.Trim(), out var parsed) ? parsed : null;
     }
 
     private static string FormatPercent(decimal value) => $"{value:0.##}%";

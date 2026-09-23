@@ -22,7 +22,7 @@
 | [COV-001](#cov-001) | Done | Coverlet Viewer domain shell (nav and page) | FND-002 |
 | [COV-002](#cov-002) | Done | Parse Coverlet JSON upload into in-memory session model | COV-001 |
 | [COV-003](#cov-003) | Done | Coverage results table (single view) | COV-002 |
-| [COV-004](#cov-004) | Open | Column-header filters on results table | COV-003 |
+| [COV-004](#cov-004) | Done | Column-header filters on results table | COV-003 |
 | [COV-005](#cov-005) | Open | Row selection, batch Hide, and Show hidden toggle | COV-004 |
 
 ---
@@ -120,10 +120,11 @@ No new SQLite tables for COV v1.
 |-------|--------|
 | **ID** | COV-004 |
 | **Title** | Column-header filters on results table |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | Add **per-column filters in the table header** for the coverage results table. Each filterable column exposes its control in the header row (text filter for names/paths, numeric threshold for percentages/counts where sensible). Filters combine (AND). Updating a filter immediately narrows visible rows. Filters apply before hide logic (COV-005). Clear-all or per-column reset is acceptable. |
 | **Test / demo** | Type in **File** header filter → only matching rows shown → combine with **Class** filter → intersection applied. |
 | **Depends on** | COV-003 |
+| **Implementation** | `CoverletCoverageFilterState`, `CoverletCoverageRowFilter`; filter inputs in table header row; **Clear filters** button; showing count. |
 
 ### COV-005
 
