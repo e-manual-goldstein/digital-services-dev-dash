@@ -16,6 +16,11 @@ Ordered list of **open** tickets across all epics. When a ticket is completed, a
 
 | TicketId | Epic | Description |
 |----------|------|-------------|
+| COV-001 | [COV](tickets/COV-coverlet-viewer.md) | **Coverlet Viewer** — nav and page shell |
+| COV-002 | [COV](tickets/COV-coverlet-viewer.md) | Parse Coverlet **JSON** upload (in-memory only) |
+| COV-003 | [COV](tickets/COV-coverlet-viewer.md) | Coverage **results table** |
+| COV-004 | [COV](tickets/COV-coverlet-viewer.md) | **Column-header** filters |
+| COV-005 | [COV](tickets/COV-coverlet-viewer.md) | Row **selection**, batch **Hide**, **Show hidden** |
 | PIP-004 | [PIP](tickets/PIP-pipeline-feeds.md) | **Pipeline feeds** derived from deployments and build branch |
 | THM-001 | [THM](tickets/THM-theme.md) | **Global colour scheme** — non-blue buttons, landing page |
 | PKG-003 | [PKG](tickets/PKG-packages.md) | Resolve package by **build number** |
@@ -26,6 +31,7 @@ In-progress epics only. **100%** completed epics move to [Completed epics](#comp
 
 | Epic | Description | Tickets Completed | Tickets Shelved | Total Tickets | Progress |
 |------|-------------|-------------------|-----------------|---------------|----------|
+| [Coverlet Viewer (COV)](tickets/COV-coverlet-viewer.md) | Coverlet JSON coverage upload and table | 0 | 0 | 5 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
 | [Theme (THM)](tickets/THM-theme.md) | Global colour scheme | 0 | 0 | 1 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0% |
 | [Packages (PKG)](tickets/PKG-packages.md) | DLL inspection and comparison | 4 | 0 | 5 | 🟩🟩🟩🟩🟩🟩🟩🟩⬜⬜ 80% |
 | [Configuration (CFG)](tickets/CFG-configuration.md) | Read and compare shared settings | 9 | 2 | 11 | 🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜⬜ 82% |
@@ -110,4 +116,5 @@ erDiagram
 | CFG | `ConfigurationSetting` |
 | LOG | `LogFormatProfile` |
 | GTH | `GitRepository`, `HistoricGitRepoRecord` |
+| COV | — (in-memory session; no SQLite entities) |
 | THM | — (presentation layer) |
