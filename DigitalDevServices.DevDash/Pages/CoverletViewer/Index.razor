@@ -1,0 +1,27 @@
+@page "/coverlet-viewer"
+
+<PageTitle>Coverlet Viewer</PageTitle>
+
+<h1 class="mb-1">Coverlet Viewer</h1>
+<p class="text-muted mb-4">
+    Upload a Coverlet code-coverage JSON report to explore results in a filterable table.
+    Files are parsed in your session only — nothing is saved to disk or the database.
+</p>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <label class="form-label" for="coverlet-upload">Coverage report (JSON)</label>
+        <InputFile id="coverlet-upload"
+                   class="form-control"
+                   accept=".json,application/json"
+                   disabled="true" />
+        <p class="form-text text-muted mb-0">
+            Upload and parsing will be enabled in a follow-up ticket. Use a standard Coverlet JSON output file
+            (for example <code>coverage.json</code> from <code>dotnet test</code> with the Coverlet collector).
+        </p>
+    </div>
+</div>
+
+<div class="alert alert-light border" role="status">
+    <p class="mb-0 text-muted">Choose a JSON file above to load coverage results.</p>
+</div>

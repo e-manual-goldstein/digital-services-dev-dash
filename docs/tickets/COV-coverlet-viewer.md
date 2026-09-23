@@ -19,7 +19,7 @@
 
 | ID | Status | Title | Depends on |
 |----|--------|-------|------------|
-| [COV-001](#cov-001) | Open | Coverlet Viewer domain shell (nav and page) | FND-002 |
+| [COV-001](#cov-001) | Done | Coverlet Viewer domain shell (nav and page) | FND-002 |
 | [COV-002](#cov-002) | Open | Parse Coverlet JSON upload into in-memory session model | COV-001 |
 | [COV-003](#cov-003) | Open | Coverage results table (single view) | COV-002 |
 | [COV-004](#cov-004) | Open | Column-header filters on results table | COV-003 |
@@ -84,10 +84,11 @@ No new SQLite tables for COV v1.
 |-------|--------|
 | **ID** | COV-001 |
 | **Title** | Coverlet Viewer domain shell (nav and page) |
-| **Status** | Open |
+| **Status** | Done |
 | **Description** | Introduce the **Coverlet Viewer** domain. **Route:** `/coverlet-viewer`. **Nav:** sidebar entry and optional home card. **Page:** `<PageTitle>` and `<h1>` **Coverlet Viewer**, short help text explaining JSON upload (parsing in COV-002). Placeholder upload area or disabled **Choose file** until COV-002. No SQLite. |
 | **Test / demo** | Sidebar **Coverlet Viewer** → page loads → bookmark `/coverlet-viewer` works. |
 | **Depends on** | FND-002 |
+| **Implementation** | `/coverlet-viewer` hub in `Pages/CoverletViewer/Index.razor`; disabled `InputFile`; nav and home card. |
 
 ### COV-002
 
