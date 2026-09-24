@@ -85,14 +85,9 @@ internal sealed class RemoteApplicationEnvironmentMatchResult
             return WindowsService.MachineName.Trim();
         }
 
-        if (EnvironmentUrl is not null)
-        {
-            return environmentDetails.WebSites
-                .FirstOrDefault(site => !string.IsNullOrWhiteSpace(site.MachineName))
-                ?.MachineName?.Trim();
-        }
-
-        return null;
+        return environmentDetails.WebSites
+            .FirstOrDefault(site => !string.IsNullOrWhiteSpace(site.MachineName))
+            ?.MachineName?.Trim();
     }
 
     public EnvironmentWebSite? GetTemplateContextWebSite(RemoteEnvironmentDetails environmentDetails)
@@ -100,11 +95,6 @@ internal sealed class RemoteApplicationEnvironmentMatchResult
         if (WebSite is not null)
         {
             return WebSite;
-        }
-
-        if (EnvironmentUrl is null)
-        {
-            return null;
         }
 
         return environmentDetails.WebSites.FirstOrDefault(site => !string.IsNullOrWhiteSpace(site.MachineName));
