@@ -59,7 +59,7 @@ public sealed class CoverletCoverageReportParser : ICoverletCoverageReportParser
         return new CoverletCoverageParseResult
         {
             Rows = rows,
-            Summary = BuildAggregateSummary(rows)
+            Summary = CoverletCoverageSummaryCalculator.BuildFromRows(rows)
         };
     }
 
@@ -240,31 +240,6 @@ public sealed class CoverletCoverageReportParser : ICoverletCoverageReportParser
             CoveredMethods = ReadInt(summaryElement, "coveredmethods"),
             TotalMethods = ReadInt(summaryElement, "totalmethods"),
             MethodCoveragePercent = ReadDecimal(summaryElement, "methodcoverage")
-        };
-    }
-
-    private static CoverletCoverageSummary BuildAggregateSummary(IReadOnlyList<CoverletCoverageRow> rows)
-    {
-        var coveredLines = rows.Sum(row => row.CoveredLines);
-        var coverableLines = rows.Sum(row => row.CoverableLines);
-        var totalLines = rows.Sum(row => row.TotalLines);
-        var coveredBranches = rows.Sum(row => row.CoveredBranches);
-        var totalBranches = rows.Sum(row => row.TotalBranches);
-        var coveredMethods = rows.Count(row => row.CoveredLines > 0 || row.LineCoveragePercent > 0);
-        var totalMethods = rows.Count;
-
-        return new CoverletCoverageSummary
-        {
-            CoveredLines = coveredLines,
-            CoverableLines = coverableLines,
-            TotalLines = totalLines,
-            LineCoveragePercent = Percent(coveredLines, coverableLines),
-            CoveredBranches = coveredBranches,
-            TotalBranches = totalBranches,
-            BranchCoveragePercent = Percent(coveredBranches, totalBranches),
-            CoveredMethods = coveredMethods,
-            TotalMethods = totalMethods,
-            MethodCoveragePercent = Percent(coveredMethods, totalMethods)
         };
     }
 

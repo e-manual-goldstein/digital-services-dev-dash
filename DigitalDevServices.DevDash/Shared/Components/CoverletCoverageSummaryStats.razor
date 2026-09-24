@@ -1,0 +1,15 @@
+<dl class="row mb-0">
+    <dt class="col-sm-5">Line coverage</dt>
+    <dd class="col-sm-7">@FormatPercent(Summary.LineCoveragePercent) (@Summary.CoveredLines / @Summary.CoverableLines coverable lines)</dd>
+    <dt class="col-sm-5">Branch coverage</dt>
+    <dd class="col-sm-7">@FormatPercent(Summary.BranchCoveragePercent) (@Summary.CoveredBranches / @Summary.TotalBranches branches)</dd>
+    <dt class="col-sm-5">Methods</dt>
+    <dd class="col-sm-7">@Summary.TotalMethods method row(s)</dd>
+</dl>
+
+@code {
+    [Parameter, EditorRequired]
+    public CoverletCoverageSummary Summary { get; set; } = new();
+
+    private static string FormatPercent(decimal value) => $"{value:0.##}%";
+}

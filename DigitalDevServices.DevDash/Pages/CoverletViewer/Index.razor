@@ -42,20 +42,20 @@ else if (_parseResult is { IsSuccess: true } result)
     <div class="card mb-4">
         <div class="card-body">
             <h2 class="h5 mb-3">Run summary</h2>
-            @if (result.Summary is not null)
-            {
-                <dl class="row mb-0">
-                    <dt class="col-sm-4">Line coverage</dt>
-                    <dd class="col-sm-8">@FormatPercent(result.Summary.LineCoveragePercent) (@result.Summary.CoveredLines / @result.Summary.CoverableLines coverable lines)</dd>
-                    <dt class="col-sm-4">Branch coverage</dt>
-                    <dd class="col-sm-8">@FormatPercent(result.Summary.BranchCoveragePercent) (@result.Summary.CoveredBranches / @result.Summary.TotalBranches branches)</dd>
-                    <dt class="col-sm-4">Methods</dt>
-                    <dd class="col-sm-8">@result.Summary.TotalMethods method row(s) in report</dd>
-                </dl>
-            }
-            <p class="text-muted small mb-0 mt-3">
-                @result.Rows.Count method row(s) parsed.
-            </p>
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <h3 class="h6 text-muted mb-2">Overall</h3>
+                    <CoverletCoverageSummaryStats Summary="@GetOverallSummary(result)" />
+                    <p class="text-muted small mb-0 mt-2">@result.Rows.Count method row(s) in upload.</p>
+                </div>
+                <div class="col-md-6 border-start ps-md-4">
+                    <h3 class="h6 text-muted mb-2">Filtered</h3>
+                    <CoverletCoverageSummaryStats Summary="@GetFilteredSummary(result.Rows)" />
+                    <p class="text-muted small mb-0 mt-2">
+                        @GetFilteredExportRowCount(result.Rows) method row(s) after column filters; hidden rows excluded.
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -88,7 +88,8 @@ else if (_parseResult is { IsSuccess: true } result)
                                            HiddenRowKeys="_hiddenRowKeys"
                                            HiddenRowKeysChanged="OnHiddenRowKeysChanged"
                                            ShowHidden="_showHidden"
-                                           ShowHiddenChanged="OnShowHiddenChanged" />
+                                           ShowHiddenChanged="OnShowHiddenChanged"
+                                           FiltersChanged="OnTableFiltersChanged" />
         </CollapsibleSection>
     </div>
 }
@@ -109,6 +110,7 @@ else
     private HashSet<string> _selectedRowKeys = new(StringComparer.Ordinal);
     private HashSet<string> _hiddenRowKeys = new(StringComparer.Ordinal);
     private bool _showHidden;
+    private CoverletCoverageFilterState _tableFilters = new();
 
     private Task OnSelectedRowKeysChanged(IReadOnlySet<string> selectedRowKeys)
     {
@@ -119,7 +121,13 @@ else
     private Task OnHiddenRowKeysChanged(IReadOnlySet<string> hiddenRowKeys)
     {
         _hiddenRowKeys = new HashSet<string>(hiddenRowKeys, StringComparer.Ordinal);
-        return Task.CompletedTask;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task OnTableFiltersChanged(CoverletCoverageFilterState filters)
+    {
+        _tableFilters = filters;
+        return InvokeAsync(StateHasChanged);
     }
 
     private Task OnShowHiddenChanged(bool showHidden)
@@ -136,6 +144,7 @@ else
         _selectedRowKeys.Clear();
         _hiddenRowKeys.Clear();
         _showHidden = false;
+        _tableFilters = new CoverletCoverageFilterState();
 
         var file = args.File;
         if (file.Size == 0)
@@ -179,7 +188,17 @@ else
         }
     }
 
-    private static string FormatPercent(decimal value) => $"{value:0.##}%";
+    private CoverletCoverageSummary GetOverallSummary(CoverletCoverageParseResult result) =>
+        result.Summary ?? CoverletCoverageSummaryCalculator.BuildFromRows(result.Rows);
+
+    private CoverletCoverageSummary GetFilteredSummary(IReadOnlyList<CoverletCoverageRow> rows)
+    {
+        var exportRows = CoverletCoverageExportBuilder.SelectRowsForExport(rows, _tableFilters, _hiddenRowKeys);
+        return CoverletCoverageSummaryCalculator.BuildFromRows(exportRows);
+    }
+
+    private int GetFilteredExportRowCount(IReadOnlyList<CoverletCoverageRow> rows) =>
+        CoverletCoverageExportBuilder.SelectRowsForExport(rows, _tableFilters, _hiddenRowKeys).Count;
 
     private string GetModulesSummaryTitle()
     {
