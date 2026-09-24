@@ -25,9 +25,9 @@ else
             </colgroup>
             <thead class="table-light">
                 <tr>
-                    <th>Class name</th>
-                    <th class="text-end">Methods</th>
-                    <th class="text-end">Line coverage</th>
+                    <SortableColumnHeader Label="Class name" ColumnKey="class" Sort="_sort" SortChanged="OnSortChanged" />
+                    <SortableColumnHeader Label="Methods" ColumnKey="methods" Sort="_sort" SortChanged="OnSortChanged" AlignEnd="true" HeaderClass="text-end" />
+                    <SortableColumnHeader Label="Line coverage" ColumnKey="lineCoverage" Sort="_sort" SortChanged="OnSortChanged" AlignEnd="true" HeaderClass="text-end" />
                 </tr>
             </thead>
             <tbody>
@@ -39,7 +39,7 @@ else
                 }
                 else
                 {
-                    @foreach (var row in ClassSummaries)
+                    @foreach (var row in SortedClassSummaries)
                     {
                         <tr>
                             <td><code class="coverlet-cell-truncate" title="@row.ClassName">@row.ClassName</code></td>
@@ -62,6 +62,16 @@ else
 
     private string? _selectedModule;
 
+    private readonly TableColumnSortState _sort = new();
+
+    private static readonly IReadOnlyDictionary<string, Func<CoverletClassSummaryRow, IComparable>> SortColumns =
+        new Dictionary<string, Func<CoverletClassSummaryRow, IComparable>>(StringComparer.Ordinal)
+        {
+            ["class"] = row => row.ClassName,
+            ["methods"] = row => row.MethodCount,
+            ["lineCoverage"] = row => row.LineCoveragePercent
+        };
+
     private IReadOnlyList<CoverletModuleSummaryRow> ModuleSummaries =>
         CoverletCoverageSummaryBuilder.BuildModuleSummaries(Rows, HiddenRowKeys);
 
@@ -69,6 +79,9 @@ else
         string.IsNullOrWhiteSpace(_selectedModule)
             ? []
             : CoverletCoverageSummaryBuilder.BuildClassSummaries(Rows, HiddenRowKeys, _selectedModule);
+
+    private IReadOnlyList<CoverletClassSummaryRow> SortedClassSummaries =>
+        TableColumnSort.Apply(ClassSummaries, _sort, SortColumns);
 
     protected override void OnParametersSet()
     {
@@ -86,6 +99,8 @@ else
             _selectedModule = modules[0].ModuleName;
         }
     }
+
+    private Task OnSortChanged() => InvokeAsync(StateHasChanged);
 
     private static string FormatPercent(decimal value) => $"{value:0.##}%";
 }

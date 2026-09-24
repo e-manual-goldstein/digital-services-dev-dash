@@ -62,13 +62,13 @@
                            checked="@IsAllVisibleSelected"
                            @onchange="ToggleSelectAllVisibleAsync" />
                 </th>
-                <th>Module</th>
-                <th>Class</th>
-                <th>Method</th>
-                <th class="text-end">Line %</th>
-                <th class="text-end">Lines</th>
-                <th class="text-end">Branch %</th>
-                <th class="text-end">Branches</th>
+                <SortableColumnHeader Label="Module" ColumnKey="module" Sort="_sort" SortChanged="OnSortChanged" />
+                <SortableColumnHeader Label="Class" ColumnKey="class" Sort="_sort" SortChanged="OnSortChanged" />
+                <SortableColumnHeader Label="Method" ColumnKey="method" Sort="_sort" SortChanged="OnSortChanged" />
+                <SortableColumnHeader Label="Line %" ColumnKey="lineCoverage" Sort="_sort" SortChanged="OnSortChanged" AlignEnd="true" HeaderClass="text-end" />
+                <SortableColumnHeader Label="Lines" ColumnKey="coveredLines" Sort="_sort" SortChanged="OnSortChanged" AlignEnd="true" HeaderClass="text-end" />
+                <SortableColumnHeader Label="Branch %" ColumnKey="branchCoverage" Sort="_sort" SortChanged="OnSortChanged" AlignEnd="true" HeaderClass="text-end" />
+                <SortableColumnHeader Label="Branches" ColumnKey="coveredBranches" Sort="_sort" SortChanged="OnSortChanged" AlignEnd="true" HeaderClass="text-end" />
             </tr>
             <tr class="coverlet-coverage-table__filters">
                 <th></th>
@@ -139,7 +139,7 @@
             }
             else
             {
-                @foreach (var row in VisibleRows)
+                @foreach (var row in SortedVisibleRows)
                 {
                     var isHidden = HiddenRowKeys.Contains(row.RowKey);
                     <tr class="@(isHidden ? "coverlet-coverage-table__hidden" : null)">
@@ -194,6 +194,20 @@
     [Parameter]
     public string? SourceFileName { get; set; }
 
+    private readonly TableColumnSortState _sort = new();
+
+    private static readonly IReadOnlyDictionary<string, Func<CoverletCoverageRow, IComparable>> SortColumns =
+        new Dictionary<string, Func<CoverletCoverageRow, IComparable>>(StringComparer.Ordinal)
+        {
+            ["module"] = row => row.Module,
+            ["class"] = row => row.ClassName,
+            ["method"] = row => row.MethodName,
+            ["lineCoverage"] = row => row.LineCoveragePercent,
+            ["coveredLines"] = row => row.CoveredLines,
+            ["branchCoverage"] = row => row.BranchCoveragePercent,
+            ["coveredBranches"] = row => row.CoveredBranches
+        };
+
     private string _moduleFilter = string.Empty;
     private string _classFilter = string.Empty;
     private string _methodFilter = string.Empty;
@@ -219,13 +233,16 @@
     private IReadOnlyList<CoverletCoverageRow> VisibleRows =>
         CoverletCoverageRowVisibility.Apply(FilteredRows, HiddenRowKeys, ShowHidden);
 
+    private IReadOnlyList<CoverletCoverageRow> SortedVisibleRows =>
+        TableColumnSort.Apply(VisibleRows, _sort, SortColumns);
+
     private IReadOnlyList<CoverletCoverageRow> ExportRows =>
         CoverletCoverageExportBuilder.SelectRowsForExport(Rows, FilterState, HiddenRowKeys);
 
     private int ExportRowCount => ExportRows.Count;
 
     private bool IsAllVisibleSelected =>
-        VisibleRows.Count > 0 && VisibleRows.All(row => SelectedRowKeys.Contains(row.RowKey));
+        SortedVisibleRows.Count > 0 && SortedVisibleRows.All(row => SelectedRowKeys.Contains(row.RowKey));
 
     private bool IsSelected(string rowKey) => SelectedRowKeys.Contains(rowKey);
 
@@ -283,7 +300,7 @@
         var selectAll = eventArgs.Value is bool value && value;
         var updated = new HashSet<string>(SelectedRowKeys, StringComparer.Ordinal);
 
-        foreach (var row in VisibleRows)
+        foreach (var row in SortedVisibleRows)
         {
             if (selectAll)
             {
@@ -337,6 +354,8 @@
 
         return int.TryParse(value.Trim(), out var parsed) ? parsed : null;
     }
+
+    private Task OnSortChanged() => InvokeAsync(StateHasChanged);
 
     private static string FormatPercent(decimal value) => $"{value:0.##}%";
 }

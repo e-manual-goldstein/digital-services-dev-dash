@@ -48,7 +48,12 @@
 }
 
 .collapsible-section__body--open {
-    max-height: 2000px;
+    /* Cap height so large tables scroll inside the section, not the whole page */
+    max-height: min(70vh, 1200px);
+    overflow-x: auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-top: 0.75rem;
     padding-bottom: 1rem;
 }
 

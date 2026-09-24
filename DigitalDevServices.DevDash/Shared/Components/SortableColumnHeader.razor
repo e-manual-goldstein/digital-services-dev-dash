@@ -1,0 +1,36 @@
+<th class="@HeaderClass" style="user-select: none;">
+    <button type="button"
+            class="btn btn-link p-0 text-decoration-none @(AlignEnd ? "w-100 text-end" : null)"
+            @onclick="HandleClick">
+        @Label<span class="ms-1 text-muted">@Sort.IndicatorFor(ColumnKey)</span>
+    </button>
+</th>
+
+@code {
+    [Parameter]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter]
+    public string ColumnKey { get; set; } = string.Empty;
+
+    [Parameter]
+    public TableColumnSortState Sort { get; set; } = new();
+
+    [Parameter]
+    public string? HeaderClass { get; set; }
+
+    [Parameter]
+    public bool AlignEnd { get; set; }
+
+    [Parameter]
+    public EventCallback SortChanged { get; set; }
+
+    private async Task HandleClick()
+    {
+        Sort.CycleColumn(ColumnKey);
+        if (SortChanged.HasDelegate)
+        {
+            await SortChanged.InvokeAsync();
+        }
+    }
+}

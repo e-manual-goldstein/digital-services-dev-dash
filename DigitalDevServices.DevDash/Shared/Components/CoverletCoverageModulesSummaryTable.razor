@@ -8,10 +8,10 @@
         </colgroup>
         <thead class="table-light">
             <tr>
-                <th>Module name</th>
-                <th class="text-end">Classes</th>
-                <th class="text-end">Methods</th>
-                <th class="text-end">Line coverage</th>
+                <SortableColumnHeader Label="Module name" ColumnKey="module" Sort="_sort" SortChanged="OnSortChanged" />
+                <SortableColumnHeader Label="Classes" ColumnKey="classes" Sort="_sort" SortChanged="OnSortChanged" AlignEnd="true" HeaderClass="text-end" />
+                <SortableColumnHeader Label="Methods" ColumnKey="methods" Sort="_sort" SortChanged="OnSortChanged" AlignEnd="true" HeaderClass="text-end" />
+                <SortableColumnHeader Label="Line coverage" ColumnKey="lineCoverage" Sort="_sort" SortChanged="OnSortChanged" AlignEnd="true" HeaderClass="text-end" />
             </tr>
         </thead>
         <tbody>
@@ -23,7 +23,7 @@
             }
             else
             {
-                @foreach (var row in ModuleSummaries)
+                @foreach (var row in SortedModuleSummaries)
                 {
                     <tr>
                         <td><code class="coverlet-cell-truncate" title="@row.ModuleName">@row.ModuleName</code></td>
@@ -44,8 +44,24 @@
     [Parameter]
     public IReadOnlySet<string> HiddenRowKeys { get; set; } = new HashSet<string>(StringComparer.Ordinal);
 
+    private readonly TableColumnSortState _sort = new();
+
+    private static readonly IReadOnlyDictionary<string, Func<CoverletModuleSummaryRow, IComparable>> SortColumns =
+        new Dictionary<string, Func<CoverletModuleSummaryRow, IComparable>>(StringComparer.Ordinal)
+        {
+            ["module"] = row => row.ModuleName,
+            ["classes"] = row => row.ClassCount,
+            ["methods"] = row => row.MethodCount,
+            ["lineCoverage"] = row => row.LineCoveragePercent
+        };
+
     private IReadOnlyList<CoverletModuleSummaryRow> ModuleSummaries =>
         CoverletCoverageSummaryBuilder.BuildModuleSummaries(Rows, HiddenRowKeys);
+
+    private IReadOnlyList<CoverletModuleSummaryRow> SortedModuleSummaries =>
+        TableColumnSort.Apply(ModuleSummaries, _sort, SortColumns);
+
+    private Task OnSortChanged() => InvokeAsync(StateHasChanged);
 
     private static string FormatPercent(decimal value) => $"{value:0.##}%";
 }

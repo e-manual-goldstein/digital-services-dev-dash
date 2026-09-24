@@ -29,6 +29,7 @@
 | [COV-008](#cov-008) | Done | **Modules summary** collapsible report | COV-005 |
 | [COV-009](#cov-009) | Done | **Class summary** by module (dropdown) | COV-008 |
 | [COV-010](#cov-010) | Done | **Export** filtered working set (flat JSON) | COV-005 |
+| [COV-011](#cov-011) | Done | **Sortable** column headers (3-state cycle) | COV-003 |
 
 ---
 
@@ -205,3 +206,15 @@ No new SQLite tables for COV v1.
 | **Test / demo** | Upload large JSON → filter → hide rows → **Export (N)** → browser saves `&lt;original&gt;.filtered.json` with `rowCount` and `rows[]`. |
 | **Depends on** | COV-005 |
 | **Implementation** | `CoverletCoverageExportBuilder`, `CoverletCoverageExportDocument`; `devDashDownload.downloadText` in `wwwroot/js/download.js`. |
+
+### COV-011
+
+| Field | Detail |
+|-------|--------|
+| **ID** | COV-011 |
+| **Title** | Sortable column headers (three-state cycle) |
+| **Status** | Done |
+| **Description** | All Coverlet viewer data tables (modules summary, class summary, method results) support click-to-sort on column headers: first click ascending, second descending, third clears sort (restores default order). ▲ / ▼ indicators on the active column. Filter row on the method table is not sortable. |
+| **Test / demo** | Click **Line coverage** in modules summary → order changes → third click restores module name order. |
+| **Depends on** | COV-003 |
+| **Implementation** | `TableColumnSortState`, `TableColumnSort`, `SortableColumnHeader` component (same cycle as `ClientTable`). |
