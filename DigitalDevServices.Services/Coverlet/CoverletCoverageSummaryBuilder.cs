@@ -58,6 +58,7 @@ public static class CoverletCoverageSummaryBuilder
                 {
                     ClassName = group.Key,
                     MethodCount = methodRows.Count,
+                    LineCount = coverableLines,
                     LineCoveragePercent = Percent(coveredLines, coverableLines)
                 };
             })

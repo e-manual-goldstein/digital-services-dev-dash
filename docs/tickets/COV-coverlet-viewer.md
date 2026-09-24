@@ -64,7 +64,7 @@ No new SQLite tables for COV v1.
 | **Table columns** | Data columns from coverage model + leading **Select** column with checkbox per row for bulk actions |
 | **Column filters** | Filter controls live **in the column headers** (e.g. text contains, numeric min/max, or enum where appropriate) — each column that is filterable exposes its control in `<thead>` |
 | **Bulk actions** | Toolbar or bar above table when ≥1 row selected; v1 action: **Hide** — marks selected rows hidden (respects **Show hidden** toggle) |
-| **Export** | **Export (N)** downloads flat JSON (`*.filtered.json`) — methods matching column filters and **not** hidden; not Coverlet schema (see COV-010) |
+| **Export** | **Export JSON (N)** / **Export CSV (N)** — methods matching column filters and **not** hidden; not Coverlet schema (see COV-010) |
 
 ### Navigation
 
@@ -200,12 +200,12 @@ No new SQLite tables for COV v1.
 | Field | Detail |
 |-------|--------|
 | **ID** | COV-010 |
-| **Title** | Export filtered working set (flat JSON) |
+| **Title** | Export filtered working set (JSON and CSV) |
 | **Status** | Done |
-| **Description** | After narrowing a large upload with column filters and **Hide**, **Export** downloads a compact JSON file for downstream automation (not a Coverlet round-trip). Export includes rows that pass current column filters and are **not** in the hidden set (independent of **Show hidden**). Document shape in `samples/coverlet/coverage.export.sample.json`. |
-| **Test / demo** | Upload large JSON → filter → hide rows → **Export (N)** → browser saves `&lt;original&gt;.filtered.json` with `rowCount` and `rows[]`. |
+| **Description** | After narrowing a large upload with column filters and **Hide**, **Export JSON** or **Export CSV** downloads a compact file for downstream automation (not a Coverlet round-trip). Export includes rows that pass current column filters and are **not** in the hidden set (independent of **Show hidden**). Shapes: `samples/coverlet/coverage.export.sample.json`, `samples/coverlet/coverage.export.sample.csv`. |
+| **Test / demo** | Upload large JSON → filter → hide rows → **Export CSV (N)** → browser saves `&lt;original&gt;.filtered.csv` with header row and one row per method. |
 | **Depends on** | COV-005 |
-| **Implementation** | `CoverletCoverageExportBuilder`, `CoverletCoverageExportDocument`; `devDashDownload.downloadText` in `wwwroot/js/download.js`. |
+| **Implementation** | `CoverletCoverageExportBuilder` (`ToJson`, `ToCsv`), `CoverletCoverageExportDocument`; `devDashDownload.downloadText` in `wwwroot/js/download.js`. |
 
 ### COV-011
 

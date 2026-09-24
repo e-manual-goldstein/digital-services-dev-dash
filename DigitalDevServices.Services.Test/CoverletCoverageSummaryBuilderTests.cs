@@ -52,10 +52,12 @@ public sealed class CoverletCoverageSummaryBuilderTests
 
         var alpha = summaries.Single(row => row.ClassName == "Alpha");
         Assert.AreEqual(2, alpha.MethodCount);
+        Assert.AreEqual(6, alpha.LineCount);
         Assert.AreEqual(66.67m, alpha.LineCoveragePercent);
 
         var beta = summaries.Single(row => row.ClassName == "Beta");
         Assert.AreEqual(1, beta.MethodCount);
+        Assert.AreEqual(4, beta.LineCount);
         Assert.AreEqual(0m, beta.LineCoveragePercent);
     }
 

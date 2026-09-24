@@ -22,9 +22,16 @@
         <button type="button"
                 class="btn btn-sm btn-outline-primary"
                 disabled="@(ExportRowCount == 0)"
-                title="Download a JSON file of method rows that match the current column filters and are not hidden."
-                @onclick="ExportWorkingSetAsync">
-            Export (@ExportRowCount)
+                title="Download JSON of method rows that match the current column filters and are not hidden."
+                @onclick="ExportJsonAsync">
+            Export JSON (@ExportRowCount)
+        </button>
+        <button type="button"
+                class="btn btn-sm btn-outline-primary"
+                disabled="@(ExportRowCount == 0)"
+                title="Download CSV of method rows that match the current column filters and are not hidden."
+                @onclick="ExportCsvAsync">
+            Export CSV (@ExportRowCount)
         </button>
         @if (FilterState.HasActiveFilters)
         {
@@ -257,7 +264,7 @@
         _minCoveredBranchesText = string.Empty;
     }
 
-    private async Task ExportWorkingSetAsync()
+    private async Task ExportJsonAsync()
     {
         if (ExportRowCount == 0)
         {
@@ -265,8 +272,20 @@
         }
 
         var json = CoverletCoverageExportBuilder.ToJson(ExportRows, SourceFileName);
-        var fileName = CoverletCoverageExportBuilder.BuildExportFileName(SourceFileName);
+        var fileName = CoverletCoverageExportBuilder.BuildExportFileName(SourceFileName, "json");
         await Js.InvokeVoidAsync("devDashDownload.downloadText", fileName, json, "application/json");
+    }
+
+    private async Task ExportCsvAsync()
+    {
+        if (ExportRowCount == 0)
+        {
+            return;
+        }
+
+        var csv = CoverletCoverageExportBuilder.ToCsv(ExportRows);
+        var fileName = CoverletCoverageExportBuilder.BuildExportFileName(SourceFileName, "csv");
+        await Js.InvokeVoidAsync("devDashDownload.downloadText", fileName, csv, "text/csv");
     }
 
     private async Task HideSelectedAsync()

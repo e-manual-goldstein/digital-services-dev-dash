@@ -1,0 +1,2 @@
+Module,SourceFile,ClassName,MethodName,CoveredLines,CoverableLines,LineCoveragePercent,CoveredBranches,TotalBranches,BranchCoveragePercent
+SampleAssembly.dll,,Sample.Namespace.SampleClass,DoWork(),8,10,80,2,4,50
