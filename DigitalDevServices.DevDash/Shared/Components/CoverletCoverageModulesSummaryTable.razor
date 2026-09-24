@@ -1,6 +1,17 @@
+@if (SelectedModuleNames.Count > 0)
+{
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+        <span class="text-muted small">@SelectedModuleNames.Count module(s) selected</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="HideMethodsInSelectedModulesAsync">
+            Hide methods
+        </button>
+    </div>
+}
+
 <div class="table-responsive">
     <table class="table table-sm table-striped align-middle coverlet-summary-table">
         <colgroup>
+            <col class="coverlet-coverage-table__select" />
             <col class="coverlet-summary-table__module" />
             <col class="coverlet-summary-table__count" />
             <col class="coverlet-summary-table__count" />
@@ -8,6 +19,12 @@
         </colgroup>
         <thead class="table-light">
             <tr>
+                <th class="text-center">
+                    <input type="checkbox"
+                           class="form-check-input"
+                           checked="@IsAllVisibleModulesSelected"
+                           @onchange="ToggleSelectAllVisibleModulesAsync" />
+                </th>
                 <SortableColumnHeader Label="Module name" ColumnKey="module" Sort="_sort" SortChanged="OnSortChanged" />
                 <SortableColumnHeader Label="Classes" ColumnKey="classes" Sort="_sort" SortChanged="OnSortChanged" AlignEnd="true" HeaderClass="text-end" />
                 <SortableColumnHeader Label="Methods" ColumnKey="methods" Sort="_sort" SortChanged="OnSortChanged" AlignEnd="true" HeaderClass="text-end" />
@@ -18,7 +35,7 @@
             @if (ModuleSummaries.Count == 0)
             {
                 <tr>
-                    <td colspan="4" class="text-muted text-center py-3">No modules with visible method rows.</td>
+                    <td colspan="5" class="text-muted text-center py-3">No modules with visible method rows.</td>
                 </tr>
             }
             else
@@ -26,6 +43,12 @@
                 @foreach (var row in SortedModuleSummaries)
                 {
                     <tr>
+                        <td class="text-center">
+                            <input type="checkbox"
+                                   class="form-check-input"
+                                   checked="@IsModuleSelected(row.ModuleName)"
+                                   @onchange="eventArgs => ToggleModuleSelectionAsync(row.ModuleName, eventArgs)" />
+                        </td>
                         <td><code class="coverlet-cell-truncate" title="@row.ModuleName">@row.ModuleName</code></td>
                         <td class="text-end">@row.ClassCount</td>
                         <td class="text-end">@row.MethodCount</td>
@@ -44,6 +67,15 @@
     [Parameter]
     public IReadOnlySet<string> HiddenRowKeys { get; set; } = new HashSet<string>(StringComparer.Ordinal);
 
+    [Parameter]
+    public IReadOnlySet<string> SelectedModuleNames { get; set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+    [Parameter]
+    public EventCallback<IReadOnlySet<string>> SelectedModuleNamesChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<IReadOnlySet<string>> HiddenRowKeysChanged { get; set; }
+
     private readonly TableColumnSortState _sort = new();
 
     private static readonly IReadOnlyDictionary<string, Func<CoverletModuleSummaryRow, IComparable>> SortColumns =
@@ -60,6 +92,79 @@
 
     private IReadOnlyList<CoverletModuleSummaryRow> SortedModuleSummaries =>
         TableColumnSort.Apply(ModuleSummaries, _sort, SortColumns);
+
+    private bool IsAllVisibleModulesSelected =>
+        SortedModuleSummaries.Count > 0
+        && SortedModuleSummaries.All(row => IsModuleSelected(row.ModuleName));
+
+    private bool IsModuleSelected(string moduleName) => SelectedModuleNames.Contains(moduleName);
+
+    private async Task HideMethodsInSelectedModulesAsync()
+    {
+        if (!HiddenRowKeysChanged.HasDelegate || SelectedModuleNames.Count == 0)
+        {
+            return;
+        }
+
+        var updatedHidden = CoverletCoverageModuleHide.HideMethodsInModules(
+            Rows,
+            HiddenRowKeys,
+            SelectedModuleNames);
+
+        await HiddenRowKeysChanged.InvokeAsync(updatedHidden);
+
+        if (SelectedModuleNamesChanged.HasDelegate)
+        {
+            await SelectedModuleNamesChanged.InvokeAsync(new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+        }
+    }
+
+    private async Task ToggleSelectAllVisibleModulesAsync(ChangeEventArgs eventArgs)
+    {
+        if (!SelectedModuleNamesChanged.HasDelegate)
+        {
+            return;
+        }
+
+        var selectAll = eventArgs.Value is bool value && value;
+        var updated = new HashSet<string>(SelectedModuleNames, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var row in SortedModuleSummaries)
+        {
+            if (selectAll)
+            {
+                updated.Add(row.ModuleName);
+            }
+            else
+            {
+                updated.Remove(row.ModuleName);
+            }
+        }
+
+        await SelectedModuleNamesChanged.InvokeAsync(updated);
+    }
+
+    private async Task ToggleModuleSelectionAsync(string moduleName, ChangeEventArgs eventArgs)
+    {
+        if (!SelectedModuleNamesChanged.HasDelegate)
+        {
+            return;
+        }
+
+        var isChecked = eventArgs.Value is bool value && value;
+        var updated = new HashSet<string>(SelectedModuleNames, StringComparer.OrdinalIgnoreCase);
+
+        if (isChecked)
+        {
+            updated.Add(moduleName);
+        }
+        else
+        {
+            updated.Remove(moduleName);
+        }
+
+        await SelectedModuleNamesChanged.InvokeAsync(updated);
+    }
 
     private Task OnSortChanged() => InvokeAsync(StateHasChanged);
 

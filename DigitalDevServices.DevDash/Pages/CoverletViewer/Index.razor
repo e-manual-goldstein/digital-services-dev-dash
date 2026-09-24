@@ -64,7 +64,10 @@ else if (_parseResult is { IsSuccess: true } result)
                             DefaultExpanded="false"
                             IsEmpty="@(result.Rows.Count == 0)">
             <CoverletCoverageModulesSummaryTable Rows="result.Rows"
-                                                 HiddenRowKeys="_hiddenRowKeys" />
+                                                 HiddenRowKeys="_hiddenRowKeys"
+                                                 HiddenRowKeysChanged="OnHiddenRowKeysChanged"
+                                                 SelectedModuleNames="_selectedModuleNames"
+                                                 SelectedModuleNamesChanged="OnSelectedModuleNamesChanged" />
         </CollapsibleSection>
     </div>
 
@@ -108,6 +111,7 @@ else
     private string? _errorMessage;
     private bool _isLoading;
     private HashSet<string> _selectedRowKeys = new(StringComparer.Ordinal);
+    private HashSet<string> _selectedModuleNames = new(StringComparer.OrdinalIgnoreCase);
     private HashSet<string> _hiddenRowKeys = new(StringComparer.Ordinal);
     private bool _showHidden;
     private CoverletCoverageFilterState _tableFilters = new();
@@ -115,6 +119,12 @@ else
     private Task OnSelectedRowKeysChanged(IReadOnlySet<string> selectedRowKeys)
     {
         _selectedRowKeys = new HashSet<string>(selectedRowKeys, StringComparer.Ordinal);
+        return Task.CompletedTask;
+    }
+
+    private Task OnSelectedModuleNamesChanged(IReadOnlySet<string> selectedModuleNames)
+    {
+        _selectedModuleNames = new HashSet<string>(selectedModuleNames, StringComparer.OrdinalIgnoreCase);
         return Task.CompletedTask;
     }
 
@@ -142,6 +152,7 @@ else
         _parseResult = null;
         _loadedFileName = null;
         _selectedRowKeys.Clear();
+        _selectedModuleNames.Clear();
         _hiddenRowKeys.Clear();
         _showHidden = false;
         _tableFilters = new CoverletCoverageFilterState();
