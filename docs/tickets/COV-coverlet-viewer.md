@@ -28,6 +28,7 @@
 | [COV-007](#cov-007) | Done | Results table column layout; drop **File** column | COV-006 |
 | [COV-008](#cov-008) | Done | **Modules summary** collapsible report | COV-005 |
 | [COV-009](#cov-009) | Done | **Class summary** by module (dropdown) | COV-008 |
+| [COV-010](#cov-010) | Done | **Export** filtered working set (flat JSON) | COV-005 |
 
 ---
 
@@ -62,6 +63,7 @@ No new SQLite tables for COV v1.
 | **Table columns** | Data columns from coverage model + leading **Select** column with checkbox per row for bulk actions |
 | **Column filters** | Filter controls live **in the column headers** (e.g. text contains, numeric min/max, or enum where appropriate) — each column that is filterable exposes its control in `<thead>` |
 | **Bulk actions** | Toolbar or bar above table when ≥1 row selected; v1 action: **Hide** — marks selected rows hidden (respects **Show hidden** toggle) |
+| **Export** | **Export (N)** downloads flat JSON (`*.filtered.json`) — methods matching column filters and **not** hidden; not Coverlet schema (see COV-010) |
 
 ### Navigation
 
@@ -191,3 +193,15 @@ No new SQLite tables for COV v1.
 | **Test / demo** | Change module dropdown → class rows update → hide a method → class and module summaries shrink accordingly. |
 | **Depends on** | COV-008 |
 | **Implementation** | `CoverletClassSummaryRow`, `CoverletCoverageClassSummaryTable`. |
+
+### COV-010
+
+| Field | Detail |
+|-------|--------|
+| **ID** | COV-010 |
+| **Title** | Export filtered working set (flat JSON) |
+| **Status** | Done |
+| **Description** | After narrowing a large upload with column filters and **Hide**, **Export** downloads a compact JSON file for downstream automation (not a Coverlet round-trip). Export includes rows that pass current column filters and are **not** in the hidden set (independent of **Show hidden**). Document shape in `samples/coverlet/coverage.export.sample.json`. |
+| **Test / demo** | Upload large JSON → filter → hide rows → **Export (N)** → browser saves `&lt;original&gt;.filtered.json` with `rowCount` and `rows[]`. |
+| **Depends on** | COV-005 |
+| **Implementation** | `CoverletCoverageExportBuilder`, `CoverletCoverageExportDocument`; `devDashDownload.downloadText` in `wwwroot/js/download.js`. |

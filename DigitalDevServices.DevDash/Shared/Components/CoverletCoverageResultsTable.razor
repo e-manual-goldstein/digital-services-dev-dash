@@ -1,3 +1,5 @@
+@inject IJSRuntime Js
+
 @if (SelectedRowKeys.Count > 0)
 {
     <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
@@ -17,6 +19,13 @@
         }
     </p>
     <div class="d-flex flex-wrap align-items-center gap-3">
+        <button type="button"
+                class="btn btn-sm btn-outline-primary"
+                disabled="@(ExportRowCount == 0)"
+                title="Download a JSON file of method rows that match the current column filters and are not hidden."
+                @onclick="ExportWorkingSetAsync">
+            Export (@ExportRowCount)
+        </button>
         @if (FilterState.HasActiveFilters)
         {
             <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ClearFilters">
@@ -182,6 +191,9 @@
     [Parameter]
     public EventCallback<bool> ShowHiddenChanged { get; set; }
 
+    [Parameter]
+    public string? SourceFileName { get; set; }
+
     private string _moduleFilter = string.Empty;
     private string _classFilter = string.Empty;
     private string _methodFilter = string.Empty;
@@ -207,6 +219,11 @@
     private IReadOnlyList<CoverletCoverageRow> VisibleRows =>
         CoverletCoverageRowVisibility.Apply(FilteredRows, HiddenRowKeys, ShowHidden);
 
+    private IReadOnlyList<CoverletCoverageRow> ExportRows =>
+        CoverletCoverageExportBuilder.SelectRowsForExport(Rows, FilterState, HiddenRowKeys);
+
+    private int ExportRowCount => ExportRows.Count;
+
     private bool IsAllVisibleSelected =>
         VisibleRows.Count > 0 && VisibleRows.All(row => SelectedRowKeys.Contains(row.RowKey));
 
@@ -221,6 +238,18 @@
         _minBranchCoverageText = string.Empty;
         _minCoveredLinesText = string.Empty;
         _minCoveredBranchesText = string.Empty;
+    }
+
+    private async Task ExportWorkingSetAsync()
+    {
+        if (ExportRowCount == 0)
+        {
+            return;
+        }
+
+        var json = CoverletCoverageExportBuilder.ToJson(ExportRows, SourceFileName);
+        var fileName = CoverletCoverageExportBuilder.BuildExportFileName(SourceFileName);
+        await Js.InvokeVoidAsync("devDashDownload.downloadText", fileName, json, "application/json");
     }
 
     private async Task HideSelectedAsync()

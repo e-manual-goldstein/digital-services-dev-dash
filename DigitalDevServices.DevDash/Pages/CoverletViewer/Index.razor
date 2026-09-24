@@ -6,8 +6,8 @@
 
 <h1 class="mb-1">Coverlet Viewer</h1>
 <p class="text-muted mb-4">
-    Upload a Coverlet code-coverage JSON report to explore results in a filterable table.
-    Files are parsed in your session only — nothing is saved to disk or the database.
+    Upload a Coverlet code-coverage JSON report, filter and hide noise, then export a smaller JSON working set for downstream tasks.
+    Files are parsed in your session only — nothing is saved on the server.
 </p>
 
 @if (!string.IsNullOrWhiteSpace(_errorMessage))
@@ -82,6 +82,7 @@ else if (_parseResult is { IsSuccess: true } result)
                             DefaultExpanded="true"
                             IsEmpty="@(result.Rows.Count == 0)">
             <CoverletCoverageResultsTable Rows="result.Rows"
+                                           SourceFileName="_loadedFileName"
                                            SelectedRowKeys="_selectedRowKeys"
                                            SelectedRowKeysChanged="OnSelectedRowKeysChanged"
                                            HiddenRowKeys="_hiddenRowKeys"
