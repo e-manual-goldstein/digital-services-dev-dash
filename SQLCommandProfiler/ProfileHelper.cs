@@ -10,6 +10,7 @@ internal sealed class ProfileHelper : IDisposable
 {
     private const int PollIntervalMilliseconds = 200;
     private const string PlaceholderSessionName = "{{SESSION_NAME}}";
+    private const string ProfilerApplicationName = "SQLCommandProfiler";
 
     private bool _disposed;
     private volatile bool _stopRequested;
@@ -70,7 +71,7 @@ internal sealed class ProfileHelper : IDisposable
     {
         try
         {
-            using var connection = new SqlConnection(_connectionString);
+            using var connection = CreateProfilerConnection();
             connection.Open();
             _profilerSessionId = GetSessionId(connection);
             InitialiseExtendedEventSession(connection);
@@ -161,6 +162,7 @@ internal sealed class ProfileHelper : IDisposable
 
             var sqlText = GetEventField(eventElement, "sql_text")
                 ?? GetEventField(eventElement, "statement")
+                ?? GetEventField(eventElement, "batch_text")
                 ?? string.Empty;
 
             var dedupeKey = $"{timestampUtc.UtcTicks}|{eventName}|{sessionId}|{sqlText}";
@@ -184,6 +186,11 @@ internal sealed class ProfileHelper : IDisposable
                 LogicalReads: ParseLong(GetEventField(eventElement, "logical_reads")),
                 QueryHash: ParseULong(GetEventField(eventElement, "query_hash")),
                 QueryPlanHash: ParseULong(GetEventField(eventElement, "query_plan_hash")));
+
+            if (IsProfilerOwnActivity(eventInfo))
+            {
+                continue;
+            }
 
             if (!_eventFilters.PassesFilters(eventInfo))
             {
@@ -255,7 +262,7 @@ internal sealed class ProfileHelper : IDisposable
 
     private void StopExtendedEventSession()
     {
-        using var connection = new SqlConnection(_connectionString);
+        using var connection = CreateProfilerConnection();
         connection.Open();
 
         if (!SessionExists(connection, _traceName) || !SessionIsRunning(connection, _traceName))
@@ -415,6 +422,33 @@ internal sealed class ProfileHelper : IDisposable
         return $"[{identifier.Replace("]", "]]", StringComparison.Ordinal)}]";
     }
 
+    private SqlConnection CreateProfilerConnection()
+    {
+        var builder = new SqlConnectionStringBuilder(_connectionString)
+        {
+            ApplicationName = ProfilerApplicationName,
+        };
+        return new SqlConnection(builder.ConnectionString);
+    }
+
+    private static bool IsProfilerOwnActivity(in ExtendedEventInfo eventInfo)
+    {
+        if (string.Equals(eventInfo.ApplicationName, ProfilerApplicationName, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(eventInfo.SqlText))
+        {
+            return false;
+        }
+
+        return eventInfo.SqlText.Contains("sys.dm_xe_session_targets", StringComparison.OrdinalIgnoreCase)
+            || eventInfo.SqlText.Contains("sys.dm_xe_sessions", StringComparison.OrdinalIgnoreCase)
+            || eventInfo.SqlText.Contains("sys.server_event_sessions", StringComparison.OrdinalIgnoreCase)
+            || eventInfo.SqlText.Contains("ALTER EVENT SESSION", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static string? GetEventField(XElement eventElement, string fieldName)
     {
         foreach (var element in eventElement.Elements())
@@ -424,7 +458,24 @@ internal sealed class ProfileHelper : IDisposable
                 continue;
             }
 
-            return (string?)element.Attribute("value");
+            var attributeValue = (string?)element.Attribute("value");
+            if (!string.IsNullOrEmpty(attributeValue))
+            {
+                return attributeValue;
+            }
+
+            foreach (var child in element.Elements())
+            {
+                if (string.Equals(child.Name.LocalName, "value", StringComparison.OrdinalIgnoreCase))
+                {
+                    return child.Value;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(element.Value))
+            {
+                return element.Value;
+            }
         }
 
         return null;
