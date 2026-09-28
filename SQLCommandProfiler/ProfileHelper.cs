@@ -24,18 +24,6 @@ internal sealed class ProfileHelper : IDisposable
     private readonly Dictionary<int, ExtendedEventInfo[]> _batchedEventsInfo = [];
     private readonly HashSet<string> _seenEventKeys = new(StringComparer.Ordinal);
 
-    public readonly record struct ExtendedEventInfo(
-        DateTimeOffset TimestampUtc,
-        string EventName,
-        string DatabaseName,
-        string UserName,
-        string ApplicationName,
-        int SessionId,
-        string SqlText,
-        long DurationMicroseconds,
-        long CpuMicroseconds,
-        long LogicalReads);
-
     public ProfileHelper(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
@@ -186,7 +174,9 @@ internal sealed class ProfileHelper : IDisposable
                 SqlText: sqlText,
                 DurationMicroseconds: ParseLong(GetEventField(eventElement, "duration")),
                 CpuMicroseconds: ParseLong(GetEventField(eventElement, "cpu_time")),
-                LogicalReads: ParseLong(GetEventField(eventElement, "logical_reads"))));
+                LogicalReads: ParseLong(GetEventField(eventElement, "logical_reads")),
+                QueryHash: ParseULong(GetEventField(eventElement, "query_hash")),
+                QueryPlanHash: ParseULong(GetEventField(eventElement, "query_plan_hash"))));
         }
 
         return events;
@@ -431,6 +421,13 @@ internal sealed class ProfileHelper : IDisposable
     private static long ParseLong(string? value)
     {
         return long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
+            ? parsed
+            : 0;
+    }
+
+    private static ulong ParseULong(string? value)
+    {
+        return ulong.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
             ? parsed
             : 0;
     }
