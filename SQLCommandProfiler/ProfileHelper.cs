@@ -21,6 +21,7 @@ internal sealed class ProfileHelper : IDisposable
     private readonly string _connectionString;
     private readonly string _traceName;
     private readonly string _extendedEventsDefinitionFilePath;
+    private readonly EventExclusionFilters _eventExclusionFilters;
     private readonly Dictionary<int, ExtendedEventInfo[]> _batchedEventsInfo = [];
     private readonly HashSet<string> _seenEventKeys = new(StringComparer.Ordinal);
 
@@ -36,6 +37,8 @@ internal sealed class ProfileHelper : IDisposable
             ?? throw new InvalidOperationException("Profiler:TraceName is required.");
         _extendedEventsDefinitionFilePath = profiler["XEventsDefinitionFilePath"]
             ?? throw new InvalidOperationException("Profiler:XEventsDefinitionFilePath is required.");
+
+        _eventExclusionFilters = new EventExclusionFilters(configuration);
     }
 
     public void BeginTrace()
@@ -164,10 +167,11 @@ internal sealed class ProfileHelper : IDisposable
                 continue;
             }
 
-            events.Add(new ExtendedEventInfo(
+            var databaseName = GetEventField(eventElement, "database_name") ?? string.Empty;
+            var eventInfo = new ExtendedEventInfo(
                 TimestampUtc: timestampUtc,
                 EventName: eventName,
-                DatabaseName: GetEventField(eventElement, "database_name") ?? string.Empty,
+                DatabaseName: databaseName,
                 UserName: GetEventField(eventElement, "username") ?? string.Empty,
                 ApplicationName: GetEventField(eventElement, "client_app_name") ?? string.Empty,
                 SessionId: sessionId,
@@ -176,7 +180,14 @@ internal sealed class ProfileHelper : IDisposable
                 CpuMicroseconds: ParseLong(GetEventField(eventElement, "cpu_time")),
                 LogicalReads: ParseLong(GetEventField(eventElement, "logical_reads")),
                 QueryHash: ParseULong(GetEventField(eventElement, "query_hash")),
-                QueryPlanHash: ParseULong(GetEventField(eventElement, "query_plan_hash"))));
+                QueryPlanHash: ParseULong(GetEventField(eventElement, "query_plan_hash")));
+
+            if (_eventExclusionFilters.ShouldExclude(eventInfo))
+            {
+                continue;
+            }
+
+            events.Add(eventInfo);
         }
 
         return events;
