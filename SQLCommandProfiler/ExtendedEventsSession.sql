@@ -2,6 +2,7 @@ CREATE EVENT SESSION [{{SESSION_NAME}}] ON SERVER
 ADD EVENT sqlserver.rpc_completed(
     ACTION(
         sqlserver.client_app_name,
+        sqlserver.client_hostname,
         sqlserver.database_id,
         sqlserver.database_name,
         sqlserver.query_hash,
@@ -18,6 +19,7 @@ ADD EVENT sqlserver.rpc_completed(
 ADD EVENT sqlserver.sp_statement_completed(
     ACTION(
         sqlserver.client_app_name,
+        sqlserver.client_hostname,
         sqlserver.database_id,
         sqlserver.database_name,
         sqlserver.query_hash,
@@ -33,6 +35,7 @@ ADD EVENT sqlserver.sp_statement_completed(
 ADD EVENT sqlserver.sql_batch_completed(
     ACTION(
         sqlserver.client_app_name,
+        sqlserver.client_hostname,
         sqlserver.database_id,
         sqlserver.database_name,
         sqlserver.query_hash,
@@ -49,6 +52,7 @@ ADD EVENT sqlserver.sql_batch_completed(
 ADD EVENT sqlserver.sql_statement_completed(
     ACTION(
         sqlserver.client_app_name,
+        sqlserver.client_hostname,
         sqlserver.database_id,
         sqlserver.database_name,
         sqlserver.query_hash,

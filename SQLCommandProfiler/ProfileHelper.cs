@@ -21,7 +21,7 @@ internal sealed class ProfileHelper : IDisposable
     private readonly string _connectionString;
     private readonly string _traceName;
     private readonly string _extendedEventsDefinitionFilePath;
-    private readonly EventExclusionFilters _eventExclusionFilters;
+    private readonly EventFilterEngine _eventFilters;
     private readonly Dictionary<int, ExtendedEventInfo[]> _batchedEventsInfo = [];
     private readonly HashSet<string> _seenEventKeys = new(StringComparer.Ordinal);
 
@@ -38,7 +38,7 @@ internal sealed class ProfileHelper : IDisposable
         _extendedEventsDefinitionFilePath = profiler["XEventsDefinitionFilePath"]
             ?? throw new InvalidOperationException("Profiler:XEventsDefinitionFilePath is required.");
 
-        _eventExclusionFilters = new EventExclusionFilters(configuration);
+        _eventFilters = new EventFilterEngine(configuration);
     }
 
     public void BeginTrace()
@@ -174,6 +174,7 @@ internal sealed class ProfileHelper : IDisposable
                 DatabaseName: databaseName,
                 UserName: GetEventField(eventElement, "username") ?? string.Empty,
                 ApplicationName: GetEventField(eventElement, "client_app_name") ?? string.Empty,
+                HostName: GetEventField(eventElement, "client_hostname") ?? string.Empty,
                 SessionId: sessionId,
                 SqlText: sqlText,
                 DurationMicroseconds: ParseLong(GetEventField(eventElement, "duration")),
@@ -182,7 +183,7 @@ internal sealed class ProfileHelper : IDisposable
                 QueryHash: ParseULong(GetEventField(eventElement, "query_hash")),
                 QueryPlanHash: ParseULong(GetEventField(eventElement, "query_plan_hash")));
 
-            if (_eventExclusionFilters.ShouldExclude(eventInfo))
+            if (!_eventFilters.PassesFilters(eventInfo))
             {
                 continue;
             }
@@ -447,7 +448,7 @@ internal sealed class ProfileHelper : IDisposable
     {
         var durationMs = info.DurationMicroseconds / 1000d;
         Console.WriteLine(
-            $"[{info.TimestampUtc:u}] {info.EventName} | db={info.DatabaseName} | spid={info.SessionId} | user={info.UserName} | app={info.ApplicationName} | {durationMs:0.###} ms | reads={info.LogicalReads}");
+            $"[{info.TimestampUtc:u}] {info.EventName} | db={info.DatabaseName} | host={info.HostName} | spid={info.SessionId} | user={info.UserName} | app={info.ApplicationName} | {durationMs:0.###} ms | reads={info.LogicalReads}");
 
         if (string.IsNullOrWhiteSpace(info.SqlText))
         {
