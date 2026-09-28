@@ -22,6 +22,7 @@ internal sealed class ProfileHelper : IDisposable
     private readonly string _traceName;
     private readonly string _extendedEventsDefinitionFilePath;
     private readonly EventFilterEngine _eventFilters;
+    private readonly bool _printEventDetailsOnCapture;
     private readonly Dictionary<int, ExtendedEventInfo[]> _batchedEventsInfo = [];
     private readonly HashSet<string> _seenEventKeys = new(StringComparer.Ordinal);
 
@@ -39,6 +40,7 @@ internal sealed class ProfileHelper : IDisposable
             ?? throw new InvalidOperationException("Profiler:XEventsDefinitionFilePath is required.");
 
         _eventFilters = new EventFilterEngine(configuration);
+        _printEventDetailsOnCapture = bool.TryParse(profiler["PrintEventDetailsOnCapture"], out var printDetails) && printDetails;
     }
 
     public void BeginTrace()
@@ -189,6 +191,11 @@ internal sealed class ProfileHelper : IDisposable
             }
 
             events.Add(eventInfo);
+
+            if (_printEventDetailsOnCapture)
+            {
+                Console.WriteLine(FormatEventCaptureSummary(eventInfo));
+            }
         }
 
         return events;
@@ -442,6 +449,41 @@ internal sealed class ProfileHelper : IDisposable
         return ulong.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
             ? parsed
             : 0;
+    }
+
+    private static string FormatEventCaptureSummary(ExtendedEventInfo info)
+    {
+        var durationMs = info.DurationMicroseconds / 1000d;
+        var sqlSnippet = FormatSqlSnippet(info.SqlText);
+
+        return
+            $"[capture] {info.TimestampUtc:HH:mm:ss.fff} | {info.EventName} | db={info.DatabaseName} | spid={info.SessionId} | {durationMs:0.###} ms | {sqlSnippet}";
+    }
+
+    private static string FormatSqlSnippet(string sqlText, int maxLength = 96)
+    {
+        if (string.IsNullOrWhiteSpace(sqlText))
+        {
+            return "(no text)";
+        }
+
+        var singleLine = sqlText
+            .Replace("\r\n", " ", StringComparison.Ordinal)
+            .Replace('\n', ' ')
+            .Replace('\r', ' ')
+            .Trim();
+
+        while (singleLine.Contains("  ", StringComparison.Ordinal))
+        {
+            singleLine = singleLine.Replace("  ", " ", StringComparison.Ordinal);
+        }
+
+        if (singleLine.Length <= maxLength)
+        {
+            return singleLine;
+        }
+
+        return string.Concat(singleLine.AsSpan(0, maxLength - 3), "...");
     }
 
     private static void WriteEvent(ExtendedEventInfo info)
