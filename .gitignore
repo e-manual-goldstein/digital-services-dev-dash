@@ -365,3 +365,4 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /DigitalDevServices.DevDash/appsettings.Development.json
+/SQLCommandProfiler/appsettings.Development.json

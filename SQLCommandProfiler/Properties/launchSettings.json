@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "SQLCommandProfiler": {
+      "commandName": "Project"
+    },
+    "RunLocal": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
