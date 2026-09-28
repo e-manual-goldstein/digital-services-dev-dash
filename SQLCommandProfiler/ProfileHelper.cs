@@ -24,7 +24,9 @@ internal sealed class ProfileHelper : IDisposable
     private readonly string _extendedEventsDefinitionFilePath;
     private readonly EventFilterEngine _eventFilters;
     private readonly bool _printEventDetailsOnCapture;
-    private readonly Dictionary<int, ExtendedEventInfo[]> _batchedEventsInfo = [];
+    private readonly EfSqlInterpretationWhen _efSqlInterpretationWhen;
+    private readonly EfSqlInterpreter _efSqlInterpreter = new();
+    private readonly Dictionary<int, CapturedSqlEvent[]> _batchedEventsInfo = [];
     private readonly HashSet<string> _seenEventKeys = new(StringComparer.Ordinal);
 
     public ProfileHelper(IConfiguration configuration)
@@ -42,6 +44,7 @@ internal sealed class ProfileHelper : IDisposable
 
         _eventFilters = new EventFilterEngine(configuration);
         _printEventDetailsOnCapture = bool.TryParse(profiler["PrintEventDetailsOnCapture"], out var printDetails) && printDetails;
+        _efSqlInterpretationWhen = EfSqlInterpretationOptions.ReadFrom(profiler);
     }
 
     public void BeginTrace()
@@ -117,7 +120,7 @@ internal sealed class ProfileHelper : IDisposable
         return !_stopRequested;
     }
 
-    private List<ExtendedEventInfo> ReadNewEvents(SqlConnection connection)
+    private List<CapturedSqlEvent> ReadNewEvents(SqlConnection connection)
     {
         const string sql = """
             SELECT CAST(t.target_data AS XML) AS TargetData
@@ -136,7 +139,7 @@ internal sealed class ProfileHelper : IDisposable
         }
 
         var targetXml = XDocument.Parse(result.ToString()!);
-        var events = new List<ExtendedEventInfo>();
+        var events = new List<CapturedSqlEvent>();
 
         foreach (var eventElement in targetXml.Descendants("event"))
         {
@@ -197,7 +200,14 @@ internal sealed class ProfileHelper : IDisposable
                 continue;
             }
 
-            events.Add(eventInfo);
+            var captured = new CapturedSqlEvent { Info = eventInfo };
+
+            if (_efSqlInterpretationWhen == EfSqlInterpretationWhen.OnReceive)
+            {
+                ApplyEfInterpretation(captured);
+            }
+
+            events.Add(captured);
 
             if (_printEventDetailsOnCapture)
             {
@@ -313,9 +323,14 @@ internal sealed class ProfileHelper : IDisposable
             Console.WriteLine();
             Console.WriteLine($"Batch {batchNumber} ({batch.Length} event(s))");
 
-            foreach (var info in batch)
+            foreach (var captured in batch)
             {
-                WriteEvent(info);
+                if (_efSqlInterpretationWhen == EfSqlInterpretationWhen.OnReport)
+                {
+                    ApplyEfInterpretation(captured);
+                }
+
+                WriteEvent(captured);
             }
         }
     }
@@ -537,8 +552,19 @@ internal sealed class ProfileHelper : IDisposable
         return string.Concat(singleLine.AsSpan(0, maxLength - 3), "...");
     }
 
-    private static void WriteEvent(ExtendedEventInfo info)
+    private void ApplyEfInterpretation(CapturedSqlEvent captured)
     {
+        if (captured.EfInterpretation is not null)
+        {
+            return;
+        }
+
+        captured.EfInterpretation = _efSqlInterpreter.Interpret(captured.Info.SqlText);
+    }
+
+    private static void WriteEvent(CapturedSqlEvent captured)
+    {
+        var info = captured.Info;
         var durationMs = info.DurationMicroseconds / 1000d;
         Console.WriteLine(
             $"[{info.TimestampUtc:u}] {info.EventName} | db={info.DatabaseName} | host={info.HostName} | spid={info.SessionId} | user={info.UserName} | app={info.ApplicationName} | {durationMs:0.###} ms | reads={info.LogicalReads}");
