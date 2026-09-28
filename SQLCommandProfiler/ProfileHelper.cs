@@ -149,10 +149,16 @@ internal sealed class ProfileHelper : IDisposable
             var timestampRaw = (string?)eventElement.Attribute("timestamp");
             var eventName = (string?)eventElement.Attribute("name") ?? string.Empty;
             if (string.IsNullOrEmpty(timestampRaw)
-                || !long.TryParse(timestampRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var timestampMicroseconds))
+                || !DateTimeOffset.TryParse(
+                    timestampRaw,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.RoundtripKind,
+                    out var timestampUtc))
             {
                 continue;
             }
+
+            timestampUtc = timestampUtc.ToUniversalTime();
 
             var sessionId = ParseInt(GetEventField(eventElement, "session_id"));
             if (sessionId == _profilerSessionId)
@@ -164,14 +170,14 @@ internal sealed class ProfileHelper : IDisposable
                 ?? GetEventField(eventElement, "statement")
                 ?? string.Empty;
 
-            var dedupeKey = $"{timestampMicroseconds}|{eventName}|{sessionId}|{sqlText}";
+            var dedupeKey = $"{timestampUtc.UtcTicks}|{eventName}|{sessionId}|{sqlText}";
             if (!_seenEventKeys.Add(dedupeKey))
             {
                 continue;
             }
 
             events.Add(new ExtendedEventInfo(
-                TimestampUtc: XeTimestampToUtc(timestampMicroseconds),
+                TimestampUtc: timestampUtc,
                 EventName: eventName,
                 DatabaseName: GetEventField(eventElement, "database_name") ?? string.Empty,
                 UserName: GetEventField(eventElement, "username") ?? string.Empty,
@@ -413,12 +419,6 @@ internal sealed class ProfileHelper : IDisposable
         }
 
         return null;
-    }
-
-    private static DateTimeOffset XeTimestampToUtc(long timestampMicroseconds)
-    {
-        var ticks = timestampMicroseconds * 10;
-        return new DateTimeOffset(ticks, TimeSpan.Zero);
     }
 
     private static int ParseInt(string? value)
