@@ -94,8 +94,7 @@ internal sealed class EventFilterEngine
             EventFilterField.EventName => eventInfo.EventName,
             EventFilterField.ObjectName => eventInfo.ObjectName,
             EventFilterField.SessionId => eventInfo.SessionId.ToString(CultureInfo.InvariantCulture),
-            EventFilterField.SqlText => throw new InvalidOperationException(
-                "SqlText filtering is not supported yet. Remove or change rules that use Field \"SqlText\"."),
+            EventFilterField.SqlText => eventInfo.SqlText,
             _ => string.Empty,
         };
     }
@@ -130,12 +129,6 @@ internal sealed class EventFilterEngine
             {
                 throw new InvalidOperationException(
                     $"Profiler:EventFilters:Rules:{index}:Field \"{fieldText}\" is invalid.");
-            }
-
-            if (field == EventFilterField.SqlText)
-            {
-                throw new InvalidOperationException(
-                    "SqlText filtering is not supported yet. Remove or change rules that use Field \"SqlText\".");
             }
 
             Regex pattern;

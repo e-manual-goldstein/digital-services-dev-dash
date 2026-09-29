@@ -43,7 +43,27 @@ public sealed class EventFilterEngineTests
         Assert.IsFalse(engine.PassesFilters(eventInfo));
     }
 
-    private static ExtendedEventInfo CreateEvent(string databaseName)
+    [TestMethod]
+    public void PassesFilters_ExcludesBySqlTextPattern()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Profiler:EventFilters:Rules:0:Effect"] = "Exclude",
+                ["Profiler:EventFilters:Rules:0:Field"] = "SqlText",
+                ["Profiler:EventFilters:Rules:0:Pattern"] = "sp_getapplock",
+            })
+            .Build();
+
+        var engine = new EventFilterEngine(configuration);
+        var blocked = CreateEvent(databaseName: "Shop", sqlText: "exec sp_getapplock @p0, @p1");
+        var allowed = CreateEvent(databaseName: "Shop", sqlText: "SELECT 1");
+
+        Assert.IsFalse(engine.PassesFilters(blocked));
+        Assert.IsTrue(engine.PassesFilters(allowed));
+    }
+
+    private static ExtendedEventInfo CreateEvent(string databaseName, string sqlText = "")
     {
         return new ExtendedEventInfo(
             TimestampUtc: DateTimeOffset.UtcNow,
@@ -54,7 +74,7 @@ public sealed class EventFilterEngineTests
             ApplicationName: string.Empty,
             HostName: string.Empty,
             SessionId: 1,
-            SqlText: string.Empty,
+            SqlText: sqlText,
             DurationMicroseconds: 0,
             CpuMicroseconds: 0,
             LogicalReads: 0,
