@@ -107,6 +107,12 @@ internal sealed class EventFilterEngine
 
         foreach (var ruleSection in rulesSection.GetChildren())
         {
+            if (IsRuleInactive(ruleSection))
+            {
+                index++;
+                continue;
+            }
+
             var effectText = ruleSection["Effect"]
                 ?? throw new InvalidOperationException($"Profiler:EventFilters:Rules:{index}:Effect is required.");
             var fieldText = ruleSection["Field"]
@@ -152,5 +158,10 @@ internal sealed class EventFilterEngine
         }
 
         return rules.ToArray();
+    }
+
+    private static bool IsRuleInactive(IConfigurationSection ruleSection)
+    {
+        return bool.TryParse(ruleSection["IsActive"], out var isActive) && !isActive;
     }
 }

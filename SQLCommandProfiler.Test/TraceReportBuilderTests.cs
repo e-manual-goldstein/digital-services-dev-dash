@@ -63,4 +63,50 @@ public sealed class TraceReportBuilderTests
         Assert.AreEqual(1, webApp.EventCount);
         Assert.AreEqual(1, webApp.EventsByType["rpc_completed"]);
     }
+
+    [TestMethod]
+    public void Build_GroupsDuplicateCommands_ByQueryHash()
+    {
+        const ulong sharedHash = 0x123456789ABCDEF0UL;
+        var events = new List<CapturedSqlEvent>
+        {
+            CreateEventWithHash(sharedHash, "WebApp", "SELECT 1"),
+            CreateEventWithHash(sharedHash, "WebApp", "SELECT 1"),
+            CreateEventWithHash(sharedHash, "Worker", "SELECT 1"),
+            CreateEventWithHash(0xFEDCBA0987654321UL, "WebApp", "SELECT 2"),
+        };
+
+        var report = TraceReportBuilder.Build("TestSession", 1, events, EfSqlInterpretationWhen.Never, sqlCommandLookupConfigured: false);
+
+        Assert.AreEqual(4, report.DuplicateCommands.EventsWithQueryHash);
+        Assert.AreEqual(2, report.DuplicateCommands.UniqueQueryHashes);
+        Assert.AreEqual(1, report.DuplicateCommands.DuplicateQueryHashGroups);
+        Assert.AreEqual(2, report.DuplicateCommands.RedundantInvocations);
+
+        var group = report.DuplicateCommands.Groups.Single();
+        Assert.AreEqual(sharedHash.ToString("X16"), group.QueryHash);
+        Assert.AreEqual(3, group.InvocationCount);
+    }
+
+    private static CapturedSqlEvent CreateEventWithHash(ulong queryHash, string applicationName, string sql)
+    {
+        return new CapturedSqlEvent
+        {
+            Info = new ExtendedEventInfo(
+                TimestampUtc: DateTimeOffset.UtcNow,
+                EventName: "rpc_completed",
+                ObjectName: string.Empty,
+                DatabaseName: "Shop",
+                UserName: "app",
+                ApplicationName: applicationName,
+                HostName: "host",
+                SessionId: 1,
+                SqlText: sql,
+                DurationMicroseconds: 100,
+                CpuMicroseconds: 100,
+                LogicalReads: 1,
+                QueryHash: queryHash,
+                QueryPlanHash: 0),
+        };
+    }
 }

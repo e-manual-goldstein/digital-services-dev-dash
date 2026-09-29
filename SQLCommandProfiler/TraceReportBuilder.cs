@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace SQLCommandProfiler;
 
 internal static class TraceReportBuilder
@@ -14,6 +16,7 @@ internal static class TraceReportBuilder
         var summary = BuildSummary(batchCount, capturedEvents);
         var efReport = BuildEfCommandReport(capturedEvents, interpretationWhen);
         var knownCommands = BuildKnownSqlCommandReport(capturedEvents, sqlCommandLookupConfigured);
+        var duplicateCommands = BuildDuplicateCommandsReport(capturedEvents);
         var byApplication = BuildApplicationGroups(capturedEvents);
 
         return new TraceReportDocument
@@ -23,6 +26,7 @@ internal static class TraceReportBuilder
             Summary = summary,
             EfCommandReport = efReport,
             KnownSqlCommandReport = knownCommands,
+            DuplicateCommands = duplicateCommands,
             CommandsByApplicationName = byApplication,
         };
     }
@@ -160,6 +164,57 @@ internal static class TraceReportBuilder
             KnownReadWrite = knownReadWrite,
             UnknownCommands = unknown,
             InvocationsByCommand = invocations,
+        };
+    }
+
+    private static DuplicateCommandsReport BuildDuplicateCommandsReport(IReadOnlyList<CapturedSqlEvent> capturedEvents)
+    {
+        var byHash = new Dictionary<ulong, List<CapturedSqlEvent>>();
+
+        foreach (var captured in capturedEvents)
+        {
+            if (captured.Info.QueryHash == 0)
+            {
+                continue;
+            }
+
+            if (!byHash.TryGetValue(captured.Info.QueryHash, out var list))
+            {
+                list = [];
+                byHash[captured.Info.QueryHash] = list;
+            }
+
+            list.Add(captured);
+        }
+
+        var eventsWithHash = byHash.Values.Sum(group => group.Count);
+        var duplicateGroups = byHash
+            .Where(pair => pair.Value.Count > 1)
+            .OrderByDescending(pair => pair.Value.Count)
+            .ThenBy(pair => pair.Key, Comparer<ulong>.Default)
+            .Select(pair =>
+            {
+                var sample = pair.Value[0].Info;
+                return new DuplicateCommandGroup
+                {
+                    QueryHash = pair.Key.ToString("X16", CultureInfo.InvariantCulture),
+                    InvocationCount = pair.Value.Count,
+                    SampleObjectName = string.IsNullOrWhiteSpace(sample.ObjectName) ? null : sample.ObjectName,
+                    SampleApplicationName = string.IsNullOrWhiteSpace(sample.ApplicationName) ? null : sample.ApplicationName,
+                    SampleSqlSnippet = FormatSqlSnippet(sample.SqlText),
+                };
+            })
+            .ToArray();
+
+        var redundant = duplicateGroups.Sum(group => group.InvocationCount - 1);
+
+        return new DuplicateCommandsReport
+        {
+            EventsWithQueryHash = eventsWithHash,
+            UniqueQueryHashes = byHash.Count,
+            DuplicateQueryHashGroups = duplicateGroups.Length,
+            RedundantInvocations = redundant,
+            Groups = duplicateGroups,
         };
     }
 

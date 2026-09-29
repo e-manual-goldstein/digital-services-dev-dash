@@ -14,7 +14,36 @@ public sealed class TraceReportDocument
 
     public required KnownSqlCommandReport KnownSqlCommandReport { get; init; }
 
+    public required DuplicateCommandsReport DuplicateCommands { get; init; }
+
     public required IReadOnlyList<ApplicationCommandGroup> CommandsByApplicationName { get; init; }
+}
+
+public sealed class DuplicateCommandsReport
+{
+    public int EventsWithQueryHash { get; init; }
+
+    public int UniqueQueryHashes { get; init; }
+
+    public int DuplicateQueryHashGroups { get; init; }
+
+    /// <summary>Extra invocations beyond the first occurrence for each duplicated hash.</summary>
+    public int RedundantInvocations { get; init; }
+
+    public IReadOnlyList<DuplicateCommandGroup> Groups { get; init; } = [];
+}
+
+public sealed class DuplicateCommandGroup
+{
+    public required string QueryHash { get; init; }
+
+    public int InvocationCount { get; init; }
+
+    public string? SampleObjectName { get; init; }
+
+    public string? SampleApplicationName { get; init; }
+
+    public string? SampleSqlSnippet { get; init; }
 }
 
 public sealed class KnownSqlCommandReport
