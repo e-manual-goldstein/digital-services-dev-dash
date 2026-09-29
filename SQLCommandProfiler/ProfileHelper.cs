@@ -221,6 +221,11 @@ public sealed class ProfileHelper : IDisposable
                 continue;
             }
 
+            if (BuiltInSqlServerRpc.IsExcludedFromCapture(eventInfo.ObjectName))
+            {
+                continue;
+            }
+
             var captured = new CapturedSqlEvent { Info = eventInfo };
 
             if (ShouldInterpretOnReceive())

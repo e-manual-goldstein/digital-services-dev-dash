@@ -13,11 +13,12 @@ internal static class TraceReportBuilder
         EfSqlInterpretationWhen interpretationWhen,
         bool sqlCommandLookupConfigured)
     {
-        var summary = BuildSummary(batchCount, capturedEvents);
+        var reportEvents = FilterEventsForTraceReport(capturedEvents);
+        var summary = BuildSummary(batchCount, reportEvents);
         var efReport = BuildEfCommandReport(capturedEvents, interpretationWhen);
-        var knownCommands = BuildKnownSqlCommandReport(capturedEvents, sqlCommandLookupConfigured);
-        var duplicateCommands = BuildDuplicateCommandsReport(capturedEvents);
-        var byApplication = BuildApplicationGroups(capturedEvents);
+        var knownCommands = BuildKnownSqlCommandReport(reportEvents, sqlCommandLookupConfigured);
+        var duplicateCommands = BuildDuplicateCommandsReport(reportEvents);
+        var byApplication = BuildApplicationGroups(reportEvents);
 
         return new TraceReportDocument
         {
@@ -29,6 +30,13 @@ internal static class TraceReportBuilder
             DuplicateCommands = duplicateCommands,
             CommandsByApplicationName = byApplication,
         };
+    }
+
+    private static List<CapturedSqlEvent> FilterEventsForTraceReport(IReadOnlyList<CapturedSqlEvent> capturedEvents)
+    {
+        return capturedEvents
+            .Where(captured => !BuiltInSqlServerRpc.IsExcludedFromTraceReport(captured.Info.ObjectName))
+            .ToList();
     }
 
     private static TraceReportSummary BuildSummary(int batchCount, IReadOnlyList<CapturedSqlEvent> capturedEvents)

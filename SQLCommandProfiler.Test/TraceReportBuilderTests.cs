@@ -88,6 +88,90 @@ public sealed class TraceReportBuilderTests
         Assert.AreEqual(3, group.InvocationCount);
     }
 
+    [TestMethod]
+    public void Build_OmitsBuiltInRpcs_FromReportSections_ButKeepsEfInterpretationForExecuteSql()
+    {
+        const string insertSql = """
+            INSERT [dbo].[Orders]([CustomerId])
+            VALUES (@p0)
+            """;
+
+        var interpreter = new EfSqlInterpreter();
+        var events = new List<CapturedSqlEvent>
+        {
+            new()
+            {
+                Info = new ExtendedEventInfo(
+                    TimestampUtc: DateTimeOffset.UtcNow,
+                    EventName: "rpc_completed",
+                    ObjectName: "sp_reset_connection",
+                    DatabaseName: "Shop",
+                    UserName: "app",
+                    ApplicationName: "WebApp",
+                    HostName: "host",
+                    SessionId: 1,
+                    SqlText: string.Empty,
+                    DurationMicroseconds: 100,
+                    CpuMicroseconds: 100,
+                    LogicalReads: 0,
+                    QueryHash: 0,
+                    QueryPlanHash: 0),
+            },
+            new()
+            {
+                Info = new ExtendedEventInfo(
+                    TimestampUtc: DateTimeOffset.UtcNow,
+                    EventName: "rpc_completed",
+                    ObjectName: "sys.sp_executesql",
+                    DatabaseName: "Shop",
+                    UserName: "app",
+                    ApplicationName: "WebApp",
+                    HostName: "host",
+                    SessionId: 1,
+                    SqlText: insertSql,
+                    DurationMicroseconds: 1000,
+                    CpuMicroseconds: 900,
+                    LogicalReads: 2,
+                    QueryHash: 0xABCDEFUL,
+                    QueryPlanHash: 0),
+                EfInterpretation = interpreter.Interpret(insertSql),
+            },
+            new()
+            {
+                Info = new ExtendedEventInfo(
+                    TimestampUtc: DateTimeOffset.UtcNow,
+                    EventName: "sql_statement_completed",
+                    ObjectName: string.Empty,
+                    DatabaseName: "Shop",
+                    UserName: "app",
+                    ApplicationName: "WebApp",
+                    HostName: "host",
+                    SessionId: 2,
+                    SqlText: "SELECT 1",
+                    DurationMicroseconds: 500,
+                    CpuMicroseconds: 400,
+                    LogicalReads: 1,
+                    QueryHash: 0,
+                    QueryPlanHash: 0),
+            },
+        };
+
+        var report = TraceReportBuilder.Build("TestSession", batchCount: 1, events, EfSqlInterpretationWhen.OnReceive, sqlCommandLookupConfigured: false);
+
+        Assert.AreEqual(1, report.Summary.TotalEventsCaptured);
+        Assert.AreEqual(1, report.EfCommandReport.EntitiesCreated);
+        Assert.AreEqual(0, report.KnownSqlCommandReport.UnknownCommands);
+        Assert.IsFalse(report.KnownSqlCommandReport.InvocationsByCommand.ContainsKey("sp_executesql"));
+        Assert.AreEqual(1, report.CommandsByApplicationName.Single().EventCount);
+    }
+
+    [TestMethod]
+    public void IsExcludedFromCapture_SkipsResetConnectionOnly()
+    {
+        Assert.IsTrue(BuiltInSqlServerRpc.IsExcludedFromCapture("sp_reset_connection"));
+        Assert.IsFalse(BuiltInSqlServerRpc.IsExcludedFromCapture("sp_executesql"));
+    }
+
     private static CapturedSqlEvent CreateEventWithHash(ulong queryHash, string applicationName, string sql)
     {
         return new CapturedSqlEvent
