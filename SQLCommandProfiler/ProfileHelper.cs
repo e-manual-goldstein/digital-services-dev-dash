@@ -578,5 +578,13 @@ internal sealed class ProfileHelper : IDisposable
         {
             Console.WriteLine($"    {line}");
         }
+
+        if (captured.EfInterpretation is not null)
+        {
+            foreach (var line in EfInterpretationFormatter.FormatSummaryLines(captured.EfInterpretation))
+            {
+                Console.WriteLine($"    {line}");
+            }
+        }
     }
 }
