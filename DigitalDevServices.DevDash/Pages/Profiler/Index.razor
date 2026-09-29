@@ -1,0 +1,111 @@
+@page "/profiler"
+@implements IDisposable
+@inject ProfilerDashboardService ProfilerState
+@using DigitalDevServices.DevDash.Services
+@using DigitalDevServices.DevDash.Shared.Components
+@using SQLCommandProfiler
+
+<PageTitle>Profiler</PageTitle>
+
+<h1 class="mb-1">SQL Command Profiler</h1>
+<p class="text-muted mb-4">
+    Start a live Extended Events trace against the configured SQL Server. Classified commands appear in the stream boxes below.
+</p>
+
+@if (!string.IsNullOrWhiteSpace(ProfilerState.ErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">@ProfilerState.ErrorMessage</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(ProfilerState.LastReportPath))
+{
+    <div class="alert alert-secondary py-2" role="status">
+        Trace report written to: <code>@ProfilerState.LastReportPath</code>
+    </div>
+}
+
+<div class="d-flex flex-wrap gap-2 mb-4">
+    <button type="button"
+            class="btn btn-primary"
+            disabled="@ProfilerState.IsRunning"
+            @onclick="BeginProfiling">
+        Begin profiling
+    </button>
+    <button type="button"
+            class="btn btn-secondary"
+            disabled="@(!ProfilerState.IsRunning)"
+            @onclick="StopProfiling">
+        Stop profiling
+    </button>
+    @if (ProfilerState.IsRunning)
+    {
+        <span class="align-self-center text-success fw-semibold">Trace running…</span>
+    }
+</div>
+
+<div class="profiler-columns row g-3">
+    <div class="col-lg-4 d-flex">
+        <ProfilerEventStream Title="INSERTS"
+                             TileClass="profiler-tile-insert"
+                             Items="ProfilerState.Inserts"
+                             AutoScroll="_autoScrollInserts"
+                             AutoScrollChanged="value => _autoScrollInserts = value"
+                             OnSelect="OpenDetail" />
+    </div>
+    <div class="col-lg-4 d-flex">
+        <ProfilerEventStream Title="UPDATES"
+                             TileClass="profiler-tile-update"
+                             Items="ProfilerState.Updates"
+                             AutoScroll="_autoScrollUpdates"
+                             AutoScrollChanged="value => _autoScrollUpdates = value"
+                             OnSelect="OpenDetail" />
+    </div>
+    <div class="col-lg-4 d-flex">
+        <ProfilerEventStream Title="READ-ONLY"
+                             TileClass="profiler-tile-readonly"
+                             Items="ProfilerState.ReadOnlyEvents"
+                             AutoScroll="_autoScrollReadOnly"
+                             AutoScrollChanged="value => _autoScrollReadOnly = value"
+                             OnSelect="OpenDetail" />
+    </div>
+</div>
+
+<TextDetailModal IsOpen="_detailOpen"
+                 Title="@_detailTitle"
+                 Body="@_detailBody"
+                 OnClose="CloseDetail" />
+
+@code {
+    private bool _autoScrollInserts = true;
+    private bool _autoScrollUpdates = true;
+    private bool _autoScrollReadOnly = true;
+    private bool _detailOpen;
+    private string _detailTitle = string.Empty;
+    private string _detailBody = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        ProfilerState.Changed += OnProfilerStateChanged;
+    }
+
+    private void BeginProfiling() => ProfilerState.BeginProfiling();
+
+    private void StopProfiling() => ProfilerState.StopProfiling();
+
+    private void OnProfilerStateChanged() => _ = InvokeAsync(StateHasChanged);
+
+    private void OpenDetail(ProfilerLiveEventDisplay display)
+    {
+        _detailTitle = $"{display.Bucket}: {display.Title}";
+        _detailBody = ProfilerEventDetailFormatter.Format(display);
+        _detailOpen = true;
+    }
+
+    private Task CloseDetail()
+    {
+        _detailOpen = false;
+        return Task.CompletedTask;
+    }
+
+    public void Dispose() => ProfilerState.Changed -= OnProfilerStateChanged;
+}

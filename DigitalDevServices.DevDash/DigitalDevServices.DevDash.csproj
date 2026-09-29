@@ -9,6 +9,12 @@
     <ProjectReference Include="..\DigitalDevServices.Data\DigitalDevServices.Data.csproj" />
     <ProjectReference Include="..\DigitalDevServices.Model\DigitalDevServices.Model.csproj" />
     <ProjectReference Include="..\DigitalDevServices.Services\DigitalDevServices.Services.csproj" />
+    <ProjectReference Include="..\SQLCommandProfiler\SQLCommandProfiler.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\SQLCommandProfiler\ExtendedEventsSession.sql" Link="Profiler\ExtendedEventsSession.sql" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\SQLCommandProfiler\SqlCommandLookup.json" Link="Profiler\SqlCommandLookup.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

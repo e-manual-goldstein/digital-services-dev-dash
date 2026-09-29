@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace SQLCommandProfiler;
 
-internal sealed class ProfileHelper : IDisposable
+public sealed class ProfileHelper : IDisposable
 {
     private const int PollIntervalMilliseconds = 200;
     private const string PlaceholderSessionName = "{{SESSION_NAME}}";
@@ -29,12 +29,21 @@ internal sealed class ProfileHelper : IDisposable
     private readonly string? _traceReportOutputPath;
     private readonly EfSqlInterpreter _efSqlInterpreter = new();
     private readonly SqlCommandLookupRegistry? _commandLookupRegistry;
+    private readonly SqlProfilerSessionOptions _sessionOptions;
     private readonly Dictionary<int, CapturedSqlEvent[]> _batchedEventsInfo = [];
     private readonly HashSet<string> _seenEventKeys = new(StringComparer.Ordinal);
 
     public ProfileHelper(IConfiguration configuration)
+        : this(configuration, new SqlProfilerSessionOptions())
+    {
+    }
+
+    public ProfileHelper(IConfiguration configuration, SqlProfilerSessionOptions sessionOptions)
     {
         ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(sessionOptions);
+
+        _sessionOptions = sessionOptions;
 
         _connectionString = configuration.GetConnectionString("Default")
             ?? throw new InvalidOperationException("ConnectionStrings:Default is required.");
@@ -46,7 +55,8 @@ internal sealed class ProfileHelper : IDisposable
             ?? throw new InvalidOperationException("Profiler:XEventsDefinitionFilePath is required.");
 
         _eventFilters = new EventFilterEngine(configuration);
-        _printEventDetailsOnCapture = bool.TryParse(profiler["PrintEventDetailsOnCapture"], out var printDetails) && printDetails;
+        var printFromConfig = bool.TryParse(profiler["PrintEventDetailsOnCapture"], out var printDetails) && printDetails;
+        _printEventDetailsOnCapture = !_sessionOptions.SuppressConsoleOutput && printFromConfig;
         _efSqlInterpretationWhen = EfSqlInterpretationOptions.ReadFrom(profiler);
         _traceReportOutputPath = profiler["TraceReportOutputPath"];
 
@@ -213,12 +223,14 @@ internal sealed class ProfileHelper : IDisposable
 
             var captured = new CapturedSqlEvent { Info = eventInfo };
 
-            if (_efSqlInterpretationWhen == EfSqlInterpretationWhen.OnReceive)
+            if (ShouldInterpretOnReceive())
             {
                 ApplyRpcInterpretations(captured);
             }
 
             events.Add(captured);
+
+            NotifyLiveEvent(captured);
 
             if (_printEventDetailsOnCapture)
             {
@@ -480,14 +492,15 @@ internal sealed class ProfileHelper : IDisposable
     {
         var builder = new SqlConnectionStringBuilder(_connectionString)
         {
-            ApplicationName = ProfilerApplicationName,
+            ApplicationName = _sessionOptions.ApplicationName,
         };
         return new SqlConnection(builder.ConnectionString);
     }
 
-    private static bool IsProfilerOwnActivity(in ExtendedEventInfo eventInfo)
+    private bool IsProfilerOwnActivity(in ExtendedEventInfo eventInfo)
     {
-        if (string.Equals(eventInfo.ApplicationName, ProfilerApplicationName, StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(eventInfo.ApplicationName, _sessionOptions.ApplicationName, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(eventInfo.ApplicationName, ProfilerApplicationName, StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }
@@ -630,5 +643,26 @@ internal sealed class ProfileHelper : IDisposable
         }
 
         captured.CommandLookup = _commandLookupRegistry.Match(captured.Info.ObjectName);
+    }
+
+    private bool ShouldInterpretOnReceive()
+    {
+        return _sessionOptions.OnLiveEvent is not null
+            || _efSqlInterpretationWhen == EfSqlInterpretationWhen.OnReceive;
+    }
+
+    private void NotifyLiveEvent(CapturedSqlEvent captured)
+    {
+        if (_sessionOptions.OnLiveEvent is null)
+        {
+            return;
+        }
+
+        if (!ProfilerLiveEventClassifier.TryCreateDisplay(captured, out var display))
+        {
+            return;
+        }
+
+        _sessionOptions.OnLiveEvent(display);
     }
 }

@@ -1,6 +1,6 @@
 namespace SQLCommandProfiler;
 
-internal sealed class CapturedSqlEvent
+public sealed class CapturedSqlEvent
 {
     public required ExtendedEventInfo Info { get; init; }
 

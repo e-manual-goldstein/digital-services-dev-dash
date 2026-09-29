@@ -1,4 +1,5 @@
 using DigitalDevServices.Data;
+using DigitalDevServices.DevDash.Services;
 using DigitalDevServices.Services;
 using Radzen;
 
@@ -21,6 +22,7 @@ builder.Services.AddTextFormattingServices();
 builder.Services.AddConfigurationServices();
 builder.Services.AddGitHistoryServices();
 builder.Services.AddCoverletServices();
+builder.Services.AddSingleton<ProfilerDashboardService>();
 
 var app = builder.Build();
 
