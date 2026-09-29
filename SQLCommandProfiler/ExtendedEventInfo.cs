@@ -3,6 +3,7 @@ namespace SQLCommandProfiler;
 public readonly record struct ExtendedEventInfo(
     DateTimeOffset TimestampUtc,
     string EventName,
+    string ObjectName,
     string DatabaseName,
     string UserName,
     string ApplicationName,

@@ -1,0 +1,12 @@
+{
+  "commands": [
+    {
+      "name": "dbo.usp_ExampleRead",
+      "access": "ReadOnly"
+    },
+    {
+      "name": "dbo.usp_ExampleWrite",
+      "access": "ReadWrite"
+    }
+  ]
+}

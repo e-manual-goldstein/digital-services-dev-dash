@@ -12,7 +12,24 @@ public sealed class TraceReportDocument
 
     public required EfCommandReport EfCommandReport { get; init; }
 
+    public required KnownSqlCommandReport KnownSqlCommandReport { get; init; }
+
     public required IReadOnlyList<ApplicationCommandGroup> CommandsByApplicationName { get; init; }
+}
+
+public sealed class KnownSqlCommandReport
+{
+    public bool LookupConfigured { get; init; }
+
+    public int RpcEventsWithObjectName { get; init; }
+
+    public int KnownReadOnly { get; init; }
+
+    public int KnownReadWrite { get; init; }
+
+    public int UnknownCommands { get; init; }
+
+    public IReadOnlyDictionary<string, int> InvocationsByCommand { get; init; } = new Dictionary<string, int>();
 }
 
 public sealed class TraceReportSummary
@@ -64,6 +81,8 @@ public sealed class CapturedEventSummary
 
     public required string EventName { get; init; }
 
+    public string? ObjectName { get; init; }
+
     public required string DatabaseName { get; init; }
 
     public string? UserName { get; init; }
@@ -76,4 +95,9 @@ public sealed class CapturedEventSummary
 
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public EfSqlAccess? EfAccess { get; init; }
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public SqlCommandAccess? KnownCommandAccess { get; init; }
+
+    public bool? IsKnownCommand { get; init; }
 }

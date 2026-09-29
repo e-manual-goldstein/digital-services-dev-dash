@@ -6,6 +6,7 @@ internal static partial class Ef6SqlDetector
 {
     private static readonly Regex ExtentOrProjectAliasPattern = ExtentProjectAliasRegex();
     private static readonly Regex Ef6BracketedDmlPattern = Ef6BracketedDmlRegex();
+    private static readonly Regex EfParameterPattern = EfParameterRegex();
 
     public static bool LooksLikeEf6(string sqlText)
     {
@@ -26,7 +27,7 @@ internal static partial class Ef6SqlDetector
         }
 
         if (Ef6BracketedDmlPattern.IsMatch(sqlText)
-            && sqlText.Contains("@p", StringComparison.OrdinalIgnoreCase))
+            && EfParameterPattern.IsMatch(sqlText))
         {
             return true;
         }
@@ -36,6 +37,9 @@ internal static partial class Ef6SqlDetector
 
     [GeneratedRegex(@"(?:INSERT|UPDATE|DELETE)\s+\[(?:[^\]]+\]\.)?\[[^\]]+\]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex Ef6BracketedDmlRegex();
+
+    [GeneratedRegex(@"@\w+", RegexOptions.CultureInvariant)]
+    private static partial Regex EfParameterRegex();
 
     [GeneratedRegex(@"AS\s+\[(?:Extent|Project)\d+\]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex ExtentProjectAliasRegex();

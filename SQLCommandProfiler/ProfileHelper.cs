@@ -11,6 +11,7 @@ internal sealed class ProfileHelper : IDisposable
     private const int PollIntervalMilliseconds = 200;
     private const string PlaceholderSessionName = "{{SESSION_NAME}}";
     private const string ProfilerApplicationName = "SQLCommandProfiler";
+    private const string RpcCompletedEventName = "rpc_completed";
 
     private bool _disposed;
     private volatile bool _stopRequested;
@@ -27,6 +28,7 @@ internal sealed class ProfileHelper : IDisposable
     private readonly EfSqlInterpretationWhen _efSqlInterpretationWhen;
     private readonly string? _traceReportOutputPath;
     private readonly EfSqlInterpreter _efSqlInterpreter = new();
+    private readonly SqlCommandLookupRegistry? _commandLookupRegistry;
     private readonly Dictionary<int, CapturedSqlEvent[]> _batchedEventsInfo = [];
     private readonly HashSet<string> _seenEventKeys = new(StringComparer.Ordinal);
 
@@ -47,6 +49,12 @@ internal sealed class ProfileHelper : IDisposable
         _printEventDetailsOnCapture = bool.TryParse(profiler["PrintEventDetailsOnCapture"], out var printDetails) && printDetails;
         _efSqlInterpretationWhen = EfSqlInterpretationOptions.ReadFrom(profiler);
         _traceReportOutputPath = profiler["TraceReportOutputPath"];
+
+        var lookupPath = profiler["SQLCommandLookupFilePath"];
+        if (!string.IsNullOrWhiteSpace(lookupPath))
+        {
+            _commandLookupRegistry = SqlCommandLookupRegistry.Load(ResolveContentFilePath(lookupPath));
+        }
     }
 
     public void BeginTrace()
@@ -180,6 +188,7 @@ internal sealed class ProfileHelper : IDisposable
             var eventInfo = new ExtendedEventInfo(
                 TimestampUtc: timestampUtc,
                 EventName: eventName,
+                ObjectName: GetEventField(eventElement, "object_name") ?? string.Empty,
                 DatabaseName: databaseName,
                 UserName: GetEventField(eventElement, "username") ?? string.Empty,
                 ApplicationName: GetEventField(eventElement, "client_app_name") ?? string.Empty,
@@ -206,7 +215,7 @@ internal sealed class ProfileHelper : IDisposable
 
             if (_efSqlInterpretationWhen == EfSqlInterpretationWhen.OnReceive)
             {
-                ApplyEfInterpretation(captured);
+                ApplyRpcInterpretations(captured);
             }
 
             events.Add(captured);
@@ -317,7 +326,7 @@ internal sealed class ProfileHelper : IDisposable
         {
             foreach (var captured in capturedEvents)
             {
-                ApplyEfInterpretation(captured);
+                ApplyRpcInterpretations(captured);
             }
         }
 
@@ -325,7 +334,8 @@ internal sealed class ProfileHelper : IDisposable
             _traceName,
             _batchedEventsInfo.Count,
             capturedEvents,
-            _efSqlInterpretationWhen);
+            _efSqlInterpretationWhen,
+            _commandLookupRegistry is not null);
 
         var outputPath = ResolveTraceReportOutputPath();
         var outputDirectory = Path.GetDirectoryName(outputPath);
@@ -336,6 +346,16 @@ internal sealed class ProfileHelper : IDisposable
 
         File.WriteAllText(outputPath, TraceReportJson.Serialize(document));
         return outputPath;
+    }
+
+    private string ResolveContentFilePath(string relativeOrAbsolutePath)
+    {
+        if (Path.IsPathRooted(relativeOrAbsolutePath))
+        {
+            return relativeOrAbsolutePath;
+        }
+
+        return Path.Combine(AppContext.BaseDirectory, relativeOrAbsolutePath);
     }
 
     private string ResolveTraceReportOutputPath()
@@ -571,13 +591,44 @@ internal sealed class ProfileHelper : IDisposable
         return string.Concat(singleLine.AsSpan(0, maxLength - 3), "...");
     }
 
+    private void ApplyRpcInterpretations(CapturedSqlEvent captured)
+    {
+        ApplyEfInterpretation(captured);
+        ApplyCommandLookup(captured);
+    }
+
     private void ApplyEfInterpretation(CapturedSqlEvent captured)
     {
+        if (!string.Equals(captured.Info.EventName, RpcCompletedEventName, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
         if (captured.EfInterpretation is not null)
         {
             return;
         }
 
         captured.EfInterpretation = _efSqlInterpreter.Interpret(captured.Info.SqlText);
+    }
+
+    private void ApplyCommandLookup(CapturedSqlEvent captured)
+    {
+        if (_commandLookupRegistry is null)
+        {
+            return;
+        }
+
+        if (!string.Equals(captured.Info.EventName, RpcCompletedEventName, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (captured.CommandLookup is not null)
+        {
+            return;
+        }
+
+        captured.CommandLookup = _commandLookupRegistry.Match(captured.Info.ObjectName);
     }
 }

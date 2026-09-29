@@ -5,6 +5,7 @@ ADD EVENT sqlserver.rpc_completed(
         sqlserver.client_hostname,
         sqlserver.database_id,
         sqlserver.database_name,
+        sqlserver.object_name,
         sqlserver.query_hash,
         sqlserver.query_plan_hash,
         sqlserver.session_id,

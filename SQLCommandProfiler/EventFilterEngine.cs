@@ -19,6 +19,7 @@ internal enum EventFilterField
     QueryHash,
     QueryPlanHash,
     EventName,
+    ObjectName,
     SessionId,
     SqlText,
 }
@@ -91,6 +92,7 @@ internal sealed class EventFilterEngine
             EventFilterField.QueryHash => eventInfo.QueryHash.ToString("X16", CultureInfo.InvariantCulture),
             EventFilterField.QueryPlanHash => eventInfo.QueryPlanHash.ToString("X16", CultureInfo.InvariantCulture),
             EventFilterField.EventName => eventInfo.EventName,
+            EventFilterField.ObjectName => eventInfo.ObjectName,
             EventFilterField.SessionId => eventInfo.SessionId.ToString(CultureInfo.InvariantCulture),
             EventFilterField.SqlText => throw new InvalidOperationException(
                 "SqlText filtering is not supported yet. Remove or change rules that use Field \"SqlText\"."),

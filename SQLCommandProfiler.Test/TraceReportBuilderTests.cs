@@ -19,6 +19,7 @@ public sealed class TraceReportBuilderTests
                 Info = new ExtendedEventInfo(
                     TimestampUtc: DateTimeOffset.Parse("2026-01-01T12:00:00Z"),
                     EventName: "rpc_completed",
+                    ObjectName: "dbo.usp_ExampleWrite",
                     DatabaseName: "Shop",
                     UserName: "app",
                     ApplicationName: "WebApp",
@@ -37,6 +38,7 @@ public sealed class TraceReportBuilderTests
                 Info = new ExtendedEventInfo(
                     TimestampUtc: DateTimeOffset.Parse("2026-01-01T12:00:01Z"),
                     EventName: "sql_statement_completed",
+                    ObjectName: string.Empty,
                     DatabaseName: "Shop",
                     UserName: "app",
                     ApplicationName: "Worker",
@@ -51,7 +53,7 @@ public sealed class TraceReportBuilderTests
             },
         };
 
-        var report = TraceReportBuilder.Build("TestSession", batchCount: 1, events, EfSqlInterpretationWhen.OnReceive);
+        var report = TraceReportBuilder.Build("TestSession", batchCount: 1, events, EfSqlInterpretationWhen.OnReceive, sqlCommandLookupConfigured: false);
 
         Assert.AreEqual(2, report.Summary.TotalEventsCaptured);
         Assert.AreEqual(1, report.EfCommandReport.EntitiesCreated);

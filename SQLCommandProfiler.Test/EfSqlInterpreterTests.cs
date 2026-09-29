@@ -90,4 +90,18 @@ public sealed class EfSqlInterpreterTests
         Assert.AreEqual("@p0", update.Update.Assignments[0].NewValueExpression);
         Assert.IsTrue(update.Update.WhereSql!.Contains("@p1", StringComparison.Ordinal));
     }
+
+    [TestMethod]
+    public void Interpret_DetectsAndParsesEf6Update_WithRpcParameterPreamble()
+    {
+        const string sql = "(@0 int,@1 datetime)UPDATE [dbo].[Orders] SET [Status] = @0 WHERE [Id] = @1";
+
+        var result = _interpreter.Interpret(sql);
+        Assert.IsNotNull(result);
+        Assert.AreEqual(EfSqlAccess.ReadWrite, result!.Access);
+
+        var update = result.Statements.Single(statement => statement.Kind == EfSqlStatementKind.Update);
+        Assert.AreEqual("Orders", update.Update!.Table.Name);
+        Assert.AreEqual("Status", update.Update.Assignments[0].Column);
+    }
 }

@@ -8,10 +8,12 @@ internal static class TraceReportBuilder
         string traceSessionName,
         int batchCount,
         IReadOnlyList<CapturedSqlEvent> capturedEvents,
-        EfSqlInterpretationWhen interpretationWhen)
+        EfSqlInterpretationWhen interpretationWhen,
+        bool sqlCommandLookupConfigured)
     {
         var summary = BuildSummary(batchCount, capturedEvents);
         var efReport = BuildEfCommandReport(capturedEvents, interpretationWhen);
+        var knownCommands = BuildKnownSqlCommandReport(capturedEvents, sqlCommandLookupConfigured);
         var byApplication = BuildApplicationGroups(capturedEvents);
 
         return new TraceReportDocument
@@ -20,6 +22,7 @@ internal static class TraceReportBuilder
             GeneratedAtUtc = DateTimeOffset.UtcNow,
             Summary = summary,
             EfCommandReport = efReport,
+            KnownSqlCommandReport = knownCommands,
             CommandsByApplicationName = byApplication,
         };
     }
@@ -107,6 +110,59 @@ internal static class TraceReportBuilder
         };
     }
 
+    private static KnownSqlCommandReport BuildKnownSqlCommandReport(
+        IReadOnlyList<CapturedSqlEvent> capturedEvents,
+        bool sqlCommandLookupConfigured)
+    {
+        var invocations = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var rpcWithObjectName = 0;
+        var knownReadOnly = 0;
+        var knownReadWrite = 0;
+        var unknown = 0;
+
+        foreach (var captured in capturedEvents)
+        {
+            if (!string.Equals(captured.Info.EventName, "rpc_completed", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(captured.Info.ObjectName))
+            {
+                continue;
+            }
+
+            rpcWithObjectName++;
+
+            if (captured.CommandLookup is null || !captured.CommandLookup.IsKnown)
+            {
+                unknown++;
+                Increment(invocations, captured.Info.ObjectName);
+                continue;
+            }
+
+            Increment(invocations, captured.Info.ObjectName);
+            if (captured.CommandLookup.Access == SqlCommandAccess.ReadOnly)
+            {
+                knownReadOnly++;
+            }
+            else
+            {
+                knownReadWrite++;
+            }
+        }
+
+        return new KnownSqlCommandReport
+        {
+            LookupConfigured = sqlCommandLookupConfigured,
+            RpcEventsWithObjectName = rpcWithObjectName,
+            KnownReadOnly = knownReadOnly,
+            KnownReadWrite = knownReadWrite,
+            UnknownCommands = unknown,
+            InvocationsByCommand = invocations,
+        };
+    }
+
     private static IReadOnlyList<ApplicationCommandGroup> BuildApplicationGroups(IReadOnlyList<CapturedSqlEvent> capturedEvents)
     {
         return capturedEvents
@@ -144,12 +200,15 @@ internal static class TraceReportBuilder
         {
             TimestampUtc = captured.Info.TimestampUtc,
             EventName = captured.Info.EventName,
+            ObjectName = string.IsNullOrWhiteSpace(captured.Info.ObjectName) ? null : captured.Info.ObjectName,
             DatabaseName = captured.Info.DatabaseName,
             UserName = captured.Info.UserName,
             HostName = captured.Info.HostName,
             DurationMicroseconds = captured.Info.DurationMicroseconds,
             SqlSnippet = FormatSqlSnippet(captured.Info.SqlText),
             EfAccess = captured.EfInterpretation?.Access,
+            KnownCommandAccess = captured.CommandLookup?.IsKnown == true ? captured.CommandLookup.Access : null,
+            IsKnownCommand = captured.CommandLookup?.IsKnown,
         };
     }
 

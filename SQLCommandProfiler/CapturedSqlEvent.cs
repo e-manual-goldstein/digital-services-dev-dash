@@ -5,4 +5,6 @@ internal sealed class CapturedSqlEvent
     public required ExtendedEventInfo Info { get; init; }
 
     public EfInterpretation? EfInterpretation { get; set; }
+
+    public SqlCommandLookupMatch? CommandLookup { get; set; }
 }

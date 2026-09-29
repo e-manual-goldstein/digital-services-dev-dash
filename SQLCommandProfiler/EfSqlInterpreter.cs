@@ -19,7 +19,9 @@ public sealed class EfSqlInterpreter
             return null;
         }
 
-        if (!_analyzer.TryAnalyze(sqlText, out var interpretation, out _))
+        var normalizedSql = Ef6SqlNormalizer.StripParameterPreamble(sqlText);
+
+        if (!_analyzer.TryAnalyze(normalizedSql, out var interpretation, out _))
         {
             return new EfInterpretation
             {
