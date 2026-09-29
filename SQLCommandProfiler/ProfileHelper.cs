@@ -25,6 +25,7 @@ internal sealed class ProfileHelper : IDisposable
     private readonly EventFilterEngine _eventFilters;
     private readonly bool _printEventDetailsOnCapture;
     private readonly EfSqlInterpretationWhen _efSqlInterpretationWhen;
+    private readonly string? _traceReportOutputPath;
     private readonly EfSqlInterpreter _efSqlInterpreter = new();
     private readonly Dictionary<int, CapturedSqlEvent[]> _batchedEventsInfo = [];
     private readonly HashSet<string> _seenEventKeys = new(StringComparer.Ordinal);
@@ -45,6 +46,7 @@ internal sealed class ProfileHelper : IDisposable
         _eventFilters = new EventFilterEngine(configuration);
         _printEventDetailsOnCapture = bool.TryParse(profiler["PrintEventDetailsOnCapture"], out var printDetails) && printDetails;
         _efSqlInterpretationWhen = EfSqlInterpretationOptions.ReadFrom(profiler);
+        _traceReportOutputPath = profiler["TraceReportOutputPath"];
     }
 
     public void BeginTrace()
@@ -304,35 +306,52 @@ internal sealed class ProfileHelper : IDisposable
         }
     }
 
-    public void PrintTraceReport()
+    public string CreateTraceReport()
     {
-        if (_batchedEventsInfo.Count == 0)
+        var capturedEvents = _batchedEventsInfo
+            .OrderBy(pair => pair.Key)
+            .SelectMany(pair => pair.Value)
+            .ToList();
+
+        if (_efSqlInterpretationWhen == EfSqlInterpretationWhen.OnReport)
         {
-            Console.WriteLine();
-            Console.WriteLine("No SQL commands were captured during this trace.");
-            return;
-        }
-
-        var totalEvents = _batchedEventsInfo.Values.Sum(batch => batch.Length);
-        Console.WriteLine();
-        Console.WriteLine($"Trace report — session \"{_traceName}\" — {totalEvents} event(s) in {_batchedEventsInfo.Count} batch(es).");
-        Console.WriteLine(new string('-', 80));
-
-        foreach (var (batchNumber, batch) in _batchedEventsInfo.OrderBy(pair => pair.Key))
-        {
-            Console.WriteLine();
-            Console.WriteLine($"Batch {batchNumber} ({batch.Length} event(s))");
-
-            foreach (var captured in batch)
+            foreach (var captured in capturedEvents)
             {
-                if (_efSqlInterpretationWhen == EfSqlInterpretationWhen.OnReport)
-                {
-                    ApplyEfInterpretation(captured);
-                }
-
-                WriteEvent(captured);
+                ApplyEfInterpretation(captured);
             }
         }
+
+        var document = TraceReportBuilder.Build(
+            _traceName,
+            _batchedEventsInfo.Count,
+            capturedEvents,
+            _efSqlInterpretationWhen);
+
+        var outputPath = ResolveTraceReportOutputPath();
+        var outputDirectory = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrEmpty(outputDirectory))
+        {
+            Directory.CreateDirectory(outputDirectory);
+        }
+
+        File.WriteAllText(outputPath, TraceReportJson.Serialize(document));
+        return outputPath;
+    }
+
+    private string ResolveTraceReportOutputPath()
+    {
+        if (string.IsNullOrWhiteSpace(_traceReportOutputPath))
+        {
+            var fileName = $"SQLCommandProfiler-{_traceName}-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}.json";
+            return Path.Combine(AppContext.BaseDirectory, fileName);
+        }
+
+        if (Path.IsPathRooted(_traceReportOutputPath))
+        {
+            return _traceReportOutputPath;
+        }
+
+        return Path.Combine(AppContext.BaseDirectory, _traceReportOutputPath);
     }
 
     public void Dispose()
@@ -560,31 +579,5 @@ internal sealed class ProfileHelper : IDisposable
         }
 
         captured.EfInterpretation = _efSqlInterpreter.Interpret(captured.Info.SqlText);
-    }
-
-    private static void WriteEvent(CapturedSqlEvent captured)
-    {
-        var info = captured.Info;
-        var durationMs = info.DurationMicroseconds / 1000d;
-        Console.WriteLine(
-            $"[{info.TimestampUtc:u}] {info.EventName} | db={info.DatabaseName} | host={info.HostName} | spid={info.SessionId} | user={info.UserName} | app={info.ApplicationName} | {durationMs:0.###} ms | reads={info.LogicalReads}");
-
-        if (string.IsNullOrWhiteSpace(info.SqlText))
-        {
-            return;
-        }
-
-        foreach (var line in info.SqlText.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n'))
-        {
-            Console.WriteLine($"    {line}");
-        }
-
-        if (captured.EfInterpretation is not null)
-        {
-            foreach (var line in EfInterpretationFormatter.FormatSummaryLines(captured.EfInterpretation))
-            {
-                Console.WriteLine($"    {line}");
-            }
-        }
     }
 }

@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="SQLCommandProfiler.Test" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.0" />
     <PackageReference Include="Microsoft.SqlServer.TransactSql.ScriptDom" Version="161.8812.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.0" />

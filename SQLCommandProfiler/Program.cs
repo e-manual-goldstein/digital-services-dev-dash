@@ -31,7 +31,8 @@ internal class Program
                 }
 
                 helper.EndTrace();
-                helper.PrintTraceReport();
+                var reportPath = helper.CreateTraceReport();
+                Console.WriteLine($"Trace report written to: {reportPath}");
             }
         }
         catch (InvalidOperationException ex)
