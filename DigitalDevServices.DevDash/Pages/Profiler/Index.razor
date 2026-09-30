@@ -43,31 +43,25 @@
     }
 </div>
 
-<div class="profiler-columns row g-3">
-    <div class="col-lg-4 d-flex">
-        <ProfilerEventStream Title="INSERTS"
-                             TileClass="profiler-tile-insert"
-                             Items="ProfilerState.Inserts"
-                             AutoScroll="_autoScrollInserts"
-                             AutoScrollChanged="value => _autoScrollInserts = value"
-                             OnSelect="OpenDetail" />
-    </div>
-    <div class="col-lg-4 d-flex">
-        <ProfilerEventStream Title="UPDATES"
-                             TileClass="profiler-tile-update"
-                             Items="ProfilerState.Updates"
-                             AutoScroll="_autoScrollUpdates"
-                             AutoScrollChanged="value => _autoScrollUpdates = value"
-                             OnSelect="OpenDetail" />
-    </div>
-    <div class="col-lg-4 d-flex">
-        <ProfilerEventStream Title="READ-ONLY"
-                             TileClass="profiler-tile-readonly"
-                             Items="ProfilerState.ReadOnlyEvents"
-                             AutoScroll="_autoScrollReadOnly"
-                             AutoScrollChanged="value => _autoScrollReadOnly = value"
-                             OnSelect="OpenDetail" />
-    </div>
+<div class="profiler-columns">
+    <ProfilerEventStream Title="INSERTS"
+                         TileClass="profiler-tile-insert"
+                         Items="ProfilerState.Inserts"
+                         AutoScroll="_autoScrollInserts"
+                         AutoScrollChanged="value => _autoScrollInserts = value"
+                         OnSelect="OpenDetail" />
+    <ProfilerEventStream Title="UPDATES"
+                         TileClass="profiler-tile-update"
+                         Items="ProfilerState.Updates"
+                         AutoScroll="_autoScrollUpdates"
+                         AutoScrollChanged="value => _autoScrollUpdates = value"
+                         OnSelect="OpenDetail" />
+    <ProfilerEventStream Title="READ-ONLY"
+                         TileClass="profiler-tile-readonly"
+                         Items="ProfilerState.ReadOnlyEvents"
+                         AutoScroll="_autoScrollReadOnly"
+                         AutoScrollChanged="value => _autoScrollReadOnly = value"
+                         OnSelect="OpenDetail" />
 </div>
 
 <TextDetailModal IsOpen="_detailOpen"
