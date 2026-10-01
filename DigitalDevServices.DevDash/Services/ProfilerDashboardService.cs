@@ -59,6 +59,8 @@ public sealed class ProfilerDashboardService
 
     public List<ProfilerLiveEventDisplay> ReadOnlyEvents { get; } = [];
 
+    public List<ProfilerLiveEventDisplay> UnknownEvents { get; } = [];
+
     public event Action? Changed;
 
     public async Task<bool> ApplySqlServerTargetAsync(string sqlServerInstanceInput)
@@ -141,6 +143,7 @@ public sealed class ProfilerDashboardService
             Inserts.Clear();
             Updates.Clear();
             ReadOnlyEvents.Clear();
+            UnknownEvents.Clear();
             ErrorMessage = null;
             LastReportPath = null;
 
@@ -220,6 +223,9 @@ public sealed class ProfilerDashboardService
                 case ProfilerEventBucket.ReadOnly:
                     ReadOnlyEvents.Add(display);
                     break;
+                case ProfilerEventBucket.Unknown:
+                    UnknownEvents.Add(display);
+                    break;
             }
         }
 
@@ -260,7 +266,7 @@ public static class ProfilerEventDetailFormatter
         builder.AppendLine(CultureInfo.InvariantCulture, $"Query hash: {info.QueryHash:X16}");
         builder.AppendLine();
         builder.AppendLine("SQL:");
-        builder.AppendLine(info.SqlText);
+        builder.AppendLine(SqlTextPrettyPrinter.FormatOrOriginal(info.SqlText));
         return builder.ToString();
     }
 }

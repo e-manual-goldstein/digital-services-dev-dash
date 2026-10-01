@@ -38,4 +38,33 @@ public sealed class ProfilerLiveEventClassifierTests
         Assert.AreEqual("ORDERS", display.Title);
         Assert.AreEqual("[Shop].[dbo].[Orders]", display.Subtitle);
     }
+
+    [TestMethod]
+    public void CreateUnknownDisplay_UsesObjectNameAsTitle()
+    {
+        var captured = new CapturedSqlEvent
+        {
+            Info = new ExtendedEventInfo(
+                TimestampUtc: DateTimeOffset.UtcNow,
+                EventName: "rpc_completed",
+                ObjectName: "dbo.usp_Custom",
+                DatabaseName: "Shop",
+                UserName: "u",
+                ApplicationName: "app",
+                HostName: "h",
+                SessionId: 1,
+                ClientProcessId: 0,
+                SqlText: "EXEC dbo.usp_Custom",
+                DurationMicroseconds: 1,
+                CpuMicroseconds: 1,
+                LogicalReads: 1,
+                QueryHash: 1,
+                QueryPlanHash: 0),
+        };
+
+        var display = ProfilerLiveEventClassifier.CreateUnknownDisplay(captured);
+
+        Assert.AreEqual(ProfilerEventBucket.Unknown, display.Bucket);
+        Assert.AreEqual("usp_Custom", display.Title);
+    }
 }

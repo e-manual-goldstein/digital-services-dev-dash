@@ -19,6 +19,26 @@ public static class ProfilerLiveEventClassifier
         return false;
     }
 
+    public static ProfilerLiveEventDisplay CreateUnknownDisplay(CapturedSqlEvent captured)
+    {
+        var info = captured.Info;
+        var title = !string.IsNullOrWhiteSpace(info.ObjectName)
+            ? GetShortObjectName(info.ObjectName)
+            : info.EventName;
+
+        var subtitle = string.IsNullOrWhiteSpace(info.DatabaseName)
+            ? info.ApplicationName
+            : info.DatabaseName;
+
+        return new ProfilerLiveEventDisplay
+        {
+            Bucket = ProfilerEventBucket.Unknown,
+            Title = title,
+            Subtitle = subtitle,
+            Captured = captured,
+        };
+    }
+
     private static bool TryFromEfInterpretation(CapturedSqlEvent captured, out ProfilerLiveEventDisplay display)
     {
         display = null!;

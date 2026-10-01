@@ -5,6 +5,7 @@ public enum ProfilerEventBucket
     Insert,
     Update,
     ReadOnly,
+    Unknown,
 }
 
 public sealed class ProfilerLiveEventDisplay

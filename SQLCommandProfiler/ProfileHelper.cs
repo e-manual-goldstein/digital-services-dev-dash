@@ -698,7 +698,7 @@ public sealed class ProfileHelper : IDisposable
 
         if (!ProfilerLiveEventClassifier.TryCreateDisplay(captured, out var display))
         {
-            return;
+            display = ProfilerLiveEventClassifier.CreateUnknownDisplay(captured);
         }
 
         _sessionOptions.OnLiveEvent(display);

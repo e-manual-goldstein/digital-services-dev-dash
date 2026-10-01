@@ -82,25 +82,47 @@
     }
 </div>
 
-<div class="profiler-columns">
-    <ProfilerEventStream Title="INSERTS"
-                         TileClass="profiler-tile-insert"
-                         Items="ProfilerState.Inserts"
-                         AutoScroll="_autoScrollInserts"
-                         AutoScrollChanged="value => _autoScrollInserts = value"
-                         OnSelect="OpenDetail" />
-    <ProfilerEventStream Title="UPDATES"
-                         TileClass="profiler-tile-update"
-                         Items="ProfilerState.Updates"
-                         AutoScroll="_autoScrollUpdates"
-                         AutoScrollChanged="value => _autoScrollUpdates = value"
-                         OnSelect="OpenDetail" />
-    <ProfilerEventStream Title="READ-ONLY"
-                         TileClass="profiler-tile-readonly"
-                         Items="ProfilerState.ReadOnlyEvents"
-                         AutoScroll="_autoScrollReadOnly"
-                         AutoScrollChanged="value => _autoScrollReadOnly = value"
-                         OnSelect="OpenDetail" />
+<div class="profiler-sections d-flex flex-column gap-2 mb-4">
+    <CollapsibleSection Title="@($"INSERTS ({ProfilerState.Inserts.Count})")"
+                        DefaultExpanded="true">
+        <ProfilerEventStream Title="INSERTS"
+                             ShowHeader="false"
+                             TileClass="profiler-tile-insert"
+                             Items="ProfilerState.Inserts"
+                             AutoScroll="_autoScrollInserts"
+                             AutoScrollChanged="value => _autoScrollInserts = value"
+                             OnSelect="OpenDetail" />
+    </CollapsibleSection>
+    <CollapsibleSection Title="@($"UPDATES ({ProfilerState.Updates.Count})")"
+                        DefaultExpanded="true">
+        <ProfilerEventStream Title="UPDATES"
+                             ShowHeader="false"
+                             TileClass="profiler-tile-update"
+                             Items="ProfilerState.Updates"
+                             AutoScroll="_autoScrollUpdates"
+                             AutoScrollChanged="value => _autoScrollUpdates = value"
+                             OnSelect="OpenDetail" />
+    </CollapsibleSection>
+    <CollapsibleSection Title="@($"READ-ONLY ({ProfilerState.ReadOnlyEvents.Count})")"
+                        DefaultExpanded="true">
+        <ProfilerEventStream Title="READ-ONLY"
+                             ShowHeader="false"
+                             TileClass="profiler-tile-readonly"
+                             Items="ProfilerState.ReadOnlyEvents"
+                             AutoScroll="_autoScrollReadOnly"
+                             AutoScrollChanged="value => _autoScrollReadOnly = value"
+                             OnSelect="OpenDetail" />
+    </CollapsibleSection>
+    <CollapsibleSection Title="@($"Unknown ({ProfilerState.UnknownEvents.Count})")"
+                        DefaultExpanded="false">
+        <ProfilerEventStream Title="Unknown"
+                             ShowHeader="false"
+                             TileClass="profiler-tile-unknown"
+                             Items="ProfilerState.UnknownEvents"
+                             AutoScroll="_autoScrollUnknown"
+                             AutoScrollChanged="value => _autoScrollUnknown = value"
+                             OnSelect="OpenDetail" />
+    </CollapsibleSection>
 </div>
 
 <TextDetailModal IsOpen="_detailOpen"
@@ -112,6 +134,7 @@
     private bool _autoScrollInserts = true;
     private bool _autoScrollUpdates = true;
     private bool _autoScrollReadOnly = true;
+    private bool _autoScrollUnknown = true;
     private bool _detailOpen;
     private string _detailTitle = string.Empty;
     private string _detailBody = string.Empty;

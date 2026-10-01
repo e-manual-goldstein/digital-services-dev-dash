@@ -1,9 +1,5 @@
-.profiler-columns {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1rem;
+.profiler-sections {
     width: 100%;
-    min-height: 28rem;
 }
 
 .profiler-instance-input {
@@ -11,20 +7,15 @@
     max-width: 32rem;
 }
 
-@media (max-width: 991.98px) {
-    .profiler-columns {
-        grid-template-columns: 1fr;
-    }
-}
-
-::deep .profiler-stream {
+::deep .profiler-stream,
+::deep .profiler-stream-panel {
     width: 100%;
     min-width: 0;
 }
 
 ::deep .profiler-stream-list {
-    min-height: 24rem;
-    max-height: 24rem;
+    min-height: 10rem;
+    max-height: 18rem;
     overflow-y: auto;
     border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 0.375rem;
@@ -65,4 +56,12 @@
 
 ::deep .profiler-tile-readonly {
     background: #cfe2ff;
+}
+
+::deep .profiler-tile-unknown {
+    background: #e9ecef;
+}
+
+::deep .collapsible-section {
+    width: 100%;
 }

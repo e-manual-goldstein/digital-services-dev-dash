@@ -34,6 +34,10 @@ namespace DigitalDevServices.DevDash.Shared.Components
             _bodyId = $"collapse-body-{suffix}";
         }
 
-        protected void Toggle() => _expanded = !_expanded;
+        protected void Toggle()
+        {
+            _expanded = !_expanded;
+            StateHasChanged();
+        }
     }
 }
