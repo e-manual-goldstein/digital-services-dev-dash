@@ -24,6 +24,11 @@ public sealed class SqlProfilerSessionOptions
 {
     public string ApplicationName { get; init; } = "SQLCommandProfiler";
 
+    /// <summary>
+    /// When set, replaces <c>Data Source</c> on <c>ConnectionStrings:Default</c> (auth and other settings unchanged).
+    /// </summary>
+    public string? SqlServerInstance { get; init; }
+
     public Action<ProfilerLiveEventDisplay>? OnLiveEvent { get; init; }
 
     public bool SuppressConsoleOutput { get; init; }

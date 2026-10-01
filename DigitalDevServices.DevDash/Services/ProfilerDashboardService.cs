@@ -9,6 +9,8 @@ public sealed class ProfilerDashboardService
     private readonly IConfiguration _configuration;
     private readonly object _sync = new();
     private ProfileHelper? _session;
+    private string? _activeSqlServerInstance;
+    private bool _canBeginProfiling = true;
 
     public ProfilerDashboardService(IConfiguration configuration)
     {
@@ -17,9 +19,39 @@ public sealed class ProfilerDashboardService
 
     public bool IsRunning { get; private set; }
 
+    public bool IsCheckingTarget { get; private set; }
+
+    public bool CanBeginProfiling
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return !IsRunning && !IsCheckingTarget && _canBeginProfiling;
+            }
+        }
+    }
+
     public string? ErrorMessage { get; private set; }
 
+    public string? TargetWarningMessage { get; private set; }
+
+    public string? TargetReadyMessage { get; private set; }
+
     public string? LastReportPath { get; private set; }
+
+    public string ActiveTargetDescription
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return string.IsNullOrWhiteSpace(_activeSqlServerInstance)
+                    ? "Default (ConnectionStrings:Default)"
+                    : _activeSqlServerInstance;
+            }
+        }
+    }
 
     public List<ProfilerLiveEventDisplay> Inserts { get; } = [];
 
@@ -29,11 +61,79 @@ public sealed class ProfilerDashboardService
 
     public event Action? Changed;
 
+    public async Task<bool> ApplySqlServerTargetAsync(string sqlServerInstanceInput)
+    {
+        if (IsRunning)
+        {
+            return false;
+        }
+
+        var trimmed = sqlServerInstanceInput.Trim();
+
+        lock (_sync)
+        {
+            IsCheckingTarget = true;
+            _canBeginProfiling = false;
+            TargetWarningMessage = null;
+            TargetReadyMessage = null;
+        }
+
+        NotifyChanged();
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(trimmed))
+            {
+                lock (_sync)
+                {
+                    _activeSqlServerInstance = null;
+                    _canBeginProfiling = true;
+                    TargetReadyMessage = "Using the default SQL Server from configuration. Click Begin profiling when ready.";
+                }
+
+                return true;
+            }
+
+            await Task.Run(() => ProfileHelper.ValidateExtendedEventsTarget(_configuration, trimmed))
+                .ConfigureAwait(false);
+
+            lock (_sync)
+            {
+                _activeSqlServerInstance = trimmed;
+                _canBeginProfiling = true;
+                TargetReadyMessage =
+                    $"Extended Events session verified on \"{trimmed}\". Click Begin profiling when ready.";
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            lock (_sync)
+            {
+                _activeSqlServerInstance = null;
+                _canBeginProfiling = false;
+                TargetWarningMessage = ex.InnerException?.Message ?? ex.Message;
+            }
+
+            return false;
+        }
+        finally
+        {
+            lock (_sync)
+            {
+                IsCheckingTarget = false;
+            }
+
+            NotifyChanged();
+        }
+    }
+
     public void BeginProfiling()
     {
         lock (_sync)
         {
-            if (IsRunning)
+            if (IsRunning || !_canBeginProfiling)
             {
                 return;
             }
@@ -47,6 +147,7 @@ public sealed class ProfilerDashboardService
             var options = new SqlProfilerSessionOptions
             {
                 ApplicationName = "DigitalDevServices.DevDash",
+                SqlServerInstance = _activeSqlServerInstance,
                 SuppressConsoleOutput = true,
                 OnLiveEvent = HandleLiveEvent,
             };

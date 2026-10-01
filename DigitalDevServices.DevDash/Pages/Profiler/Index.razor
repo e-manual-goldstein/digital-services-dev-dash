@@ -9,12 +9,22 @@
 
 <h1 class="mb-1">SQL Command Profiler</h1>
 <p class="text-muted mb-4">
-    Start a live Extended Events trace against the configured SQL Server. Classified commands appear in the stream boxes below.
+    Start a live Extended Events trace against a SQL Server instance. Classified commands appear in the stream boxes below.
 </p>
 
 @if (!string.IsNullOrWhiteSpace(ProfilerState.ErrorMessage))
 {
     <div class="alert alert-danger" role="alert">@ProfilerState.ErrorMessage</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(ProfilerState.TargetWarningMessage))
+{
+    <div class="alert alert-warning" role="alert">@ProfilerState.TargetWarningMessage</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(ProfilerState.TargetReadyMessage))
+{
+    <div class="alert alert-success py-2" role="status">@ProfilerState.TargetReadyMessage</div>
 }
 
 @if (!string.IsNullOrWhiteSpace(ProfilerState.LastReportPath))
@@ -24,10 +34,39 @@
     </div>
 }
 
+<div class="card mb-4">
+    <div class="card-body">
+        <label class="form-label fw-semibold" for="profiler-sql-instance">SQL Server instance</label>
+        <div class="d-flex flex-wrap gap-2 align-items-start">
+            <input id="profiler-sql-instance"
+                   class="form-control profiler-instance-input"
+                   placeholder="Leave empty for default from configuration"
+                   @bind="_sqlServerInstanceInput"
+                   disabled="@(ProfilerState.IsRunning || ProfilerState.IsCheckingTarget)" />
+            <button type="button"
+                    class="btn btn-outline-primary"
+                    disabled="@(ProfilerState.IsRunning || ProfilerState.IsCheckingTarget || !InstanceInputChanged)"
+                    @onclick="ApplySqlServerTarget">
+                Apply instance
+            </button>
+        </div>
+        <p class="form-text mb-2">
+            Optional. Uses credentials from <code>ConnectionStrings:Default</code> with a different server name (e.g. <code>myhost\SQLEXPRESS</code> or <code>myhost,1433</code>).
+        </p>
+        <p class="form-text mb-0">
+            Active target: <strong>@ProfilerState.ActiveTargetDescription</strong>
+        </p>
+        @if (ProfilerState.IsCheckingTarget)
+        {
+            <p class="text-muted small mb-0 mt-2">Checking Extended Events on that instance…</p>
+        }
+    </div>
+</div>
+
 <div class="d-flex flex-wrap gap-2 mb-4">
     <button type="button"
             class="btn btn-primary"
-            disabled="@ProfilerState.IsRunning"
+            disabled="@(!CanBeginProfiling)"
             @onclick="BeginProfiling">
         Begin profiling
     </button>
@@ -76,10 +115,26 @@
     private bool _detailOpen;
     private string _detailTitle = string.Empty;
     private string _detailBody = string.Empty;
+    private string _sqlServerInstanceInput = string.Empty;
+    private string _appliedSqlServerInstanceInput = string.Empty;
+
+    private bool InstanceInputChanged =>
+        !string.Equals(_sqlServerInstanceInput.Trim(), _appliedSqlServerInstanceInput, StringComparison.Ordinal);
+
+    private bool CanBeginProfiling =>
+        ProfilerState.CanBeginProfiling && !InstanceInputChanged;
 
     protected override void OnInitialized()
     {
         ProfilerState.Changed += OnProfilerStateChanged;
+    }
+
+    private async Task ApplySqlServerTarget()
+    {
+        if (await ProfilerState.ApplySqlServerTargetAsync(_sqlServerInstanceInput))
+        {
+            _appliedSqlServerInstanceInput = _sqlServerInstanceInput.Trim();
+        }
     }
 
     private void BeginProfiling() => ProfilerState.BeginProfiling();

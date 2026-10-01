@@ -45,8 +45,7 @@ public sealed class ProfileHelper : IDisposable
 
         _sessionOptions = sessionOptions;
 
-        _connectionString = configuration.GetConnectionString("Default")
-            ?? throw new InvalidOperationException("ConnectionStrings:Default is required.");
+        _connectionString = ProfilerConnectionResolver.Resolve(configuration, sessionOptions.SqlServerInstance);
 
         var profiler = configuration.GetSection("Profiler");
         _traceName = profiler["TraceName"]
@@ -65,6 +64,21 @@ public sealed class ProfileHelper : IDisposable
         {
             _commandLookupRegistry = SqlCommandLookupRegistry.Load(ResolveContentFilePath(lookupPath));
         }
+    }
+
+    public static void ValidateExtendedEventsTarget(IConfiguration configuration, string sqlServerInstance)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sqlServerInstance);
+
+        var options = new SqlProfilerSessionOptions
+        {
+            SqlServerInstance = sqlServerInstance.Trim(),
+            ApplicationName = "DigitalDevServices.DevDash-Probe",
+            SuppressConsoleOutput = true,
+        };
+
+        using var helper = new ProfileHelper(configuration, options);
+        helper.ProveExtendedEventsSessionCapability();
     }
 
     public void BeginTrace()
@@ -88,6 +102,14 @@ public sealed class ProfileHelper : IDisposable
             IsBackground = false,
         };
         _traceThread.Start();
+    }
+
+    private void ProveExtendedEventsSessionCapability()
+    {
+        using var connection = CreateProfilerConnection();
+        connection.Open();
+        InitialiseExtendedEventSession(connection);
+        StopSession(connection);
     }
 
     private void TraceLoop()
@@ -299,6 +321,19 @@ public sealed class ProfileHelper : IDisposable
         command.ExecuteNonQuery();
     }
 
+    private static void StopSession(SqlConnection connection, string traceName)
+    {
+        using var command = new SqlCommand(
+            $"ALTER EVENT SESSION {QuoteBracketIdentifier(traceName)} ON SERVER STATE = STOP;",
+            connection);
+        command.ExecuteNonQuery();
+    }
+
+    private void StopSession(SqlConnection connection)
+    {
+        StopSession(connection, _traceName);
+    }
+
     private void StopExtendedEventSession()
     {
         using var connection = CreateProfilerConnection();
@@ -309,10 +344,7 @@ public sealed class ProfileHelper : IDisposable
             return;
         }
 
-        using var command = new SqlCommand(
-            $"ALTER EVENT SESSION {QuoteBracketIdentifier(_traceName)} ON SERVER STATE = STOP;",
-            connection);
-        command.ExecuteNonQuery();
+        StopSession(connection);
     }
 
     public void EndTrace()
