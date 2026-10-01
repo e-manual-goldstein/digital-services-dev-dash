@@ -267,6 +267,7 @@ internal static class TraceReportBuilder
             DatabaseName = captured.Info.DatabaseName,
             UserName = captured.Info.UserName,
             HostName = captured.Info.HostName,
+            ClientProcessId = captured.Info.ClientProcessId > 0 ? captured.Info.ClientProcessId : null,
             DurationMicroseconds = captured.Info.DurationMicroseconds,
             SqlSnippet = FormatSqlSnippet(captured.Info.SqlText),
             EfAccess = captured.EfInterpretation?.Access,

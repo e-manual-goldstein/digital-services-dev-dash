@@ -23,6 +23,7 @@ public sealed class ProfilerLiveEventClassifierTests
                 ApplicationName: "app",
                 HostName: "h",
                 SessionId: 1,
+                ClientProcessId: 0,
                 SqlText: sql,
                 DurationMicroseconds: 1,
                 CpuMicroseconds: 1,

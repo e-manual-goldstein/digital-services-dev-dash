@@ -21,6 +21,7 @@ internal enum EventFilterField
     EventName,
     ObjectName,
     SessionId,
+    ClientProcessId,
     SqlText,
 }
 
@@ -94,6 +95,7 @@ internal sealed class EventFilterEngine
             EventFilterField.EventName => eventInfo.EventName,
             EventFilterField.ObjectName => eventInfo.ObjectName,
             EventFilterField.SessionId => eventInfo.SessionId.ToString(CultureInfo.InvariantCulture),
+            EventFilterField.ClientProcessId => eventInfo.ClientProcessId.ToString(CultureInfo.InvariantCulture),
             EventFilterField.SqlText => eventInfo.SqlText,
             _ => string.Empty,
         };

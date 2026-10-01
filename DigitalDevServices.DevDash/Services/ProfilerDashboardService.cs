@@ -147,6 +147,11 @@ public static class ProfilerEventDetailFormatter
         builder.AppendLine(CultureInfo.InvariantCulture, $"Application: {info.ApplicationName}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"User: {info.UserName}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"Host: {info.HostName}");
+        if (info.ClientProcessId > 0)
+        {
+            builder.AppendLine(CultureInfo.InvariantCulture, $"Client process id: {info.ClientProcessId}");
+        }
+
         builder.AppendLine(CultureInfo.InvariantCulture, $"Session id: {info.SessionId}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"Object: {info.ObjectName}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"Duration (ms): {info.DurationMicroseconds / 1000d:0.###}");

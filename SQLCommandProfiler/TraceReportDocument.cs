@@ -118,6 +118,8 @@ public sealed class CapturedEventSummary
 
     public string? HostName { get; init; }
 
+    public int? ClientProcessId { get; init; }
+
     public long DurationMicroseconds { get; init; }
 
     public string? SqlSnippet { get; init; }

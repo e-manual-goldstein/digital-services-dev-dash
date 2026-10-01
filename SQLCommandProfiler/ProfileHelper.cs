@@ -204,6 +204,7 @@ public sealed class ProfileHelper : IDisposable
                 ApplicationName: GetEventField(eventElement, "client_app_name") ?? string.Empty,
                 HostName: GetEventField(eventElement, "client_hostname") ?? string.Empty,
                 SessionId: sessionId,
+                ClientProcessId: ParseInt(GetEventField(eventElement, "client_process_id")),
                 SqlText: sqlText,
                 DurationMicroseconds: ParseLong(GetEventField(eventElement, "duration")),
                 CpuMicroseconds: ParseLong(GetEventField(eventElement, "cpu_time")),
@@ -580,7 +581,7 @@ public sealed class ProfileHelper : IDisposable
         var sqlSnippet = FormatSqlSnippet(info.SqlText);
 
         return
-            $"[capture] {info.TimestampUtc:HH:mm:ss.fff} | {info.EventName} | db={info.DatabaseName} | spid={info.SessionId} | {durationMs:0.###} ms | {sqlSnippet}";
+            $"[capture] {info.TimestampUtc:HH:mm:ss.fff} | {info.EventName} | db={info.DatabaseName} | spid={info.SessionId} | clientPid={info.ClientProcessId} | {durationMs:0.###} ms | {sqlSnippet}";
     }
 
     private static string FormatSqlSnippet(string sqlText, int maxLength = 96)

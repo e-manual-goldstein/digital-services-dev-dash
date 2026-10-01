@@ -25,6 +25,7 @@ public sealed class TraceReportBuilderTests
                     ApplicationName: "WebApp",
                     HostName: "host1",
                     SessionId: 10,
+                    ClientProcessId: 4242,
                     SqlText: insertSql,
                     DurationMicroseconds: 1000,
                     CpuMicroseconds: 900,
@@ -44,6 +45,7 @@ public sealed class TraceReportBuilderTests
                     ApplicationName: "Worker",
                     HostName: "host2",
                     SessionId: 11,
+                    ClientProcessId: 0,
                     SqlText: "SELECT 1",
                     DurationMicroseconds: 500,
                     CpuMicroseconds: 400,
@@ -62,6 +64,7 @@ public sealed class TraceReportBuilderTests
         var webApp = report.CommandsByApplicationName.Single(group => group.ApplicationName == "WebApp");
         Assert.AreEqual(1, webApp.EventCount);
         Assert.AreEqual(1, webApp.EventsByType["rpc_completed"]);
+        Assert.AreEqual(4242, webApp.Events.Single().ClientProcessId);
     }
 
     [TestMethod]
@@ -110,6 +113,7 @@ public sealed class TraceReportBuilderTests
                     ApplicationName: "WebApp",
                     HostName: "host",
                     SessionId: 1,
+                    ClientProcessId: 0,
                     SqlText: string.Empty,
                     DurationMicroseconds: 100,
                     CpuMicroseconds: 100,
@@ -128,6 +132,7 @@ public sealed class TraceReportBuilderTests
                     ApplicationName: "WebApp",
                     HostName: "host",
                     SessionId: 1,
+                    ClientProcessId: 0,
                     SqlText: insertSql,
                     DurationMicroseconds: 1000,
                     CpuMicroseconds: 900,
@@ -147,6 +152,7 @@ public sealed class TraceReportBuilderTests
                     ApplicationName: "WebApp",
                     HostName: "host",
                     SessionId: 2,
+                    ClientProcessId: 0,
                     SqlText: "SELECT 1",
                     DurationMicroseconds: 500,
                     CpuMicroseconds: 400,
@@ -185,6 +191,7 @@ public sealed class TraceReportBuilderTests
                 ApplicationName: applicationName,
                 HostName: "host",
                 SessionId: 1,
+                ClientProcessId: 0,
                 SqlText: sql,
                 DurationMicroseconds: 100,
                 CpuMicroseconds: 100,

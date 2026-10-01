@@ -74,6 +74,7 @@ public sealed class EventFilterEngineTests
             ApplicationName: string.Empty,
             HostName: string.Empty,
             SessionId: 1,
+            ClientProcessId: 0,
             SqlText: sqlText,
             DurationMicroseconds: 0,
             CpuMicroseconds: 0,
