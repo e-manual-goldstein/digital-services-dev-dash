@@ -53,15 +53,27 @@ public sealed class ProfilerDashboardService
         }
     }
 
-    public List<ProfilerLiveEventDisplay> Inserts { get; } = [];
+    private readonly List<ProfilerLiveEventDisplay> _inserts = [];
+    private readonly List<ProfilerLiveEventDisplay> _updates = [];
+    private readonly List<ProfilerLiveEventDisplay> _readOnlyEvents = [];
+    private readonly List<ProfilerLiveEventDisplay> _recognisedCommands = [];
+    private readonly List<ProfilerLiveEventDisplay> _unknownEvents = [];
 
-    public List<ProfilerLiveEventDisplay> Updates { get; } = [];
+    private ProfilerLiveEventDisplay[] _insertsSnapshot = [];
+    private ProfilerLiveEventDisplay[] _updatesSnapshot = [];
+    private ProfilerLiveEventDisplay[] _readOnlyEventsSnapshot = [];
+    private ProfilerLiveEventDisplay[] _recognisedCommandsSnapshot = [];
+    private ProfilerLiveEventDisplay[] _unknownEventsSnapshot = [];
 
-    public List<ProfilerLiveEventDisplay> ReadOnlyEvents { get; } = [];
+    public IReadOnlyList<ProfilerLiveEventDisplay> Inserts => _insertsSnapshot;
 
-    public List<ProfilerLiveEventDisplay> RecognisedCommands { get; } = [];
+    public IReadOnlyList<ProfilerLiveEventDisplay> Updates => _updatesSnapshot;
 
-    public List<ProfilerLiveEventDisplay> UnknownEvents { get; } = [];
+    public IReadOnlyList<ProfilerLiveEventDisplay> ReadOnlyEvents => _readOnlyEventsSnapshot;
+
+    public IReadOnlyList<ProfilerLiveEventDisplay> RecognisedCommands => _recognisedCommandsSnapshot;
+
+    public IReadOnlyList<ProfilerLiveEventDisplay> UnknownEvents => _unknownEventsSnapshot;
 
     public IReadOnlyList<ProfilerEventFilterDefinition> RuntimeFilters
     {
@@ -75,6 +87,9 @@ public sealed class ProfilerDashboardService
     }
 
     public string? FilterFeedbackMessage { get; private set; }
+
+    public string CommandLookupConfiguredPath =>
+        _configuration["Profiler:SQLCommandLookupFilePath"] ?? string.Empty;
 
     public event Action? Changed;
 
@@ -297,6 +312,35 @@ public sealed class ProfilerDashboardService
         return success;
     }
 
+    public bool TryReloadRecognisedCommandsLookup(out string? errorMessage)
+    {
+        lock (_sync)
+        {
+            if (!IsRunning || _session is null)
+            {
+                errorMessage = "Start profiling before reloading the command lookup.";
+                FilterFeedbackMessage = null;
+                NotifyChanged();
+                return false;
+            }
+
+            if (!_session.TryReloadCommandLookup(out errorMessage))
+            {
+                FilterFeedbackMessage = null;
+                NotifyChanged();
+                return false;
+            }
+
+            ReclassifyMasterDisplays();
+            RebuildVisibleBuckets();
+            FilterFeedbackMessage =
+                $"Command lookup reloaded from {_session.CommandLookupFilePath ?? CommandLookupConfiguredPath}.";
+            errorMessage = null;
+            NotifyChanged();
+            return true;
+        }
+    }
+
     public void ClearBucket(ProfilerEventBucket bucket)
     {
         lock (_sync)
@@ -322,6 +366,16 @@ public sealed class ProfilerDashboardService
         NotifyChanged();
     }
 
+    private void ReclassifyMasterDisplays()
+    {
+        for (var i = 0; i < _masterDisplays.Count; i++)
+        {
+            var captured = _masterDisplays[i].Captured;
+            _session!.RefreshCommandLookup(captured);
+            _masterDisplays[i] = ProfilerLiveEventClassifier.CreateClassifiedDisplay(captured);
+        }
+    }
+
     private void RebuildVisibleBuckets()
     {
         ClearAllBuckets();
@@ -341,11 +395,11 @@ public sealed class ProfilerDashboardService
 
     private void ClearAllBuckets()
     {
-        Inserts.Clear();
-        Updates.Clear();
-            ReadOnlyEvents.Clear();
-            RecognisedCommands.Clear();
-            UnknownEvents.Clear();
+        _inserts.Clear();
+        _updates.Clear();
+        _readOnlyEvents.Clear();
+        _recognisedCommands.Clear();
+        _unknownEvents.Clear();
     }
 
     private void AddToBucket(ProfilerLiveEventDisplay display)
@@ -353,24 +407,41 @@ public sealed class ProfilerDashboardService
         switch (display.Bucket)
         {
             case ProfilerEventBucket.Insert:
-                Inserts.Add(display);
+                _inserts.Add(display);
                 break;
             case ProfilerEventBucket.Update:
-                Updates.Add(display);
+                _updates.Add(display);
                 break;
-                case ProfilerEventBucket.ReadOnly:
-                    ReadOnlyEvents.Add(display);
-                    break;
-                case ProfilerEventBucket.RecognisedCommand:
-                    RecognisedCommands.Add(display);
-                    break;
-                case ProfilerEventBucket.Unknown:
-                UnknownEvents.Add(display);
+            case ProfilerEventBucket.ReadOnly:
+                _readOnlyEvents.Add(display);
+                break;
+            case ProfilerEventBucket.RecognisedCommand:
+                _recognisedCommands.Add(display);
+                break;
+            case ProfilerEventBucket.Unknown:
+                _unknownEvents.Add(display);
                 break;
         }
     }
 
-    private void NotifyChanged() => Changed?.Invoke();
+    private void PublishStreamSnapshots()
+    {
+        _insertsSnapshot = _inserts.ToArray();
+        _updatesSnapshot = _updates.ToArray();
+        _readOnlyEventsSnapshot = _readOnlyEvents.ToArray();
+        _recognisedCommandsSnapshot = _recognisedCommands.ToArray();
+        _unknownEventsSnapshot = _unknownEvents.ToArray();
+    }
+
+    private void NotifyChanged()
+    {
+        lock (_sync)
+        {
+            PublishStreamSnapshots();
+        }
+
+        Changed?.Invoke();
+    }
 }
 
 public static class ProfilerEventDetailFormatter

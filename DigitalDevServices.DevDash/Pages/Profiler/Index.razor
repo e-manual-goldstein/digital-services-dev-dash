@@ -182,6 +182,13 @@
                         DefaultExpanded="true">
         <HeaderActions>
             <button type="button"
+                    class="btn btn-sm btn-outline-primary"
+                    disabled="@(!ProfilerState.IsRunning)"
+                    title="@($"Reload {ProfilerState.CommandLookupConfiguredPath}")"
+                    @onclick="ReloadRecognisedCommands">
+                Reload
+            </button>
+            <button type="button"
                     class="btn btn-sm btn-outline-secondary"
                     disabled="@(ProfilerState.RecognisedCommands.Count == 0)"
                     @onclick="() => ClearBucket(ProfilerEventBucket.RecognisedCommand)">
@@ -282,6 +289,9 @@
 
     private void RemoveRuntimeFilter(int runtimeFilterIndex) =>
         ProfilerState.TryRemoveRuntimeFilter(runtimeFilterIndex, out _);
+
+    private void ReloadRecognisedCommands() =>
+        ProfilerState.TryReloadRecognisedCommandsLookup(out _);
 
     private void OnProfilerStateChanged() => _ = InvokeAsync(StateHasChanged);
 

@@ -66,6 +66,12 @@
     background: #e9ecef;
 }
 
+::deep .collapsible-section__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
 ::deep .collapsible-section {
     width: 100%;
 }

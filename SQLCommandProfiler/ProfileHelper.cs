@@ -28,7 +28,9 @@ public sealed class ProfileHelper : IDisposable
     private readonly EfSqlInterpretationWhen _efSqlInterpretationWhen;
     private readonly string? _traceReportOutputPath;
     private readonly EfSqlInterpreter _efSqlInterpreter = new();
-    private readonly SqlCommandLookupRegistry? _commandLookupRegistry;
+    private readonly object _commandLookupSync = new();
+    private readonly string? _commandLookupFilePath;
+    private SqlCommandLookupRegistry? _commandLookupRegistry;
     private readonly SqlProfilerSessionOptions _sessionOptions;
     private readonly Dictionary<int, CapturedSqlEvent[]> _batchedEventsInfo = [];
     private readonly HashSet<string> _seenEventKeys = new(StringComparer.Ordinal);
@@ -62,8 +64,42 @@ public sealed class ProfileHelper : IDisposable
         var lookupPath = profiler["SQLCommandLookupFilePath"];
         if (!string.IsNullOrWhiteSpace(lookupPath))
         {
+            _commandLookupFilePath = lookupPath;
             _commandLookupRegistry = SqlCommandLookupRegistry.Load(ResolveContentFilePath(lookupPath));
         }
+    }
+
+    public string? CommandLookupFilePath => _commandLookupFilePath;
+
+    public bool TryReloadCommandLookup(out string? errorMessage)
+    {
+        if (string.IsNullOrWhiteSpace(_commandLookupFilePath))
+        {
+            errorMessage = "Profiler:SQLCommandLookupFilePath is not configured.";
+            return false;
+        }
+
+        try
+        {
+            var registry = SqlCommandLookupRegistry.Load(ResolveContentFilePath(_commandLookupFilePath));
+            lock (_commandLookupSync)
+            {
+                _commandLookupRegistry = registry;
+            }
+
+            errorMessage = null;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+            return false;
+        }
+    }
+
+    public void RefreshCommandLookup(CapturedSqlEvent captured)
+    {
+        ApplyCommandLookup(captured, forceRefresh: true);
     }
 
     public static void ValidateExtendedEventsTarget(IConfiguration configuration, string sqlServerInstance)
@@ -681,24 +717,28 @@ public sealed class ProfileHelper : IDisposable
         captured.EfInterpretation = _efSqlInterpreter.Interpret(captured.Info.SqlText);
     }
 
-    private void ApplyCommandLookup(CapturedSqlEvent captured)
+    private void ApplyCommandLookup(CapturedSqlEvent captured, bool forceRefresh = false)
     {
-        if (_commandLookupRegistry is null)
-        {
-            return;
-        }
-
         if (!string.Equals(captured.Info.EventName, RpcCompletedEventName, StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
 
-        if (captured.CommandLookup is not null)
+        lock (_commandLookupSync)
         {
-            return;
-        }
+            if (_commandLookupRegistry is null)
+            {
+                captured.CommandLookup = null;
+                return;
+            }
 
-        captured.CommandLookup = _commandLookupRegistry.Match(captured.Info.ObjectName);
+            if (!forceRefresh && captured.CommandLookup is not null)
+            {
+                return;
+            }
+
+            captured.CommandLookup = _commandLookupRegistry.Match(captured.Info.ObjectName);
+        }
     }
 
     private bool ShouldInterpretOnReceive()
@@ -714,10 +754,7 @@ public sealed class ProfileHelper : IDisposable
             return;
         }
 
-        if (!ProfilerLiveEventClassifier.TryCreateDisplay(captured, out var display))
-        {
-            display = ProfilerLiveEventClassifier.CreateUnknownDisplay(captured);
-        }
+        var display = ProfilerLiveEventClassifier.CreateClassifiedDisplay(captured);
 
         _sessionOptions.OnLiveEvent(display);
     }

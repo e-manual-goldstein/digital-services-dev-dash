@@ -19,6 +19,16 @@ public static class ProfilerLiveEventClassifier
         return false;
     }
 
+    public static ProfilerLiveEventDisplay CreateClassifiedDisplay(CapturedSqlEvent captured)
+    {
+        if (TryCreateDisplay(captured, out var display))
+        {
+            return display;
+        }
+
+        return CreateUnknownDisplay(captured);
+    }
+
     public static ProfilerLiveEventDisplay CreateUnknownDisplay(CapturedSqlEvent captured)
     {
         var info = captured.Info;
