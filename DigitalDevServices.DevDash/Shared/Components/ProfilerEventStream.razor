@@ -22,6 +22,10 @@
         <div class="profiler-table-scroll flex-grow-1" @ref="_scrollElement">
             <table class="profiler-table table table-sm table-borderless mb-0">
                 <colgroup>
+                    @if (ShowCommandNameColumn)
+                    {
+                        <col class="profiler-col-command" />
+                    }
                     <col class="profiler-col-database" />
                     <col class="profiler-col-application" />
                     <col class="profiler-col-user" />
@@ -32,6 +36,10 @@
                 </colgroup>
                 <thead class="profiler-table-head">
                     <tr>
+                        @if (ShowCommandNameColumn)
+                        {
+                            <th scope="col">Command</th>
+                        }
                         <th scope="col">Database</th>
                         <th scope="col">Application</th>
                         <th scope="col">User</th>
@@ -52,6 +60,10 @@
                             tabindex="0"
                             @onclick="() => OnSelect.InvokeAsync(item)"
                             @onkeydown="e => OnRowKeyDown(e, item)">
+                            @if (ShowCommandNameColumn)
+                            {
+                                <td class="profiler-cell-command">@DisplayCell(GetCommandName(item))</td>
+                            }
                             <td>@DisplayCell(info.DatabaseName)</td>
                             <td>@DisplayCell(info.ApplicationName)</td>
                             <td>@DisplayCell(info.UserName)</td>
@@ -77,6 +89,9 @@
 
     [Parameter]
     public bool ShowHeader { get; set; } = true;
+
+    [Parameter]
+    public bool ShowCommandNameColumn { get; set; }
 
     [Parameter, EditorRequired]
     public string ThemeClass { get; set; } = string.Empty;
@@ -143,6 +158,22 @@
 
     private static string FormatSqlText(string sqlText) =>
         ProfilerSqlSnippet.FormatForTile(sqlText, SqlTextMaxLength);
+
+    private static string GetCommandName(ProfilerLiveEventDisplay item)
+    {
+        if (!string.IsNullOrWhiteSpace(item.Title))
+        {
+            return item.Title;
+        }
+
+        var lookup = item.Captured.CommandLookup;
+        if (!string.IsNullOrWhiteSpace(lookup?.ObjectName))
+        {
+            return lookup.ObjectName;
+        }
+
+        return item.Captured.Info.ObjectName;
+    }
 
     private const int SqlTextMaxLength = 120;
 }

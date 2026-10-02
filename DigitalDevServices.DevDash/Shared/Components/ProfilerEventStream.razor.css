@@ -63,6 +63,15 @@
     word-break: break-word;
 }
 
+.profiler-col-command {
+    width: 11%;
+}
+
+.profiler-cell-command {
+    font-weight: 600;
+    word-break: break-word;
+}
+
 .profiler-col-database {
     width: 9%;
 }
