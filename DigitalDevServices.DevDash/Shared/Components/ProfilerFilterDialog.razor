@@ -1,0 +1,179 @@
+@namespace DigitalDevServices.DevDash.Shared.Components
+@using SQLCommandProfiler
+
+@if (IsOpen)
+{
+    <div class="modal fade show d-block"
+         tabindex="-1"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="@_titleId"
+         @ref="_modalElement"
+         @onkeydown="HandleKeyDownAsync">
+        <div class="modal-dialog modal-dialog-scrollable" @onclick:stopPropagation="true">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="@_titleId">Add profiler filter</h5>
+                    <button type="button"
+                            class="btn-close"
+                            aria-label="Close"
+                            @onclick="CloseAsync"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrWhiteSpace(ValidationMessage))
+                    {
+                        <div class="alert alert-danger py-2" role="alert">@ValidationMessage</div>
+                    }
+
+                    @if (SourceEvent is not null)
+                    {
+                        <p class="text-muted small">
+                            Pattern updates when you change the field, using the selected event&apos;s value (regex-escaped).
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="text-muted small">
+                            Pattern is a regular expression matched against the chosen field (case-insensitive).
+                        </p>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label" for="@_effectId">Effect</label>
+                        <select id="@_effectId"
+                                class="form-select"
+                                @bind="_effect">
+                            @foreach (var effect in _effects)
+                            {
+                                <option value="@effect">@effect</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="@_fieldId">Field</label>
+                        <select id="@_fieldId"
+                                class="form-select"
+                                value="@_field"
+                                @onchange="OnFieldChanged">
+                            @foreach (var field in _fields)
+                            {
+                                <option value="@field">@field</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label" for="@_patternId">Pattern</label>
+                        <input id="@_patternId"
+                               class="form-control font-monospace"
+                               @bind="_pattern" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseAsync">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="SubmitAsync">Add filter</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show" @onclick="CloseAsync"></div>
+}
+
+@code {
+    private readonly string _titleId = $"profiler-filter-title-{Guid.NewGuid():N}";
+    private readonly string _effectId = $"profiler-filter-effect-{Guid.NewGuid():N}";
+    private readonly string _fieldId = $"profiler-filter-field-{Guid.NewGuid():N}";
+    private readonly string _patternId = $"profiler-filter-pattern-{Guid.NewGuid():N}";
+    private ElementReference _modalElement;
+    private bool _wasOpen;
+
+    private static readonly ProfilerEventFilterEffect[] _effects =
+        Enum.GetValues<ProfilerEventFilterEffect>();
+
+    private static readonly ProfilerEventFilterField[] _fields =
+        Enum.GetValues<ProfilerEventFilterField>();
+
+    private ProfilerEventFilterEffect _effect = ProfilerEventFilterEffect.Exclude;
+    private ProfilerEventFilterField _field = ProfilerEventFilterField.DatabaseName;
+    private string _pattern = string.Empty;
+    private bool _previousIsOpen;
+
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public ExtendedEventInfo? SourceEvent { get; set; }
+
+    [Parameter]
+    public ProfilerEventFilterEffect InitialEffect { get; set; } = ProfilerEventFilterEffect.Exclude;
+
+    [Parameter]
+    public ProfilerEventFilterField InitialField { get; set; } = ProfilerEventFilterField.DatabaseName;
+
+    [Parameter]
+    public string InitialPattern { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? ValidationMessage { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public EventCallback<ProfilerEventFilterDefinition> OnSubmit { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (IsOpen && !_previousIsOpen)
+        {
+            _effect = InitialEffect;
+            _field = InitialField;
+            _pattern = InitialPattern;
+            if (SourceEvent is ExtendedEventInfo source)
+            {
+                _pattern = ProfilerEventFilterFieldValues.SuggestPattern(in source, _field);
+            }
+        }
+
+        _previousIsOpen = IsOpen;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (IsOpen && !_wasOpen)
+        {
+            await _modalElement.FocusAsync();
+        }
+
+        _wasOpen = IsOpen;
+    }
+
+    private void OnFieldChanged(ChangeEventArgs args)
+    {
+        if (args.Value is null || !Enum.TryParse<ProfilerEventFilterField>(args.Value.ToString(), out var field))
+        {
+            return;
+        }
+
+        _field = field;
+        if (SourceEvent is ExtendedEventInfo source)
+        {
+            _pattern = ProfilerEventFilterFieldValues.SuggestPattern(in source, _field);
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        var definition = new ProfilerEventFilterDefinition(_effect, _field, _pattern.Trim());
+        await OnSubmit.InvokeAsync(definition);
+    }
+
+    private async Task HandleKeyDownAsync(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+        {
+            await CloseAsync();
+        }
+    }
+
+    private Task CloseAsync() => OnClose.InvokeAsync();
+}

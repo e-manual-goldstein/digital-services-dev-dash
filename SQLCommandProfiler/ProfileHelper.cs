@@ -104,6 +104,12 @@ public sealed class ProfileHelper : IDisposable
         _traceThread.Start();
     }
 
+    public bool TryAddEventFilter(ProfilerEventFilterDefinition definition, out string? errorMessage)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _eventFilters.TryAddRule(definition, out errorMessage);
+    }
+
     private void ProveExtendedEventsSessionCapability()
     {
         using var connection = CreateProfilerConnection();

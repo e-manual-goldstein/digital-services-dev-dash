@@ -63,6 +63,28 @@ public sealed class EventFilterEngineTests
         Assert.IsTrue(engine.PassesFilters(allowed));
     }
 
+    [TestMethod]
+    public void TryAddRule_AppliesAfterConfigurationRules()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>())
+            .Build();
+
+        var engine = new EventFilterEngine(configuration);
+        Assert.IsTrue(engine.TryAddRule(
+            new ProfilerEventFilterDefinition(
+                ProfilerEventFilterEffect.Exclude,
+                ProfilerEventFilterField.DatabaseName,
+                "^Shop$"),
+            out _));
+
+        var blocked = CreateEvent(databaseName: "Shop");
+        var allowed = CreateEvent(databaseName: "Other");
+
+        Assert.IsFalse(engine.PassesFilters(blocked));
+        Assert.IsTrue(engine.PassesFilters(allowed));
+    }
+
     private static ExtendedEventInfo CreateEvent(string databaseName, string sqlText = "")
     {
         return new ExtendedEventInfo(

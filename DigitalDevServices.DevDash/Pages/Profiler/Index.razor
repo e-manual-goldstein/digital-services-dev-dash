@@ -27,6 +27,11 @@
     <div class="alert alert-success py-2" role="status">@ProfilerState.TargetReadyMessage</div>
 }
 
+@if (!string.IsNullOrWhiteSpace(ProfilerState.FilterFeedbackMessage))
+{
+    <div class="alert alert-info py-2" role="status">@ProfilerState.FilterFeedbackMessage</div>
+}
+
 @if (!string.IsNullOrWhiteSpace(ProfilerState.LastReportPath))
 {
     <div class="alert alert-secondary py-2" role="status">
@@ -75,6 +80,12 @@
             disabled="@(!ProfilerState.IsRunning)"
             @onclick="StopProfiling">
         Stop profiling
+    </button>
+    <button type="button"
+            class="btn btn-outline-secondary"
+            disabled="@(!ProfilerState.IsRunning)"
+            @onclick="OpenAddFilterDialog">
+        Add new filter
     </button>
     @if (ProfilerState.IsRunning)
     {
@@ -128,7 +139,18 @@
 <TextDetailModal IsOpen="_detailOpen"
                  Title="@_detailTitle"
                  Body="@_detailBody"
+                 ShowFilterByButton="@(ProfilerState.IsRunning && _detailDisplay is not null)"
+                 OnFilterBy="OpenFilterByFromDetail"
                  OnClose="CloseDetail" />
+
+<ProfilerFilterDialog IsOpen="_filterDialogOpen"
+                      SourceEvent="_filterSourceEvent"
+                      InitialEffect="_filterInitialEffect"
+                      InitialField="_filterInitialField"
+                      InitialPattern="_filterInitialPattern"
+                      ValidationMessage="_filterValidationMessage"
+                      OnClose="CloseFilterDialog"
+                      OnSubmit="SubmitFilterAsync" />
 
 @code {
     private bool _autoScrollInserts = true;
@@ -140,6 +162,13 @@
     private string _detailBody = string.Empty;
     private string _sqlServerInstanceInput = string.Empty;
     private string _appliedSqlServerInstanceInput = string.Empty;
+    private bool _filterDialogOpen;
+    private ExtendedEventInfo? _filterSourceEvent;
+    private ProfilerEventFilterEffect _filterInitialEffect = ProfilerEventFilterEffect.Exclude;
+    private ProfilerEventFilterField _filterInitialField = ProfilerEventFilterField.DatabaseName;
+    private string _filterInitialPattern = string.Empty;
+    private string? _filterValidationMessage;
+    private ProfilerLiveEventDisplay? _detailDisplay;
 
     private bool InstanceInputChanged =>
         !string.Equals(_sqlServerInstanceInput.Trim(), _appliedSqlServerInstanceInput, StringComparison.Ordinal);
@@ -168,6 +197,7 @@
 
     private void OpenDetail(ProfilerLiveEventDisplay display)
     {
+        _detailDisplay = display;
         _detailTitle = $"{display.Bucket}: {display.Title}";
         _detailBody = ProfilerEventDetailFormatter.Format(display);
         _detailOpen = true;
@@ -176,7 +206,54 @@
     private Task CloseDetail()
     {
         _detailOpen = false;
+        _detailDisplay = null;
         return Task.CompletedTask;
+    }
+
+    private void OpenAddFilterDialog()
+    {
+        _filterSourceEvent = null;
+        _filterInitialEffect = ProfilerEventFilterEffect.Exclude;
+        _filterInitialField = ProfilerEventFilterField.DatabaseName;
+        _filterInitialPattern = string.Empty;
+        _filterValidationMessage = null;
+        _filterDialogOpen = true;
+    }
+
+    private void OpenFilterByFromDetail()
+    {
+        if (_detailDisplay is null)
+        {
+            return;
+        }
+
+        var info = _detailDisplay.Captured.Info;
+        _filterSourceEvent = info;
+        _filterInitialEffect = ProfilerEventFilterEffect.Exclude;
+        _filterInitialField = ProfilerEventFilterField.ApplicationName;
+        _filterInitialPattern = ProfilerEventFilterFieldValues.SuggestPattern(in info, _filterInitialField);
+        _filterValidationMessage = null;
+        _filterDialogOpen = true;
+    }
+
+    private Task CloseFilterDialog()
+    {
+        _filterDialogOpen = false;
+        _filterValidationMessage = null;
+        return Task.CompletedTask;
+    }
+
+    private Task SubmitFilterAsync(ProfilerEventFilterDefinition definition)
+    {
+        if (!ProfilerState.TryAddRuntimeFilter(definition, out var errorMessage))
+        {
+            _filterValidationMessage = errorMessage;
+            return InvokeAsync(StateHasChanged);
+        }
+
+        _filterDialogOpen = false;
+        _filterValidationMessage = null;
+        return InvokeAsync(StateHasChanged);
     }
 
     public void Dispose() => ProfilerState.Changed -= OnProfilerStateChanged;

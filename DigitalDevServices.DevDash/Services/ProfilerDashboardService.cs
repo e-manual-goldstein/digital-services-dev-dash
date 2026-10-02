@@ -61,7 +61,22 @@ public sealed class ProfilerDashboardService
 
     public List<ProfilerLiveEventDisplay> UnknownEvents { get; } = [];
 
+    public IReadOnlyList<ProfilerEventFilterDefinition> RuntimeFilters
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _runtimeFilters.ToArray();
+            }
+        }
+    }
+
+    public string? FilterFeedbackMessage { get; private set; }
+
     public event Action? Changed;
+
+    private readonly List<ProfilerEventFilterDefinition> _runtimeFilters = [];
 
     public async Task<bool> ApplySqlServerTargetAsync(string sqlServerInstanceInput)
     {
@@ -144,6 +159,8 @@ public sealed class ProfilerDashboardService
             Updates.Clear();
             ReadOnlyEvents.Clear();
             UnknownEvents.Clear();
+            _runtimeFilters.Clear();
+            FilterFeedbackMessage = null;
             ErrorMessage = null;
             LastReportPath = null;
 
@@ -206,6 +223,38 @@ public sealed class ProfilerDashboardService
             session.Dispose();
             NotifyChanged();
         }
+    }
+
+    public bool TryAddRuntimeFilter(ProfilerEventFilterDefinition definition, out string? errorMessage)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+
+        bool success;
+        lock (_sync)
+        {
+            if (!IsRunning || _session is null)
+            {
+                errorMessage = "Start profiling before adding filters.";
+                FilterFeedbackMessage = null;
+                success = false;
+            }
+            else if (!_session.TryAddEventFilter(definition, out errorMessage))
+            {
+                FilterFeedbackMessage = null;
+                success = false;
+            }
+            else
+            {
+                _runtimeFilters.Add(definition);
+                FilterFeedbackMessage =
+                    $"{definition.Effect} filter added on {definition.Field} (pattern: {definition.Pattern}).";
+                errorMessage = null;
+                success = true;
+            }
+        }
+
+        NotifyChanged();
+        return success;
     }
 
     private void HandleLiveEvent(ProfilerLiveEventDisplay display)

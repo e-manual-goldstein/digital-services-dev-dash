@@ -4,47 +4,61 @@ using Microsoft.Extensions.Configuration;
 
 namespace SQLCommandProfiler;
 
-internal enum EventFilterEffect
-{
-    Exclude,
-    Include,
-}
-
-internal enum EventFilterField
-{
-    DatabaseName,
-    ApplicationName,
-    UserName,
-    HostName,
-    QueryHash,
-    QueryPlanHash,
-    EventName,
-    ObjectName,
-    SessionId,
-    ClientProcessId,
-    SqlText,
-}
-
-internal sealed record EventFilterRule(EventFilterEffect Effect, EventFilterField Field, Regex Pattern);
+internal sealed record EventFilterRule(ProfilerEventFilterEffect Effect, ProfilerEventFilterField Field, Regex Pattern);
 
 internal sealed class EventFilterEngine
 {
-    private readonly EventFilterRule[] _rules;
-    private readonly bool _hasIncludeRules;
+    private readonly object _sync = new();
+    private List<EventFilterRule> _rules;
+    private bool _hasIncludeRules;
 
     public EventFilterEngine(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
 
-        _rules = LoadRules(configuration.GetSection("Profiler:EventFilters:Rules"));
-        _hasIncludeRules = _rules.Any(rule => rule.Effect == EventFilterEffect.Include);
+        _rules = LoadRules(configuration.GetSection("Profiler:EventFilters:Rules")).ToList();
+        _hasIncludeRules = _rules.Any(rule => rule.Effect == ProfilerEventFilterEffect.Include);
+    }
+
+    public bool TryAddRule(ProfilerEventFilterDefinition definition, out string? errorMessage)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+
+        if (string.IsNullOrWhiteSpace(definition.Pattern))
+        {
+            errorMessage = "Pattern is required.";
+            return false;
+        }
+
+        if (!TryCompilePattern(definition.Pattern, out var pattern, out errorMessage))
+        {
+            return false;
+        }
+
+        lock (_sync)
+        {
+            _rules.Add(new EventFilterRule(definition.Effect, definition.Field, pattern));
+            _hasIncludeRules = _rules.Any(rule => rule.Effect == ProfilerEventFilterEffect.Include);
+        }
+
+        errorMessage = null;
+        return true;
     }
 
     public bool PassesFilters(in ExtendedEventInfo eventInfo)
     {
-        foreach (var rule in _rules)
+        EventFilterRule[] rules;
+        var hasIncludeRules = false;
+
+        lock (_sync)
         {
-            if (rule.Effect != EventFilterEffect.Exclude)
+            rules = _rules.ToArray();
+            hasIncludeRules = _hasIncludeRules;
+        }
+
+        foreach (var rule in rules)
+        {
+            if (rule.Effect != ProfilerEventFilterEffect.Exclude)
             {
                 continue;
             }
@@ -55,14 +69,14 @@ internal sealed class EventFilterEngine
             }
         }
 
-        if (!_hasIncludeRules)
+        if (!hasIncludeRules)
         {
             return true;
         }
 
-        foreach (var rule in _rules)
+        foreach (var rule in rules)
         {
-            if (rule.Effect != EventFilterEffect.Include)
+            if (rule.Effect != ProfilerEventFilterEffect.Include)
             {
                 continue;
             }
@@ -78,27 +92,8 @@ internal sealed class EventFilterEngine
 
     private static bool RuleMatches(EventFilterRule rule, in ExtendedEventInfo eventInfo)
     {
-        var value = GetFieldValue(eventInfo, rule.Field);
+        var value = ProfilerEventFilterFieldValues.GetValue(in eventInfo, rule.Field);
         return rule.Pattern.IsMatch(value);
-    }
-
-    private static string GetFieldValue(in ExtendedEventInfo eventInfo, EventFilterField field)
-    {
-        return field switch
-        {
-            EventFilterField.DatabaseName => eventInfo.DatabaseName,
-            EventFilterField.ApplicationName => eventInfo.ApplicationName,
-            EventFilterField.UserName => eventInfo.UserName,
-            EventFilterField.HostName => eventInfo.HostName,
-            EventFilterField.QueryHash => eventInfo.QueryHash.ToString("X16", CultureInfo.InvariantCulture),
-            EventFilterField.QueryPlanHash => eventInfo.QueryPlanHash.ToString("X16", CultureInfo.InvariantCulture),
-            EventFilterField.EventName => eventInfo.EventName,
-            EventFilterField.ObjectName => eventInfo.ObjectName,
-            EventFilterField.SessionId => eventInfo.SessionId.ToString(CultureInfo.InvariantCulture),
-            EventFilterField.ClientProcessId => eventInfo.ClientProcessId.ToString(CultureInfo.InvariantCulture),
-            EventFilterField.SqlText => eventInfo.SqlText,
-            _ => string.Empty,
-        };
     }
 
     private static EventFilterRule[] LoadRules(IConfigurationSection rulesSection)
@@ -121,31 +116,22 @@ internal sealed class EventFilterEngine
             var patternText = ruleSection["Pattern"]
                 ?? throw new InvalidOperationException($"Profiler:EventFilters:Rules:{index}:Pattern is required.");
 
-            if (!Enum.TryParse(effectText, ignoreCase: true, out EventFilterEffect effect))
+            if (!Enum.TryParse(effectText, ignoreCase: true, out ProfilerEventFilterEffect effect))
             {
                 throw new InvalidOperationException(
                     $"Profiler:EventFilters:Rules:{index}:Effect \"{effectText}\" is invalid. Use Exclude or Include.");
             }
 
-            if (!Enum.TryParse(fieldText, ignoreCase: true, out EventFilterField field))
+            if (!Enum.TryParse(fieldText, ignoreCase: true, out ProfilerEventFilterField field))
             {
                 throw new InvalidOperationException(
                     $"Profiler:EventFilters:Rules:{index}:Field \"{fieldText}\" is invalid.");
             }
 
-            Regex pattern;
-            try
-            {
-                pattern = new Regex(
-                    patternText,
-                    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled,
-                    TimeSpan.FromSeconds(1));
-            }
-            catch (Exception ex) when (ex is ArgumentException or RegexMatchTimeoutException)
+            if (!TryCompilePattern(patternText, out var pattern, out var errorMessage))
             {
                 throw new InvalidOperationException(
-                    $"Profiler:EventFilters:Rules:{index}:Pattern is not a valid regular expression: \"{patternText}\".",
-                    ex);
+                    $"Profiler:EventFilters:Rules:{index}:Pattern is not a valid regular expression: \"{patternText}\". {errorMessage}");
             }
 
             rules.Add(new EventFilterRule(effect, field, pattern));
@@ -153,6 +139,25 @@ internal sealed class EventFilterEngine
         }
 
         return rules.ToArray();
+    }
+
+    private static bool TryCompilePattern(string patternText, out Regex pattern, out string? errorMessage)
+    {
+        try
+        {
+            pattern = new Regex(
+                patternText,
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled,
+                TimeSpan.FromSeconds(1));
+            errorMessage = null;
+            return true;
+        }
+        catch (Exception ex) when (ex is ArgumentException or RegexMatchTimeoutException)
+        {
+            pattern = null!;
+            errorMessage = ex.Message;
+            return false;
+        }
     }
 
     private static bool IsRuleInactive(IConfigurationSection ruleSection)

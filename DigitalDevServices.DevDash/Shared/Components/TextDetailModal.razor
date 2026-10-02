@@ -22,6 +22,14 @@
                     <FormattedTextViewer Text="@Body" />
                 </div>
                 <div class="modal-footer">
+                    @if (ShowFilterByButton)
+                    {
+                        <button type="button"
+                                class="btn btn-outline-primary me-auto"
+                                @onclick="FilterByAsync">
+                            Filter by…
+                        </button>
+                    }
                     <button type="button" class="btn btn-secondary" @onclick="CloseAsync">Close</button>
                 </div>
             </div>
@@ -47,6 +55,12 @@
     [Parameter]
     public EventCallback OnClose { get; set; }
 
+    [Parameter]
+    public bool ShowFilterByButton { get; set; }
+
+    [Parameter]
+    public EventCallback OnFilterBy { get; set; }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (IsOpen && !_wasOpen)
@@ -66,4 +80,6 @@
     }
 
     private Task CloseAsync() => OnClose.InvokeAsync();
+
+    private Task FilterByAsync() => OnFilterBy.InvokeAsync();
 }
