@@ -1,0 +1,157 @@
+.profiler-stream-panel,
+.profiler-stream-body {
+    min-width: 0;
+    min-height: 0;
+}
+
+.profiler-table-scroll {
+    min-height: 10rem;
+    max-height: 18rem;
+    overflow: auto;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 0.375rem;
+}
+
+.profiler-table {
+    table-layout: fixed;
+    width: 100%;
+    font-size: 0.78rem;
+}
+
+.profiler-table-head th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: none;
+    vertical-align: bottom;
+    padding: 0.4rem 0.45rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(2px);
+    white-space: nowrap;
+}
+
+.profiler-data-row td {
+    padding: 0.35rem 0.45rem;
+    vertical-align: top;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.profiler-data-row {
+    cursor: pointer;
+}
+
+.profiler-data-row:hover {
+    filter: brightness(0.97);
+}
+
+.profiler-data-row:focus-visible {
+    outline: 2px solid rgba(13, 110, 253, 0.65);
+    outline-offset: -2px;
+}
+
+.profiler-cell-numeric {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.profiler-cell-sql {
+    word-break: break-word;
+}
+
+.profiler-col-database {
+    width: 9%;
+}
+
+.profiler-col-application {
+    width: 12%;
+}
+
+.profiler-col-user {
+    width: 8%;
+}
+
+.profiler-col-host {
+    width: 10%;
+}
+
+.profiler-col-client-pid {
+    width: 6.5rem;
+}
+
+.profiler-col-duration {
+    width: 5.5rem;
+}
+
+.profiler-col-sql {
+    width: auto;
+}
+
+/* Insert — #ffd6d6 base */
+.profiler-theme-insert .profiler-table-head th {
+    background: #ffc2c2;
+}
+
+.profiler-theme-insert .profiler-row-even {
+    background: #ffd6d6;
+}
+
+.profiler-theme-insert .profiler-row-odd {
+    background: #ffb8b8;
+}
+
+/* Update — #ffe0b3 base */
+.profiler-theme-update .profiler-table-head th {
+    background: #ffd199;
+}
+
+.profiler-theme-update .profiler-row-even {
+    background: #ffe0b3;
+}
+
+.profiler-theme-update .profiler-row-odd {
+    background: #ffd699;
+}
+
+/* Read-only — #cfe2ff base */
+.profiler-theme-readonly .profiler-table-head th {
+    background: #b6d4fe;
+}
+
+.profiler-theme-readonly .profiler-row-even {
+    background: #cfe2ff;
+}
+
+.profiler-theme-readonly .profiler-row-odd {
+    background: #b6d4fe;
+}
+
+/* Recognised — #d1e7dd base */
+.profiler-theme-recognised .profiler-table-head th {
+    background: #badbcc;
+}
+
+.profiler-theme-recognised .profiler-row-even {
+    background: #d1e7dd;
+}
+
+.profiler-theme-recognised .profiler-row-odd {
+    background: #c3e0cb;
+}
+
+/* Unknown — #e9ecef base */
+.profiler-theme-unknown .profiler-table-head th {
+    background: #dee2e6;
+}
+
+.profiler-theme-unknown .profiler-row-even {
+    background: #e9ecef;
+}
+
+.profiler-theme-unknown .profiler-row-odd {
+    background: #dee2e6;
+}

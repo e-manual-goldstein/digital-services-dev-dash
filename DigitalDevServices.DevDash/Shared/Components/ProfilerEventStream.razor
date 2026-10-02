@@ -1,7 +1,8 @@
 @inject IJSRuntime JsRuntime
+@using System.Globalization
 @using SQLCommandProfiler
 
-<div class="profiler-stream @(ShowHeader ? "card h-100 w-100" : "profiler-stream-panel w-100")">
+<div class="profiler-stream @(ShowHeader ? "card h-100 w-100" : "profiler-stream-panel w-100") @ThemeClass">
     @if (ShowHeader)
     {
         <div class="card-header d-flex justify-content-between align-items-center py-2">
@@ -9,8 +10,8 @@
             <span class="badge text-bg-secondary">@Items.Count</span>
         </div>
     }
-    <div class="@(ShowHeader ? "card-body" : string.Empty) p-2 d-flex flex-column">
-        <div class="form-check form-check-sm mb-2">
+    <div class="@(ShowHeader ? "card-body" : string.Empty) p-2 d-flex flex-column profiler-stream-body">
+        <div class="form-check form-check-sm mb-2 flex-shrink-0">
             <input class="form-check-input"
                    type="checkbox"
                    id="@_autoScrollId"
@@ -18,19 +19,50 @@
                    @onchange="OnAutoScrollChanged" />
             <label class="form-check-label small" for="@_autoScrollId">Autoscroll</label>
         </div>
-        <div class="profiler-stream-list flex-grow-1" @ref="_scrollElement">
-            @foreach (var item in Items)
-            {
-                <button type="button"
-                        class="profiler-tile @TileClass w-100 text-start mb-2"
-                        @onclick="() => OnSelect.InvokeAsync(item)">
-                    <div class="profiler-tile-title">@item.Title</div>
-                    @if (!string.IsNullOrWhiteSpace(item.Subtitle))
+        <div class="profiler-table-scroll flex-grow-1" @ref="_scrollElement">
+            <table class="profiler-table table table-sm table-borderless mb-0">
+                <colgroup>
+                    <col class="profiler-col-database" />
+                    <col class="profiler-col-application" />
+                    <col class="profiler-col-user" />
+                    <col class="profiler-col-host" />
+                    <col class="profiler-col-client-pid" />
+                    <col class="profiler-col-duration" />
+                    <col class="profiler-col-sql" />
+                </colgroup>
+                <thead class="profiler-table-head">
+                    <tr>
+                        <th scope="col">Database</th>
+                        <th scope="col">Application</th>
+                        <th scope="col">User</th>
+                        <th scope="col">Host</th>
+                        <th scope="col">ClientProcessId</th>
+                        <th scope="col">Duration</th>
+                        <th scope="col">SqlText</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (var index = 0; index < Items.Count; index++)
                     {
-                        <div class="profiler-tile-subtitle">@item.Subtitle</div>
+                        var item = Items[index];
+                        var rowShade = index % 2 == 0 ? "profiler-row-even" : "profiler-row-odd";
+                        var info = item.Captured.Info;
+                        <tr class="profiler-data-row @rowShade"
+                            role="button"
+                            tabindex="0"
+                            @onclick="() => OnSelect.InvokeAsync(item)"
+                            @onkeydown="e => OnRowKeyDown(e, item)">
+                            <td>@DisplayCell(info.DatabaseName)</td>
+                            <td>@DisplayCell(info.ApplicationName)</td>
+                            <td>@DisplayCell(info.UserName)</td>
+                            <td>@DisplayCell(info.HostName)</td>
+                            <td class="profiler-cell-numeric">@FormatClientProcessId(info.ClientProcessId)</td>
+                            <td class="profiler-cell-numeric">@FormatDuration(info.DurationMicroseconds)</td>
+                            <td class="profiler-cell-sql" title="@info.SqlText">@FormatSqlText(info.SqlText)</td>
+                        </tr>
                     }
-                </button>
-            }
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -47,7 +79,7 @@
     public bool ShowHeader { get; set; } = true;
 
     [Parameter, EditorRequired]
-    public string TileClass { get; set; } = string.Empty;
+    public string ThemeClass { get; set; } = string.Empty;
 
     [Parameter, EditorRequired]
     public IReadOnlyList<ProfilerLiveEventDisplay> Items { get; set; } = Array.Empty<ProfilerLiveEventDisplay>();
@@ -81,4 +113,36 @@
         };
         await AutoScrollChanged.InvokeAsync(enabled);
     }
+
+    private async Task OnRowKeyDown(KeyboardEventArgs args, ProfilerLiveEventDisplay item)
+    {
+        if (args.Key is "Enter" or " ")
+        {
+            await OnSelect.InvokeAsync(item);
+        }
+    }
+
+    private static string DisplayCell(string value) =>
+        string.IsNullOrWhiteSpace(value) ? "—" : value;
+
+    private static string FormatClientProcessId(int clientProcessId) =>
+        clientProcessId > 0 ? clientProcessId.ToString(CultureInfo.InvariantCulture) : "—";
+
+    private static string FormatDuration(long durationMicroseconds)
+    {
+        if (durationMicroseconds <= 0)
+        {
+            return "—";
+        }
+
+        var milliseconds = durationMicroseconds / 1000d;
+        return milliseconds < 1
+            ? "<1 ms"
+            : $"{milliseconds.ToString("0.###", CultureInfo.InvariantCulture)} ms";
+    }
+
+    private static string FormatSqlText(string sqlText) =>
+        ProfilerSqlSnippet.FormatForTile(sqlText, SqlTextMaxLength);
+
+    private const int SqlTextMaxLength = 120;
 }
