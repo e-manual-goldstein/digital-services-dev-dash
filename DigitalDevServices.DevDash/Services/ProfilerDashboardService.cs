@@ -59,6 +59,8 @@ public sealed class ProfilerDashboardService
 
     public List<ProfilerLiveEventDisplay> ReadOnlyEvents { get; } = [];
 
+    public List<ProfilerLiveEventDisplay> RecognisedCommands { get; } = [];
+
     public List<ProfilerLiveEventDisplay> UnknownEvents { get; } = [];
 
     public IReadOnlyList<ProfilerEventFilterDefinition> RuntimeFilters
@@ -341,8 +343,9 @@ public sealed class ProfilerDashboardService
     {
         Inserts.Clear();
         Updates.Clear();
-        ReadOnlyEvents.Clear();
-        UnknownEvents.Clear();
+            ReadOnlyEvents.Clear();
+            RecognisedCommands.Clear();
+            UnknownEvents.Clear();
     }
 
     private void AddToBucket(ProfilerLiveEventDisplay display)
@@ -355,10 +358,13 @@ public sealed class ProfilerDashboardService
             case ProfilerEventBucket.Update:
                 Updates.Add(display);
                 break;
-            case ProfilerEventBucket.ReadOnly:
-                ReadOnlyEvents.Add(display);
-                break;
-            case ProfilerEventBucket.Unknown:
+                case ProfilerEventBucket.ReadOnly:
+                    ReadOnlyEvents.Add(display);
+                    break;
+                case ProfilerEventBucket.RecognisedCommand:
+                    RecognisedCommands.Add(display);
+                    break;
+                case ProfilerEventBucket.Unknown:
                 UnknownEvents.Add(display);
                 break;
         }

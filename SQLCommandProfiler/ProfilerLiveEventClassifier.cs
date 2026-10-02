@@ -22,13 +22,27 @@ public static class ProfilerLiveEventClassifier
     public static ProfilerLiveEventDisplay CreateUnknownDisplay(CapturedSqlEvent captured)
     {
         var info = captured.Info;
-        var title = !string.IsNullOrWhiteSpace(info.ObjectName)
-            ? GetShortObjectName(info.ObjectName)
-            : info.EventName;
+        string title;
+        string subtitle;
 
-        var subtitle = string.IsNullOrWhiteSpace(info.DatabaseName)
-            ? info.ApplicationName
-            : info.DatabaseName;
+        if (BuiltInSqlServerRpc.IsSpExecuteSql(info.ObjectName)
+            && !string.IsNullOrWhiteSpace(info.SqlText))
+        {
+            title = ProfilerSqlSnippet.FormatForTile(info.SqlText);
+            subtitle = string.IsNullOrWhiteSpace(info.DatabaseName)
+                ? info.ApplicationName
+                : info.DatabaseName;
+        }
+        else
+        {
+            title = !string.IsNullOrWhiteSpace(info.ObjectName)
+                ? GetShortObjectName(info.ObjectName)
+                : info.EventName;
+
+            subtitle = string.IsNullOrWhiteSpace(info.DatabaseName)
+                ? info.ApplicationName
+                : info.DatabaseName;
+        }
 
         return new ProfilerLiveEventDisplay
         {
@@ -87,17 +101,25 @@ public static class ProfilerLiveEventClassifier
 
         display = new ProfilerLiveEventDisplay
         {
-            Bucket = lookup.Access == SqlCommandAccess.ReadOnly ? ProfilerEventBucket.ReadOnly : ProfilerEventBucket.Update,
-            Title = lookup.Access == SqlCommandAccess.ReadOnly
-                ? captured.Info.DatabaseName
-                : title,
-            Subtitle = lookup.Access == SqlCommandAccess.ReadOnly
-                ? string.Empty
-                : FormatQualifiedTableName(null, title, captured.Info.DatabaseName),
+            Bucket = ProfilerEventBucket.RecognisedCommand,
+            Title = title,
+            Subtitle = FormatRecognisedCommandSubtitle(lookup, captured),
             Captured = captured,
         };
 
         return true;
+    }
+
+    private static string FormatRecognisedCommandSubtitle(
+        SqlCommandLookupMatch lookup,
+        CapturedSqlEvent captured)
+    {
+        if (!string.IsNullOrWhiteSpace(captured.Info.DatabaseName))
+        {
+            return captured.Info.DatabaseName;
+        }
+
+        return lookup.ObjectName;
     }
 
     private static ProfilerLiveEventDisplay CreateTableEvent(

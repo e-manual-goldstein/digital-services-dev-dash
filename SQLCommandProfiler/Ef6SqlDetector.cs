@@ -6,6 +6,7 @@ internal static partial class Ef6SqlDetector
 {
     private static readonly Regex ExtentOrProjectAliasPattern = ExtentProjectAliasRegex();
     private static readonly Regex Ef6BracketedDmlPattern = Ef6BracketedDmlRegex();
+    private static readonly Regex Ef6SelectPattern = Ef6SelectRegex();
     private static readonly Regex EfParameterPattern = EfParameterRegex();
 
     public static bool LooksLikeEf6(string sqlText)
@@ -32,8 +33,16 @@ internal static partial class Ef6SqlDetector
             return true;
         }
 
+        if (Ef6SelectPattern.IsMatch(sqlText) && EfParameterPattern.IsMatch(sqlText))
+        {
+            return true;
+        }
+
         return false;
     }
+
+    [GeneratedRegex(@"\bSELECT\b[\s\S]*\[[^\]]+\]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex Ef6SelectRegex();
 
     [GeneratedRegex(@"(?:INSERT|UPDATE|DELETE)\s+\[(?:[^\]]+\]\.)?\[[^\]]+\]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex Ef6BracketedDmlRegex();

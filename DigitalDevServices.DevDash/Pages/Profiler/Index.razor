@@ -118,7 +118,7 @@
 }
 
 <div class="profiler-sections d-flex flex-column gap-2 mb-4">
-    <CollapsibleSection Title="@($"INSERTS ({ProfilerState.Inserts.Count})")"
+    <CollapsibleSection Title="@($"EF Inserts ({ProfilerState.Inserts.Count})")"
                         DefaultExpanded="true">
         <HeaderActions>
             <button type="button"
@@ -138,7 +138,7 @@
                              OnSelect="OpenDetail" />
         </ChildContent>
     </CollapsibleSection>
-    <CollapsibleSection Title="@($"UPDATES ({ProfilerState.Updates.Count})")"
+    <CollapsibleSection Title="@($"EF Updates ({ProfilerState.Updates.Count})")"
                         DefaultExpanded="true">
         <HeaderActions>
             <button type="button"
@@ -158,7 +158,7 @@
                              OnSelect="OpenDetail" />
         </ChildContent>
     </CollapsibleSection>
-    <CollapsibleSection Title="@($"READ-ONLY ({ProfilerState.ReadOnlyEvents.Count})")"
+    <CollapsibleSection Title="@($"EF Read-Only ({ProfilerState.ReadOnlyEvents.Count})")"
                         DefaultExpanded="true">
         <HeaderActions>
             <button type="button"
@@ -175,6 +175,26 @@
                              Items="ProfilerState.ReadOnlyEvents"
                              AutoScroll="_autoScrollReadOnly"
                              AutoScrollChanged="value => _autoScrollReadOnly = value"
+                             OnSelect="OpenDetail" />
+        </ChildContent>
+    </CollapsibleSection>
+    <CollapsibleSection Title="@($"Recognised Commands ({ProfilerState.RecognisedCommands.Count})")"
+                        DefaultExpanded="true">
+        <HeaderActions>
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    disabled="@(ProfilerState.RecognisedCommands.Count == 0)"
+                    @onclick="() => ClearBucket(ProfilerEventBucket.RecognisedCommand)">
+                Clear
+            </button>
+        </HeaderActions>
+        <ChildContent>
+            <ProfilerEventStream Title="Recognised Commands"
+                             ShowHeader="false"
+                             TileClass="profiler-tile-recognised"
+                             Items="ProfilerState.RecognisedCommands"
+                             AutoScroll="_autoScrollRecognised"
+                             AutoScrollChanged="value => _autoScrollRecognised = value"
                              OnSelect="OpenDetail" />
         </ChildContent>
     </CollapsibleSection>
@@ -220,6 +240,7 @@
     private bool _autoScrollInserts = true;
     private bool _autoScrollUpdates = true;
     private bool _autoScrollReadOnly = true;
+    private bool _autoScrollRecognised = true;
     private bool _autoScrollUnknown = true;
     private bool _detailOpen;
     private string _detailTitle = string.Empty;

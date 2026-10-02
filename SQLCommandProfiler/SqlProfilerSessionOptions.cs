@@ -5,6 +5,7 @@ public enum ProfilerEventBucket
     Insert,
     Update,
     ReadOnly,
+    RecognisedCommand,
     Unknown,
 }
 

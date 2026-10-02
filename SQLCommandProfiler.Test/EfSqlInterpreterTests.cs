@@ -92,6 +92,18 @@ public sealed class EfSqlInterpreterTests
     }
 
     [TestMethod]
+    public void Interpret_ClassifiesEf6Select_WithRpcParameterPreamble_AsReadOnly()
+    {
+        const string sql =
+            "(@0 int)SELECT [Extent1].[Id] AS [Id] FROM [dbo].[Customers] AS [Extent1] WHERE [Extent1].[Id] = @0";
+
+        var result = _interpreter.Interpret(sql);
+        Assert.IsNotNull(result);
+        Assert.AreEqual(EfSqlAccess.ReadOnly, result!.Access);
+        Assert.IsTrue(result.Statements.Any(statement => statement.Kind == EfSqlStatementKind.Select));
+    }
+
+    [TestMethod]
     public void Interpret_DetectsAndParsesEf6Update_WithRpcParameterPreamble()
     {
         const string sql = "(@0 int,@1 datetime)UPDATE [dbo].[Orders] SET [Status] = @0 WHERE [Id] = @1";
