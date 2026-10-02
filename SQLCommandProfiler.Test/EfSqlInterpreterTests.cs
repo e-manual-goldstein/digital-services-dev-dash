@@ -116,4 +116,33 @@ public sealed class EfSqlInterpreterTests
         Assert.AreEqual("Orders", update.Update!.Table.Name);
         Assert.AreEqual("Status", update.Update.Assignments[0].Column);
     }
+
+    [TestMethod]
+    public void Interpret_ClassifiesEf6Delete_WithWhere()
+    {
+        const string sql = """
+            DELETE [dbo].[Orders]
+            WHERE ([Extent1].[Id] = @p0)
+            """;
+
+        var result = _interpreter.Interpret(sql);
+        Assert.IsNotNull(result);
+        Assert.AreEqual(EfSqlAccess.ReadWrite, result!.Access);
+
+        var delete = result.Statements.Single(statement => statement.Kind == EfSqlStatementKind.Delete);
+        Assert.AreEqual("Orders", delete.DeleteTarget!.Name);
+    }
+
+    [TestMethod]
+    public void Interpret_DetectsAndParsesEf6Delete_WithRpcParameterPreamble()
+    {
+        const string sql = "(@0 int)DELETE [dbo].[Orders] WHERE [Id] = @0";
+
+        var result = _interpreter.Interpret(sql);
+        Assert.IsNotNull(result);
+        Assert.AreEqual(EfSqlAccess.ReadWrite, result!.Access);
+
+        var delete = result.Statements.Single(statement => statement.Kind == EfSqlStatementKind.Delete);
+        Assert.AreEqual("Orders", delete.DeleteTarget!.Name);
+    }
 }

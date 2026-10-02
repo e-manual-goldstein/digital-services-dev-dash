@@ -40,6 +40,42 @@ public sealed class ProfilerLiveEventClassifierTests
     }
 
     [TestMethod]
+    public void TryCreateDisplay_ClassifiesDelete_WithTableSubtitle()
+    {
+        const string sql = """
+            DELETE [dbo].[Orders]
+            WHERE ([Extent1].[Id] = @p0)
+            """;
+
+        var interpreter = new EfSqlInterpreter();
+        var captured = new CapturedSqlEvent
+        {
+            Info = new ExtendedEventInfo(
+                TimestampUtc: DateTimeOffset.UtcNow,
+                EventName: "rpc_completed",
+                ObjectName: string.Empty,
+                DatabaseName: "Shop",
+                UserName: "u",
+                ApplicationName: "app",
+                HostName: "h",
+                SessionId: 1,
+                ClientProcessId: 0,
+                SqlText: sql,
+                DurationMicroseconds: 1,
+                CpuMicroseconds: 1,
+                LogicalReads: 1,
+                QueryHash: 1,
+                QueryPlanHash: 0),
+            EfInterpretation = interpreter.Interpret(sql),
+        };
+
+        Assert.IsTrue(ProfilerLiveEventClassifier.TryCreateDisplay(captured, out var display));
+        Assert.AreEqual(ProfilerEventBucket.Delete, display.Bucket);
+        Assert.AreEqual("ORDERS", display.Title);
+        Assert.AreEqual("[Shop].[dbo].[Orders]", display.Subtitle);
+    }
+
+    [TestMethod]
     public void CreateUnknownDisplay_UsesObjectNameAsTitle()
     {
         var captured = new CapturedSqlEvent

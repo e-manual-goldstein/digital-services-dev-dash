@@ -55,12 +55,14 @@ public sealed class ProfilerDashboardService
 
     private readonly List<ProfilerLiveEventDisplay> _inserts = [];
     private readonly List<ProfilerLiveEventDisplay> _updates = [];
+    private readonly List<ProfilerLiveEventDisplay> _deletes = [];
     private readonly List<ProfilerLiveEventDisplay> _readOnlyEvents = [];
     private readonly List<ProfilerLiveEventDisplay> _recognisedCommands = [];
     private readonly List<ProfilerLiveEventDisplay> _unknownEvents = [];
 
     private ProfilerLiveEventDisplay[] _insertsSnapshot = [];
     private ProfilerLiveEventDisplay[] _updatesSnapshot = [];
+    private ProfilerLiveEventDisplay[] _deletesSnapshot = [];
     private ProfilerLiveEventDisplay[] _readOnlyEventsSnapshot = [];
     private ProfilerLiveEventDisplay[] _recognisedCommandsSnapshot = [];
     private ProfilerLiveEventDisplay[] _unknownEventsSnapshot = [];
@@ -68,6 +70,8 @@ public sealed class ProfilerDashboardService
     public IReadOnlyList<ProfilerLiveEventDisplay> Inserts => _insertsSnapshot;
 
     public IReadOnlyList<ProfilerLiveEventDisplay> Updates => _updatesSnapshot;
+
+    public IReadOnlyList<ProfilerLiveEventDisplay> Deletes => _deletesSnapshot;
 
     public IReadOnlyList<ProfilerLiveEventDisplay> ReadOnlyEvents => _readOnlyEventsSnapshot;
 
@@ -397,6 +401,7 @@ public sealed class ProfilerDashboardService
     {
         _inserts.Clear();
         _updates.Clear();
+        _deletes.Clear();
         _readOnlyEvents.Clear();
         _recognisedCommands.Clear();
         _unknownEvents.Clear();
@@ -411,6 +416,9 @@ public sealed class ProfilerDashboardService
                 break;
             case ProfilerEventBucket.Update:
                 _updates.Add(display);
+                break;
+            case ProfilerEventBucket.Delete:
+                _deletes.Add(display);
                 break;
             case ProfilerEventBucket.ReadOnly:
                 _readOnlyEvents.Add(display);
@@ -428,6 +436,7 @@ public sealed class ProfilerDashboardService
     {
         _insertsSnapshot = _inserts.ToArray();
         _updatesSnapshot = _updates.ToArray();
+        _deletesSnapshot = _deletes.ToArray();
         _readOnlyEventsSnapshot = _readOnlyEvents.ToArray();
         _recognisedCommandsSnapshot = _recognisedCommands.ToArray();
         _unknownEventsSnapshot = _unknownEvents.ToArray();

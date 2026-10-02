@@ -4,6 +4,7 @@ public enum ProfilerEventBucket
 {
     Insert,
     Update,
+    Delete,
     ReadOnly,
     RecognisedCommand,
     Unknown,

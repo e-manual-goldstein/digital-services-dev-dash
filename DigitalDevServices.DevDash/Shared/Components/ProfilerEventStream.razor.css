@@ -126,6 +126,19 @@
     background: #ffd699;
 }
 
+/* Delete — #e8c4e8 base */
+.profiler-theme-delete .profiler-table-head th {
+    background: #d9aed9;
+}
+
+.profiler-theme-delete .profiler-row-even {
+    background: #e8c4e8;
+}
+
+.profiler-theme-delete .profiler-row-odd {
+    background: #dbb3db;
+}
+
 /* Read-only — #cfe2ff base */
 .profiler-theme-readonly .profiler-table-head th {
     background: #b6d4fe;

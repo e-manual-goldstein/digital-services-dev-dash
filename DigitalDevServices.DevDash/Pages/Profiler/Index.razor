@@ -158,6 +158,26 @@
                              OnSelect="OpenDetail" />
         </ChildContent>
     </CollapsibleSection>
+    <CollapsibleSection Title="@($"EF Deletes ({ProfilerState.Deletes.Count})")"
+                        DefaultExpanded="true">
+        <HeaderActions>
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    disabled="@(ProfilerState.Deletes.Count == 0)"
+                    @onclick="() => ClearBucket(ProfilerEventBucket.Delete)">
+                Clear
+            </button>
+        </HeaderActions>
+        <ChildContent>
+            <ProfilerEventStream Title="DELETES"
+                             ShowHeader="false"
+                             ThemeClass="profiler-theme-delete"
+                             Items="ProfilerState.Deletes"
+                             AutoScroll="_autoScrollDeletes"
+                             AutoScrollChanged="value => _autoScrollDeletes = value"
+                             OnSelect="OpenDetail" />
+        </ChildContent>
+    </CollapsibleSection>
     <CollapsibleSection Title="@($"EF Read-Only ({ProfilerState.ReadOnlyEvents.Count})")"
                         DefaultExpanded="true">
         <HeaderActions>
@@ -247,6 +267,7 @@
 @code {
     private bool _autoScrollInserts = true;
     private bool _autoScrollUpdates = true;
+    private bool _autoScrollDeletes = true;
     private bool _autoScrollReadOnly = true;
     private bool _autoScrollRecognised = true;
     private bool _autoScrollUnknown = true;

@@ -86,6 +86,13 @@ public static class ProfilerLiveEventClassifier
             return true;
         }
 
+        var delete = interpretation.Statements.FirstOrDefault(statement => statement.Kind == EfSqlStatementKind.Delete);
+        if (delete?.DeleteTarget is not null && !string.IsNullOrEmpty(delete.DeleteTarget.Name))
+        {
+            display = CreateTableEvent(ProfilerEventBucket.Delete, delete.DeleteTarget, captured);
+            return true;
+        }
+
         if (interpretation.Access == EfSqlAccess.ReadOnly)
         {
             display = CreateReadOnlyDatabaseEvent(captured);
