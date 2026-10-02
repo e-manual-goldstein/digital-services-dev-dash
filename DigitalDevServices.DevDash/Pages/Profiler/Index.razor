@@ -87,6 +87,12 @@
             @onclick="OpenAddFilterDialog">
         Add new filter
     </button>
+    <button type="button"
+            class="btn btn-outline-secondary"
+            disabled="@(ProfilerState.MasterEventCount == 0)"
+            @onclick="OpenGroupSummaryDialog">
+        View Group Summary
+    </button>
     @if (ProfilerState.IsRunning)
     {
         <span class="align-self-center text-success fw-semibold">Trace running…</span>
@@ -264,6 +270,9 @@
                       OnClose="CloseFilterDialog"
                       OnSubmit="SubmitFilterAsync" />
 
+<ProfilerGroupSummaryDialog IsOpen="_groupSummaryOpen"
+                            OnClose="CloseGroupSummaryDialog" />
+
 @code {
     private bool _autoScrollInserts = true;
     private bool _autoScrollUpdates = true;
@@ -277,6 +286,7 @@
     private string _sqlServerInstanceInput = string.Empty;
     private string _appliedSqlServerInstanceInput = string.Empty;
     private bool _filterDialogOpen;
+    private bool _groupSummaryOpen;
     private ExtendedEventInfo? _filterSourceEvent;
     private ProfilerEventFilterEffect _filterInitialEffect = ProfilerEventFilterEffect.Exclude;
     private ProfilerEventFilterField _filterInitialField = ProfilerEventFilterField.DatabaseName;
@@ -362,6 +372,14 @@
     {
         _filterDialogOpen = false;
         _filterValidationMessage = null;
+        return Task.CompletedTask;
+    }
+
+    private void OpenGroupSummaryDialog() => _groupSummaryOpen = true;
+
+    private Task CloseGroupSummaryDialog()
+    {
+        _groupSummaryOpen = false;
         return Task.CompletedTask;
     }
 

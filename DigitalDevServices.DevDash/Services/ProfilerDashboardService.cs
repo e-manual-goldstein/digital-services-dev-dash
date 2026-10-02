@@ -356,6 +356,103 @@ public sealed class ProfilerDashboardService
         NotifyChanged();
     }
 
+    public int MasterEventCount
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _masterDisplays.Count;
+            }
+        }
+    }
+
+    public IReadOnlyList<ProfilerGroupSummaryRow> GetGroupSummary(ProfilerGroupSummaryDimension dimension)
+    {
+        lock (_sync)
+        {
+            var accumulators = new Dictionary<string, BucketCounts>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var display in _masterDisplays)
+            {
+                var groupKey = ResolveGroupKey(display.Captured.Info, dimension);
+                if (!accumulators.TryGetValue(groupKey, out var counts))
+                {
+                    counts = new BucketCounts();
+                    accumulators[groupKey] = counts;
+                }
+
+                counts.Increment(display.Bucket);
+            }
+
+            return accumulators
+                .Select(pair => pair.Value.ToRow(pair.Key))
+                .OrderBy(row => row.GroupKey, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+    }
+
+    private static string ResolveGroupKey(ExtendedEventInfo info, ProfilerGroupSummaryDimension dimension)
+    {
+        var raw = dimension switch
+        {
+            ProfilerGroupSummaryDimension.HostName => info.HostName,
+            ProfilerGroupSummaryDimension.ApplicationName => info.ApplicationName,
+            ProfilerGroupSummaryDimension.Database => info.DatabaseName,
+            ProfilerGroupSummaryDimension.User => info.UserName,
+            _ => string.Empty,
+        };
+
+        return string.IsNullOrWhiteSpace(raw) ? "(empty)" : raw.Trim();
+    }
+
+    private sealed class BucketCounts
+    {
+        public int Inserts;
+        public int Updates;
+        public int Deletes;
+        public int ReadOnly;
+        public int Recognised;
+        public int Unknown;
+
+        public void Increment(ProfilerEventBucket bucket)
+        {
+            switch (bucket)
+            {
+                case ProfilerEventBucket.Insert:
+                    Inserts++;
+                    break;
+                case ProfilerEventBucket.Update:
+                    Updates++;
+                    break;
+                case ProfilerEventBucket.Delete:
+                    Deletes++;
+                    break;
+                case ProfilerEventBucket.ReadOnly:
+                    ReadOnly++;
+                    break;
+                case ProfilerEventBucket.RecognisedCommand:
+                    Recognised++;
+                    break;
+                case ProfilerEventBucket.Unknown:
+                    Unknown++;
+                    break;
+            }
+        }
+
+        public ProfilerGroupSummaryRow ToRow(string groupKey) =>
+            new()
+            {
+                GroupKey = groupKey,
+                InsertCount = Inserts,
+                UpdateCount = Updates,
+                DeleteCount = Deletes,
+                ReadOnlyCount = ReadOnly,
+                RecognisedCount = Recognised,
+                UnknownCount = Unknown,
+            };
+    }
+
     private void HandleLiveEvent(ProfilerLiveEventDisplay display)
     {
         lock (_sync)
