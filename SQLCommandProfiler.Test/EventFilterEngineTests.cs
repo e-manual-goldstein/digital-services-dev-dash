@@ -85,6 +85,28 @@ public sealed class EventFilterEngineTests
         Assert.IsTrue(engine.PassesFilters(allowed));
     }
 
+    [TestMethod]
+    public void TryRemoveRuntimeRule_RestoresPassingEvents()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>())
+            .Build();
+
+        var engine = new EventFilterEngine(configuration);
+        Assert.IsTrue(engine.TryAddRule(
+            new ProfilerEventFilterDefinition(
+                ProfilerEventFilterEffect.Exclude,
+                ProfilerEventFilterField.DatabaseName,
+                "^Shop$"),
+            out _));
+
+        var shopEvent = CreateEvent(databaseName: "Shop");
+        Assert.IsFalse(engine.PassesFilters(shopEvent));
+
+        Assert.IsTrue(engine.TryRemoveRuntimeRule(0, out _));
+        Assert.IsTrue(engine.PassesFilters(shopEvent));
+    }
+
     private static ExtendedEventInfo CreateEvent(string databaseName, string sqlText = "")
     {
         return new ExtendedEventInfo(

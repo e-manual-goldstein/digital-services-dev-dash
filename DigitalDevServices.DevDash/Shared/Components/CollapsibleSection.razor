@@ -2,15 +2,23 @@
 @inherits CollapsibleSectionBase
 
 <div class="collapsible-section @(IsEmpty ? "collapsible-section--empty" : null)">
-    <button type="button"
-            class="collapsible-section__header w-100 d-flex align-items-center justify-content-between gap-2 text-start @(IsEmpty ? "text-secondary" : null)"
-            aria-expanded="@Expanded"
-            aria-controls="@BodyId"
-            id="@HeaderId"
-            @onclick="Toggle">
-        <span class="fw-semibold">@Title</span>
-        <span class="collapsible-section__chevron" aria-hidden="true">@(Expanded ? "▼" : "▶")</span>
-    </button>
+    <div class="collapsible-section__header d-flex align-items-center gap-2 w-100">
+        <button type="button"
+                class="collapsible-section__toggle flex-grow-1 d-flex align-items-center justify-content-between gap-2 text-start border-0 bg-transparent p-0 @(IsEmpty ? "text-secondary" : null)"
+                aria-expanded="@Expanded"
+                aria-controls="@BodyId"
+                id="@HeaderId"
+                @onclick="Toggle">
+            <span class="fw-semibold">@Title</span>
+            <span class="collapsible-section__chevron" aria-hidden="true">@(Expanded ? "▼" : "▶")</span>
+        </button>
+        @if (HeaderActions is not null)
+        {
+            <div class="collapsible-section__actions flex-shrink-0">
+                @HeaderActions
+            </div>
+        }
+    </div>
     <div class="collapsible-section-inner">
         <div id="@BodyId"
              class="collapsible-section__body @(Expanded ? "collapsible-section__body--open" : "collapsible-section__body--closed")"
@@ -24,4 +32,7 @@
 @code {
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public RenderFragment? HeaderActions { get; set; }
 }

@@ -76,6 +76,7 @@ public sealed class ProfilerDashboardService
 
     public event Action? Changed;
 
+    private readonly List<ProfilerLiveEventDisplay> _masterDisplays = [];
     private readonly List<ProfilerEventFilterDefinition> _runtimeFilters = [];
 
     public async Task<bool> ApplySqlServerTargetAsync(string sqlServerInstanceInput)
@@ -155,10 +156,8 @@ public sealed class ProfilerDashboardService
                 return;
             }
 
-            Inserts.Clear();
-            Updates.Clear();
-            ReadOnlyEvents.Clear();
-            UnknownEvents.Clear();
+            ClearAllBuckets();
+            _masterDisplays.Clear();
             _runtimeFilters.Clear();
             FilterFeedbackMessage = null;
             ErrorMessage = null;
@@ -246,6 +245,7 @@ public sealed class ProfilerDashboardService
             else
             {
                 _runtimeFilters.Add(definition);
+                RebuildVisibleBuckets();
                 FilterFeedbackMessage =
                     $"{definition.Effect} filter added on {definition.Field} (pattern: {definition.Pattern}).";
                 errorMessage = null;
@@ -257,28 +257,111 @@ public sealed class ProfilerDashboardService
         return success;
     }
 
-    private void HandleLiveEvent(ProfilerLiveEventDisplay display)
+    public bool TryRemoveRuntimeFilter(int runtimeFilterIndex, out string? errorMessage)
     {
+        bool success;
         lock (_sync)
         {
-            switch (display.Bucket)
+            if (!IsRunning || _session is null)
             {
-                case ProfilerEventBucket.Insert:
-                    Inserts.Add(display);
-                    break;
-                case ProfilerEventBucket.Update:
-                    Updates.Add(display);
-                    break;
-                case ProfilerEventBucket.ReadOnly:
-                    ReadOnlyEvents.Add(display);
-                    break;
-                case ProfilerEventBucket.Unknown:
-                    UnknownEvents.Add(display);
-                    break;
+                errorMessage = "Start profiling before removing filters.";
+                FilterFeedbackMessage = null;
+                success = false;
+            }
+            else if (runtimeFilterIndex < 0 || runtimeFilterIndex >= _runtimeFilters.Count)
+            {
+                errorMessage = "Runtime filter was not found.";
+                FilterFeedbackMessage = null;
+                success = false;
+            }
+            else if (!_session.TryRemoveEventFilter(runtimeFilterIndex, out errorMessage))
+            {
+                FilterFeedbackMessage = null;
+                success = false;
+            }
+            else
+            {
+                var removed = _runtimeFilters[runtimeFilterIndex];
+                _runtimeFilters.RemoveAt(runtimeFilterIndex);
+                RebuildVisibleBuckets();
+                FilterFeedbackMessage =
+                    $"{removed.Effect} filter removed from {removed.Field} (pattern: {removed.Pattern}).";
+                errorMessage = null;
+                success = true;
             }
         }
 
         NotifyChanged();
+        return success;
+    }
+
+    public void ClearBucket(ProfilerEventBucket bucket)
+    {
+        lock (_sync)
+        {
+            _masterDisplays.RemoveAll(display => display.Bucket == bucket);
+            RebuildVisibleBuckets();
+        }
+
+        NotifyChanged();
+    }
+
+    private void HandleLiveEvent(ProfilerLiveEventDisplay display)
+    {
+        lock (_sync)
+        {
+            _masterDisplays.Add(display);
+            if (_session is not null && _session.PassesEventFilters(display.Captured.Info))
+            {
+                AddToBucket(display);
+            }
+        }
+
+        NotifyChanged();
+    }
+
+    private void RebuildVisibleBuckets()
+    {
+        ClearAllBuckets();
+        if (_session is null)
+        {
+            return;
+        }
+
+        foreach (var display in _masterDisplays)
+        {
+            if (_session.PassesEventFilters(display.Captured.Info))
+            {
+                AddToBucket(display);
+            }
+        }
+    }
+
+    private void ClearAllBuckets()
+    {
+        Inserts.Clear();
+        Updates.Clear();
+        ReadOnlyEvents.Clear();
+        UnknownEvents.Clear();
+    }
+
+    private void AddToBucket(ProfilerLiveEventDisplay display)
+    {
+        switch (display.Bucket)
+        {
+            case ProfilerEventBucket.Insert:
+                Inserts.Add(display);
+                break;
+            case ProfilerEventBucket.Update:
+                Updates.Add(display);
+                break;
+            case ProfilerEventBucket.ReadOnly:
+                ReadOnlyEvents.Add(display);
+                break;
+            case ProfilerEventBucket.Unknown:
+                UnknownEvents.Add(display);
+                break;
+        }
     }
 
     private void NotifyChanged() => Changed?.Invoke();

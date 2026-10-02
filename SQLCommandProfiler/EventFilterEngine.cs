@@ -11,13 +11,27 @@ internal sealed class EventFilterEngine
     private readonly object _sync = new();
     private List<EventFilterRule> _rules;
     private bool _hasIncludeRules;
+    private readonly int _configRuleCount;
 
     public EventFilterEngine(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
 
-        _rules = LoadRules(configuration.GetSection("Profiler:EventFilters:Rules")).ToList();
+        var configRules = LoadRules(configuration.GetSection("Profiler:EventFilters:Rules"));
+        _configRuleCount = configRules.Length;
+        _rules = configRules.ToList();
         _hasIncludeRules = _rules.Any(rule => rule.Effect == ProfilerEventFilterEffect.Include);
+    }
+
+    public int RuntimeRuleCount
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return Math.Max(0, _rules.Count - _configRuleCount);
+            }
+        }
     }
 
     public bool TryAddRule(ProfilerEventFilterDefinition definition, out string? errorMessage)
@@ -38,6 +52,25 @@ internal sealed class EventFilterEngine
         lock (_sync)
         {
             _rules.Add(new EventFilterRule(definition.Effect, definition.Field, pattern));
+            _hasIncludeRules = _rules.Any(rule => rule.Effect == ProfilerEventFilterEffect.Include);
+        }
+
+        errorMessage = null;
+        return true;
+    }
+
+    public bool TryRemoveRuntimeRule(int runtimeRuleIndex, out string? errorMessage)
+    {
+        lock (_sync)
+        {
+            var runtimeCount = _rules.Count - _configRuleCount;
+            if (runtimeRuleIndex < 0 || runtimeRuleIndex >= runtimeCount)
+            {
+                errorMessage = "Runtime filter was not found.";
+                return false;
+            }
+
+            _rules.RemoveAt(_configRuleCount + runtimeRuleIndex);
             _hasIncludeRules = _rules.Any(rule => rule.Effect == ProfilerEventFilterEffect.Include);
         }
 

@@ -93,46 +93,110 @@
     }
 </div>
 
+@if (ProfilerState.IsRunning && ProfilerState.RuntimeFilters.Count > 0)
+{
+    <div class="card mb-3">
+        <div class="card-body py-2">
+            <div class="fw-semibold small mb-2">Session filters</div>
+            <ul class="list-group list-group-flush">
+                @for (var i = 0; i < ProfilerState.RuntimeFilters.Count; i++)
+                {
+                    var filterIndex = i;
+                    var filter = ProfilerState.RuntimeFilters[filterIndex];
+                    <li class="list-group-item d-flex flex-wrap align-items-center justify-content-between gap-2 px-0">
+                        <code class="small">@filter.Effect @filter.Field / @filter.Pattern</code>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-danger"
+                                @onclick="() => RemoveRuntimeFilter(filterIndex)">
+                            Remove
+                        </button>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+}
+
 <div class="profiler-sections d-flex flex-column gap-2 mb-4">
     <CollapsibleSection Title="@($"INSERTS ({ProfilerState.Inserts.Count})")"
                         DefaultExpanded="true">
-        <ProfilerEventStream Title="INSERTS"
+        <HeaderActions>
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    disabled="@(ProfilerState.Inserts.Count == 0)"
+                    @onclick="() => ClearBucket(ProfilerEventBucket.Insert)">
+                Clear
+            </button>
+        </HeaderActions>
+        <ChildContent>
+            <ProfilerEventStream Title="INSERTS"
                              ShowHeader="false"
                              TileClass="profiler-tile-insert"
                              Items="ProfilerState.Inserts"
                              AutoScroll="_autoScrollInserts"
                              AutoScrollChanged="value => _autoScrollInserts = value"
                              OnSelect="OpenDetail" />
+        </ChildContent>
     </CollapsibleSection>
     <CollapsibleSection Title="@($"UPDATES ({ProfilerState.Updates.Count})")"
                         DefaultExpanded="true">
-        <ProfilerEventStream Title="UPDATES"
+        <HeaderActions>
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    disabled="@(ProfilerState.Updates.Count == 0)"
+                    @onclick="() => ClearBucket(ProfilerEventBucket.Update)">
+                Clear
+            </button>
+        </HeaderActions>
+        <ChildContent>
+            <ProfilerEventStream Title="UPDATES"
                              ShowHeader="false"
                              TileClass="profiler-tile-update"
                              Items="ProfilerState.Updates"
                              AutoScroll="_autoScrollUpdates"
                              AutoScrollChanged="value => _autoScrollUpdates = value"
                              OnSelect="OpenDetail" />
+        </ChildContent>
     </CollapsibleSection>
     <CollapsibleSection Title="@($"READ-ONLY ({ProfilerState.ReadOnlyEvents.Count})")"
                         DefaultExpanded="true">
-        <ProfilerEventStream Title="READ-ONLY"
+        <HeaderActions>
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    disabled="@(ProfilerState.ReadOnlyEvents.Count == 0)"
+                    @onclick="() => ClearBucket(ProfilerEventBucket.ReadOnly)">
+                Clear
+            </button>
+        </HeaderActions>
+        <ChildContent>
+            <ProfilerEventStream Title="READ-ONLY"
                              ShowHeader="false"
                              TileClass="profiler-tile-readonly"
                              Items="ProfilerState.ReadOnlyEvents"
                              AutoScroll="_autoScrollReadOnly"
                              AutoScrollChanged="value => _autoScrollReadOnly = value"
                              OnSelect="OpenDetail" />
+        </ChildContent>
     </CollapsibleSection>
     <CollapsibleSection Title="@($"Unknown ({ProfilerState.UnknownEvents.Count})")"
                         DefaultExpanded="false">
-        <ProfilerEventStream Title="Unknown"
+        <HeaderActions>
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    disabled="@(ProfilerState.UnknownEvents.Count == 0)"
+                    @onclick="() => ClearBucket(ProfilerEventBucket.Unknown)">
+                Clear
+            </button>
+        </HeaderActions>
+        <ChildContent>
+            <ProfilerEventStream Title="Unknown"
                              ShowHeader="false"
                              TileClass="profiler-tile-unknown"
                              Items="ProfilerState.UnknownEvents"
                              AutoScroll="_autoScrollUnknown"
                              AutoScrollChanged="value => _autoScrollUnknown = value"
                              OnSelect="OpenDetail" />
+        </ChildContent>
     </CollapsibleSection>
 </div>
 
@@ -192,6 +256,11 @@
     private void BeginProfiling() => ProfilerState.BeginProfiling();
 
     private void StopProfiling() => ProfilerState.StopProfiling();
+
+    private void ClearBucket(ProfilerEventBucket bucket) => ProfilerState.ClearBucket(bucket);
+
+    private void RemoveRuntimeFilter(int runtimeFilterIndex) =>
+        ProfilerState.TryRemoveRuntimeFilter(runtimeFilterIndex, out _);
 
     private void OnProfilerStateChanged() => _ = InvokeAsync(StateHasChanged);
 

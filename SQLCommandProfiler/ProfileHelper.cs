@@ -110,6 +110,18 @@ public sealed class ProfileHelper : IDisposable
         return _eventFilters.TryAddRule(definition, out errorMessage);
     }
 
+    public bool TryRemoveEventFilter(int runtimeFilterIndex, out string? errorMessage)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _eventFilters.TryRemoveRuntimeRule(runtimeFilterIndex, out errorMessage);
+    }
+
+    public bool PassesEventFilters(in ExtendedEventInfo eventInfo)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _eventFilters.PassesFilters(in eventInfo);
+    }
+
     private void ProveExtendedEventsSessionCapability()
     {
         using var connection = CreateProfilerConnection();
@@ -232,7 +244,7 @@ public sealed class ProfileHelper : IDisposable
                 ApplicationName: GetEventField(eventElement, "client_app_name") ?? string.Empty,
                 HostName: GetEventField(eventElement, "client_hostname") ?? string.Empty,
                 SessionId: sessionId,
-                ClientProcessId: ParseInt(GetEventField(eventElement, "client_process_id")),
+                ClientProcessId: ParseInt(GetEventField(eventElement, "client_pid")),
                 SqlText: sqlText,
                 DurationMicroseconds: ParseLong(GetEventField(eventElement, "duration")),
                 CpuMicroseconds: ParseLong(GetEventField(eventElement, "cpu_time")),
