@@ -30,6 +30,25 @@
                             Filter by…
                         </button>
                     }
+                    else if (ShowNavigation)
+                    {
+                        <span class="me-auto"></span>
+                    }
+                    @if (ShowNavigation)
+                    {
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                disabled="@(!CanGoPrevious)"
+                                @onclick="PreviousAsync">
+                            Previous
+                        </button>
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                disabled="@(!CanGoNext)"
+                                @onclick="NextAsync">
+                            Next
+                        </button>
+                    }
                     <button type="button" class="btn btn-secondary" @onclick="CloseAsync">Close</button>
                 </div>
             </div>
@@ -61,6 +80,21 @@
     [Parameter]
     public EventCallback OnFilterBy { get; set; }
 
+    [Parameter]
+    public bool ShowNavigation { get; set; }
+
+    [Parameter]
+    public bool CanGoPrevious { get; set; }
+
+    [Parameter]
+    public bool CanGoNext { get; set; }
+
+    [Parameter]
+    public EventCallback OnPrevious { get; set; }
+
+    [Parameter]
+    public EventCallback OnNext { get; set; }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (IsOpen && !_wasOpen)
@@ -76,10 +110,29 @@
         if (args.Key == "Escape")
         {
             await CloseAsync();
+            return;
+        }
+
+        if (!ShowNavigation)
+        {
+            return;
+        }
+
+        if (args.Key == "ArrowLeft" && CanGoPrevious)
+        {
+            await PreviousAsync();
+        }
+        else if (args.Key == "ArrowRight" && CanGoNext)
+        {
+            await NextAsync();
         }
     }
 
     private Task CloseAsync() => OnClose.InvokeAsync();
 
     private Task FilterByAsync() => OnFilterBy.InvokeAsync();
+
+    private Task PreviousAsync() => OnPrevious.InvokeAsync();
+
+    private Task NextAsync() => OnNext.InvokeAsync();
 }

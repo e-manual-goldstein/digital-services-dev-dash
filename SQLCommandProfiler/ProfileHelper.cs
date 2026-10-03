@@ -260,11 +260,11 @@ public sealed class ProfileHelper : IDisposable
             }
 
             var sqlText = GetEventField(eventElement, "sql_text")
-                ?? GetEventField(eventElement, "statement")
                 ?? GetEventField(eventElement, "batch_text")
                 ?? string.Empty;
+            var statement = GetEventField(eventElement, "statement") ?? string.Empty;
 
-            var dedupeKey = $"{timestampUtc.UtcTicks}|{eventName}|{sessionId}|{sqlText}";
+            var dedupeKey = $"{timestampUtc.UtcTicks}|{eventName}|{sessionId}|{sqlText}|{statement}";
             if (!_seenEventKeys.Add(dedupeKey))
             {
                 continue;
@@ -282,6 +282,7 @@ public sealed class ProfileHelper : IDisposable
                 SessionId: sessionId,
                 ClientProcessId: ParseInt(GetEventField(eventElement, "client_pid")),
                 SqlText: sqlText,
+                Statement: statement,
                 DurationMicroseconds: ParseLong(GetEventField(eventElement, "duration")),
                 CpuMicroseconds: ParseLong(GetEventField(eventElement, "cpu_time")),
                 LogicalReads: ParseLong(GetEventField(eventElement, "logical_reads")),
@@ -597,15 +598,26 @@ public sealed class ProfileHelper : IDisposable
             return true;
         }
 
-        if (string.IsNullOrWhiteSpace(eventInfo.SqlText))
+        if (string.IsNullOrWhiteSpace(eventInfo.SqlText) && string.IsNullOrWhiteSpace(eventInfo.Statement))
         {
             return false;
         }
 
-        return eventInfo.SqlText.Contains("sys.dm_xe_session_targets", StringComparison.OrdinalIgnoreCase)
-            || eventInfo.SqlText.Contains("sys.dm_xe_sessions", StringComparison.OrdinalIgnoreCase)
-            || eventInfo.SqlText.Contains("sys.server_event_sessions", StringComparison.OrdinalIgnoreCase)
-            || eventInfo.SqlText.Contains("ALTER EVENT SESSION", StringComparison.OrdinalIgnoreCase);
+        return ContainsProfilerActivityMarker(eventInfo.SqlText)
+            || ContainsProfilerActivityMarker(eventInfo.Statement);
+    }
+
+    private static bool ContainsProfilerActivityMarker(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return false;
+        }
+
+        return text.Contains("sys.dm_xe_session_targets", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("sys.dm_xe_sessions", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("sys.server_event_sessions", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("ALTER EVENT SESSION", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string? GetEventField(XElement eventElement, string fieldName)

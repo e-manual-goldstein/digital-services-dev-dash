@@ -580,7 +580,14 @@ public static class ProfilerEventDetailFormatter
         builder.AppendLine(CultureInfo.InvariantCulture, $"Logical reads: {info.LogicalReads}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"Query hash: {info.QueryHash:X16}");
         builder.AppendLine();
-        builder.AppendLine("SQL:");
+        if (!string.IsNullOrWhiteSpace(info.Statement))
+        {
+            builder.AppendLine("Statement:");
+            builder.AppendLine(SqlTextPrettyPrinter.FormatOrOriginal(info.Statement));
+            builder.AppendLine();
+        }
+
+        builder.AppendLine("Sql text:");
         builder.AppendLine(SqlTextPrettyPrinter.FormatOrOriginal(info.SqlText));
         return builder.ToString();
     }

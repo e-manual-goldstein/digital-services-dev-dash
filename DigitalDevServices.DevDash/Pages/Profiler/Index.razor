@@ -259,6 +259,11 @@
                  Body="@_detailBody"
                  ShowFilterByButton="@(ProfilerState.IsRunning && _detailDisplay is not null)"
                  OnFilterBy="OpenFilterByFromDetail"
+                 ShowNavigation="@(_detailItems is not null && _detailItems.Count > 1)"
+                 CanGoPrevious="@CanGoToPreviousDetail"
+                 CanGoNext="@CanGoToNextDetail"
+                 OnPrevious="ShowPreviousDetail"
+                 OnNext="ShowNextDetail"
                  OnClose="CloseDetail" />
 
 <ProfilerFilterDialog IsOpen="_filterDialogOpen"
@@ -293,6 +298,13 @@
     private string _filterInitialPattern = string.Empty;
     private string? _filterValidationMessage;
     private ProfilerLiveEventDisplay? _detailDisplay;
+    private IReadOnlyList<ProfilerLiveEventDisplay>? _detailItems;
+    private int _detailIndex;
+
+    private bool CanGoToPreviousDetail => _detailItems is not null && _detailIndex > 0;
+
+    private bool CanGoToNextDetail =>
+        _detailItems is not null && _detailIndex < _detailItems.Count - 1;
 
     private bool InstanceInputChanged =>
         !string.Equals(_sqlServerInstanceInput.Trim(), _appliedSqlServerInstanceInput, StringComparison.Ordinal);
@@ -325,20 +337,119 @@
     private void ReloadRecognisedCommands() =>
         ProfilerState.TryReloadRecognisedCommandsLookup(out _);
 
-    private void OnProfilerStateChanged() => _ = InvokeAsync(StateHasChanged);
+    private void OnProfilerStateChanged() =>
+        _ = InvokeAsync(() =>
+        {
+            if (_detailOpen && _detailDisplay is not null)
+            {
+                RefreshDetailFromCurrentBucket();
+            }
+
+            StateHasChanged();
+        });
 
     private void OpenDetail(ProfilerLiveEventDisplay display)
     {
+        _detailItems = GetItemsForBucket(display.Bucket);
+        _detailIndex = FindDetailIndex(_detailItems, display);
+        ShowDetailAt(_detailIndex);
+        _detailOpen = true;
+    }
+
+    private Task ShowPreviousDetail()
+    {
+        if (CanGoToPreviousDetail)
+        {
+            ShowDetailAt(_detailIndex - 1);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task ShowNextDetail()
+    {
+        if (CanGoToNextDetail)
+        {
+            ShowDetailAt(_detailIndex + 1);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void ShowDetailAt(int index)
+    {
+        if (_detailItems is null || index < 0 || index >= _detailItems.Count)
+        {
+            return;
+        }
+
+        _detailIndex = index;
+        var display = _detailItems[_detailIndex];
         _detailDisplay = display;
         _detailTitle = $"{display.Bucket}: {display.Title}";
         _detailBody = ProfilerEventDetailFormatter.Format(display);
-        _detailOpen = true;
+    }
+
+    private void RefreshDetailFromCurrentBucket()
+    {
+        if (_detailDisplay is null)
+        {
+            return;
+        }
+
+        _detailItems = GetItemsForBucket(_detailDisplay.Bucket);
+        if (_detailItems.Count == 0)
+        {
+            _ = CloseDetail();
+            return;
+        }
+
+        if (_detailIndex >= _detailItems.Count)
+        {
+            _detailIndex = _detailItems.Count - 1;
+        }
+
+        ShowDetailAt(_detailIndex);
+    }
+
+    private static IReadOnlyList<ProfilerLiveEventDisplay> GetItemsForBucket(
+        ProfilerEventBucket bucket,
+        ProfilerDashboardService profilerState) =>
+        bucket switch
+        {
+            ProfilerEventBucket.Insert => profilerState.Inserts,
+            ProfilerEventBucket.Update => profilerState.Updates,
+            ProfilerEventBucket.Delete => profilerState.Deletes,
+            ProfilerEventBucket.ReadOnly => profilerState.ReadOnlyEvents,
+            ProfilerEventBucket.RecognisedCommand => profilerState.RecognisedCommands,
+            ProfilerEventBucket.Unknown => profilerState.UnknownEvents,
+            _ => Array.Empty<ProfilerLiveEventDisplay>(),
+        };
+
+    private IReadOnlyList<ProfilerLiveEventDisplay> GetItemsForBucket(ProfilerEventBucket bucket) =>
+        GetItemsForBucket(bucket, ProfilerState);
+
+    private static int FindDetailIndex(
+        IReadOnlyList<ProfilerLiveEventDisplay> items,
+        ProfilerLiveEventDisplay display)
+    {
+        for (var i = 0; i < items.Count; i++)
+        {
+            if (items[i].Id == display.Id)
+            {
+                return i;
+            }
+        }
+
+        return 0;
     }
 
     private Task CloseDetail()
     {
         _detailOpen = false;
         _detailDisplay = null;
+        _detailItems = null;
+        _detailIndex = 0;
         return Task.CompletedTask;
     }
 

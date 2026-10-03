@@ -11,6 +11,7 @@ public readonly record struct ExtendedEventInfo(
     int SessionId,
     int ClientProcessId,
     string SqlText,
+    string Statement,
     long DurationMicroseconds,
     long CpuMicroseconds,
     long LogicalReads,

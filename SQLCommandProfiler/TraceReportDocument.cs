@@ -124,6 +124,8 @@ public sealed class CapturedEventSummary
 
     public string? SqlSnippet { get; init; }
 
+    public string? StatementSnippet { get; init; }
+
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public EfSqlAccess? EfAccess { get; init; }
 

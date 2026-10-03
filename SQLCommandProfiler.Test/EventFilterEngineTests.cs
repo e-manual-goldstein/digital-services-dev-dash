@@ -120,6 +120,7 @@ public sealed class EventFilterEngineTests
             SessionId: 1,
             ClientProcessId: 0,
             SqlText: sqlText,
+            Statement: string.Empty,
             DurationMicroseconds: 0,
             CpuMicroseconds: 0,
             LogicalReads: 0,

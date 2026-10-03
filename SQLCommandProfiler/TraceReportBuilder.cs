@@ -270,6 +270,7 @@ internal static class TraceReportBuilder
             ClientProcessId = captured.Info.ClientProcessId > 0 ? captured.Info.ClientProcessId : null,
             DurationMicroseconds = captured.Info.DurationMicroseconds,
             SqlSnippet = FormatSqlSnippet(captured.Info.SqlText),
+            StatementSnippet = FormatSqlSnippet(captured.Info.Statement),
             EfAccess = captured.EfInterpretation?.Access,
             KnownCommandAccess = captured.CommandLookup?.IsKnown == true ? captured.CommandLookup.Access : null,
             IsKnownCommand = captured.CommandLookup?.IsKnown,

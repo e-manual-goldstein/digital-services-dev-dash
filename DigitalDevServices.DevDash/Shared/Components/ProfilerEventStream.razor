@@ -70,7 +70,7 @@
                             <td>@DisplayCell(info.HostName)</td>
                             <td class="profiler-cell-numeric">@FormatClientProcessId(info.ClientProcessId)</td>
                             <td class="profiler-cell-numeric">@FormatDuration(info.DurationMicroseconds)</td>
-                            <td class="profiler-cell-sql" title="@info.SqlText">@FormatSqlText(info.SqlText)</td>
+                            <td class="profiler-cell-sql" title="@FormatSqlTooltip(info)">@FormatSqlText(info)</td>
                         </tr>
                     }
                 </tbody>
@@ -156,8 +156,21 @@
             : $"{milliseconds.ToString("0.###", CultureInfo.InvariantCulture)} ms";
     }
 
-    private static string FormatSqlText(string sqlText) =>
-        ProfilerSqlSnippet.FormatForTile(sqlText, SqlTextMaxLength);
+    private static string FormatSqlText(ExtendedEventInfo info) =>
+        ProfilerSqlSnippet.FormatForTile(GetDisplaySqlText(info), SqlTextMaxLength);
+
+    private static string FormatSqlTooltip(ExtendedEventInfo info)
+    {
+        if (!string.IsNullOrWhiteSpace(info.Statement) && !string.IsNullOrWhiteSpace(info.SqlText))
+        {
+            return $"Statement:\n{info.Statement}\n\nSql text:\n{info.SqlText}";
+        }
+
+        return GetDisplaySqlText(info);
+    }
+
+    private static string GetDisplaySqlText(ExtendedEventInfo info) =>
+        !string.IsNullOrWhiteSpace(info.SqlText) ? info.SqlText : info.Statement;
 
     private static string GetCommandName(ProfilerLiveEventDisplay item)
     {
